@@ -64,12 +64,21 @@ interface TourFormProps {
   onCancel: () => void;
 }
 
+interface Categoria {
+  id: string;
+  nome: string;
+  icone: string | null;
+  cor: string | null;
+}
+
 const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
   const [loading, setLoading] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [currentPdfPath, setCurrentPdfPath] = useState<string | null>(null);
+  const [allCategorias, setAllCategorias] = useState<Categoria[]>([]);
+  const [selectedCategoriaIds, setSelectedCategoriaIds] = useState<string[]>([]);
   const { toast } = useToast();
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialLoadRef = useRef(true);
@@ -147,6 +156,43 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
     }
   }, [tour, form]);
 
+  // Load all active categories
+  useEffect(() => {
+    supabase
+      .from('categorias_passeio')
+      .select('id, nome, icone, cor')
+      .eq('ativo', true)
+      .order('ordem')
+      .then(({ data }) => { if (data) setAllCategorias(data); });
+  }, []);
+
+  // Load tour's selected categories
+  useEffect(() => {
+    if (!tour) return;
+    supabase
+      .from('tour_categorias')
+      .select('categoria_id')
+      .eq('tour_id', tour.id)
+      .then(({ data }) => {
+        if (data) setSelectedCategoriaIds(data.map((r) => r.categoria_id));
+      });
+  }, [tour]);
+
+  const toggleCategoria = (id: string) => {
+    setSelectedCategoriaIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const saveCategoriasForTour = async (tourId: string) => {
+    await supabase.from('tour_categorias').delete().eq('tour_id', tourId);
+    if (selectedCategoriaIds.length > 0) {
+      await supabase.from('tour_categorias').insert(
+        selectedCategoriaIds.map((cid) => ({ tour_id: tourId, categoria_id: cid }))
+      );
+    }
+  };
+
   // Auto-save function for existing tours
   const autoSave = useCallback(async (values: z.infer<typeof formSchema>) => {
     if (!tour) return; // Only auto-save for existing tours
@@ -196,6 +242,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
       const { error: pricingError } = await supabase.from('tour_pricing_options').insert(pricingOptionsToInsert);
       if (pricingError) throw pricingError;
 
+      await saveCategoriasForTour(tour.id);
       setLastSaved(new Date());
     } catch (error: any) {
       console.error('Auto-save error:', error);
@@ -329,6 +376,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
 
         const { error: pricingError } = await supabase.from('tour_pricing_options').insert(pricingOptionsToInsert);
         if (pricingError) throw pricingError;
+
+        await saveCategoriasForTour(tourId);
       }
 
       toast({ title: tour ? "Passeio atualizado!" : "Passeio criado!" });
@@ -565,6 +614,40 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                     />
                   </CardContent>
                 </Card>
+
+                {/* Categorias */}
+                {allCategorias.length > 0 && (
+                  <Card className="border-0 shadow-sm">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base font-medium text-slate-700">Categorias</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Selecione as categorias que descrevem este passeio. Usadas nos filtros da home.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {allCategorias.map((cat) => {
+                          const selected = selectedCategoriaIds.includes(cat.id);
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => toggleCategoria(cat.id)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                                selected
+                                  ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                                  : 'bg-white text-slate-600 border-slate-200 hover:border-primary/50 hover:text-primary'
+                              }`}
+                            >
+                              {cat.icone && <span>{cat.icone}</span>}
+                              {cat.nome}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Preços */}
                 <Card className="border-0 shadow-sm">
