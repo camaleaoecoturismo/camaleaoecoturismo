@@ -1,0 +1,775 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dual scrollbar container - shows scrollbar at top */
+.dual-scroll-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.dual-scroll-top {
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 12px;
+  transform: rotateX(180deg);
+}
+
+.dual-scroll-top > div {
+  height: 1px;
+}
+
+.dual-scroll-content {
+  overflow-x: auto;
+}
+
+.dual-scroll-top::-webkit-scrollbar,
+.dual-scroll-content::-webkit-scrollbar {
+  height: 10px;
+}
+
+.dual-scroll-top::-webkit-scrollbar-track,
+.dual-scroll-content::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.2);
+  border-radius: 5px;
+}
+
+.dual-scroll-top::-webkit-scrollbar-thumb,
+.dual-scroll-content::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.4);
+  border-radius: 5px;
+}
+
+.dual-scroll-top::-webkit-scrollbar-thumb:hover,
+.dual-scroll-content::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.6);
+}
+
+/* Scroll suave customizado */
+.scrollbar-smooth {
+  scroll-behavior: smooth;
+}
+
+.scrollbar-smooth::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-smooth::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-smooth::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 3px;
+}
+
+.scrollbar-smooth::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.3);
+}
+
+/* Export (html2canvas/PDF): fix baseline drift inside chips/badges */
+.isExporting .export-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.isExporting .export-chip-text {
+  display: block;
+  line-height: 1;
+  transform: translateY(2px);
+}
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 265 4% 12.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 265 4% 12.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 265 4% 12.9%;
+
+    --primary: 271 81.3333% 55.8824%;
+    --primary-foreground: 248 0.3% 98.4%;
+
+    --secondary: 248 0.7% 96.8%;
+    --secondary-foreground: 266 4% 20.8%;
+
+    --muted: 248 0.7% 96.8%;
+    --muted-foreground: 257 4.6% 55.4%;
+
+    --accent: 248 0.7% 96.8%;
+    --accent-foreground: 266 4% 20.8%;
+
+    --destructive: 27 24.5% 57.7%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 256 1.3% 92.9%;
+    --input: 256 1.3% 92.9%;
+    --ring: 257 4% 70.4%;
+
+    --success: 154 59% 38%;
+    --success-foreground: 0 0% 100%;
+
+    /* Status colors for professional badges */
+    --status-paid: 151 67% 38%;
+    --status-paid-bg: 151 67% 95%;
+    --status-pending: 43 96% 65%;
+    --status-pending-bg: 43 96% 95%;
+    --status-cancelled: 0 0% 64%;
+    --status-cancelled-bg: 0 0% 95%;
+    --status-late: 0 84% 60%;
+    --status-late-bg: 0 84% 95%;
+    --status-confirmed: 270 100% 45%;
+    --status-confirmed-bg: 270 100% 95%;
+
+    /* Header específico cores */
+    --header-purple: 270 100% 42%;
+    --header-yellow: 53 100% 65%;
+    --header-purple-dark: 270 100% 35%;
+
+    /* Menu top bar colors */
+    --menu-purple: 274 85% 45%;
+    --menu-yellow: 51 100% 65%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(var(--background)), hsl(var(--secondary)));
+    --shadow-elegant: 0 10px 30px -10px hsl(270 100% 20% / 0.3);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius: 0.375rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 265 4% 12.9%;
+
+    --sidebar-primary: 266 4% 20.8%;
+
+    --sidebar-primary-foreground: 248 0.3% 98.4%;
+
+    --sidebar-accent: 248 0.7% 96.8%;
+
+    --sidebar-accent-foreground: 266 4% 20.8%;
+
+    --sidebar-border: 256 1.3% 92.9%;
+
+    --sidebar-ring: 257 4% 70.4%;
+
+    --chart-1: 41 22.2% 64.6%;
+
+    --chart-2: 185 11.8% 60%;
+
+    --chart-3: 227 7% 39.8%;
+
+    --chart-4: 84 18.9% 82.8%;
+
+    --chart-5: 70 18.8% 76.9%;
+
+    --sidebar: 248 0.3% 98.4%;
+
+    --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+
+    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+
+    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+
+    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+
+    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+
+    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+
+    --tracking-normal: 0em;
+
+    --spacing: 0.25rem;
+  }
+
+  .dark {
+    --background: 0 0% 15%;
+    --foreground: 248 0.3% 98.4%;
+
+    --card: 266 4% 20.8%;
+    --card-foreground: 248 0.3% 98.4%;
+
+    --popover: 266 4% 20.8%;
+    --popover-foreground: 248 0.3% 98.4%;
+
+    --primary: 256 1.3% 92.9%;
+    --primary-foreground: 266 4% 20.8%;
+
+    --secondary: 260 4.1% 27.9%;
+    --secondary-foreground: 248 0.3% 98.4%;
+
+    --muted: 260 4.1% 27.9%;
+    --muted-foreground: 257 4% 70.4%;
+
+    --accent: 260 4.1% 27.9%;
+    --accent-foreground: 248 0.3% 98.4%;
+
+    --destructive: 22 19.1% 70.4%;
+    --destructive-foreground: 248 0.3% 98.4%;
+
+    --border: 0 0% 100% / 10%;
+    --input: 0 0% 100% / 15%;
+    --ring: 264 2.7% 55.1%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 248 0.3% 98.4%;
+    --sidebar-primary: 264 24.3% 48.8%;
+    --sidebar-primary-foreground: 248 0.3% 98.4%;
+    --sidebar-accent: 260 4.1% 27.9%;
+    --sidebar-accent-foreground: 248 0.3% 98.4%;
+    --sidebar-border: 0 0% 100% / 10%;
+    --sidebar-ring: 264 2.7% 55.1%;
+    --chart-1: 264 24.3% 48.8%;
+    --chart-2: 162 17% 69.6%;
+    --chart-3: 70 18.8% 76.9%;
+    --chart-4: 304 26.5% 62.7%;
+    --chart-5: 16 24.6% 64.5%;
+    --sidebar: 266 4% 20.8%;
+    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Remove spinners from number inputs in all browsers */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  /* Prevent zoom on input focus in mobile + force text color */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  textarea,
+  select {
+    color: black !important;
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+  }
+
+  @media (max-width: 768px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="search"],
+    textarea,
+    select {
+      font-size: 16px !important; /* Must be 16px+ to prevent iOS auto-zoom */
+    }
+  }
+
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="number"]:focus,
+  input[type="tel"]:focus,
+  input[type="url"]:focus,
+  input[type="search"]:focus,
+  textarea:focus,
+  select:focus {
+    outline: none !important;
+    ring: 0 !important;
+    border-color: rgb(209 213 219) !important; /* gray-300 */
+    box-shadow: none !important;
+  }
+}
+
+/* Card slide-up animation */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* WhatsApp button gentle pulse animation */
+@keyframes pulse-gentle {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out forwards;
+}
+
+.animate-pulse-gentle {
+  animation: pulse-gentle 0.6s ease-in-out;
+}
+
+/* Chat animations for WhatsApp-like experience */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Ticket content rich text styles */
+.ticket-content ul,
+.ticket-content ol {
+  list-style-position: inside;
+  padding-left: 0;
+}
+
+.ticket-content ul {
+  list-style-type: disc;
+}
+
+.ticket-content ol {
+  list-style-type: decimal;
+}
+
+.ticket-content li {
+  margin-bottom: 0.25rem;
+}
+
+.ticket-content p {
+  margin-bottom: 0.25rem;
+}
+
+.ticket-content strong,
+.ticket-content b {
+  font-weight: 600;
+}
+
+.ticket-content em,
+.ticket-content i {
+  font-style: italic;
+}
+
+.ticket-content u {
+  text-decoration: underline;
+}
+
+.ticket-content s {
+  text-decoration: line-through;
+}
+
+.ticket-content h1 {
+  font-size: 1em;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.ticket-content h2 {
+  font-size: 0.95em;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.ticket-content h3 {
+  font-size: 0.9em;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.ticket-content blockquote {
+  border-left: 2px solid hsl(var(--muted));
+  padding-left: 0.5rem;
+  margin: 0.25rem 0;
+  font-style: italic;
+}
+
+/* Rich Text Editor Quill Customizations */
+.rich-text-editor-container .ql-toolbar {
+  border-top-left-radius: 0.375rem;
+  border-top-right-radius: 0.375rem;
+  background: hsl(var(--muted));
+  border-color: hsl(var(--border));
+  flex-wrap: wrap;
+}
+
+.rich-text-editor-container .ql-container {
+  border-bottom-left-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+  border-color: hsl(var(--border));
+  font-family: inherit;
+}
+
+.rich-text-editor-container .ql-editor {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.rich-text-editor-container .ql-editor.ql-blank::before {
+  color: hsl(var(--muted-foreground));
+  font-style: normal;
+}
+
+.rich-text-editor-container .ql-toolbar button:hover,
+.rich-text-editor-container .ql-toolbar button.ql-active {
+  color: hsl(var(--primary));
+}
+
+.rich-text-editor-container .ql-toolbar button:hover .ql-stroke,
+.rich-text-editor-container .ql-toolbar button.ql-active .ql-stroke {
+  stroke: hsl(var(--primary));
+}
+
+.rich-text-editor-container .ql-toolbar button:hover .ql-fill,
+.rich-text-editor-container .ql-toolbar button.ql-active .ql-fill {
+  fill: hsl(var(--primary));
+}
+
+.rich-text-editor-container .ql-picker-label:hover,
+.rich-text-editor-container .ql-picker-label.ql-active {
+  color: hsl(var(--primary));
+}
+
+.rich-text-editor-container .ql-picker-options {
+  background: hsl(var(--background));
+  border-color: hsl(var(--border));
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.rich-text-editor-container .ql-picker-item:hover {
+  color: hsl(var(--primary));
+}
+
+/* Size picker labels - numeric values */
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-label::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-item::before {
+  content: 'Tamanho';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="10px"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="10px"]::before {
+  content: '10px';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before {
+  content: '12px';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="14px"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="14px"]::before {
+  content: '14px';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="16px"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="16px"]::before {
+  content: '16px';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="18px"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="18px"]::before {
+  content: '18px';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="20px"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="20px"]::before {
+  content: '20px';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before {
+  content: '24px';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="28px"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="28px"]::before {
+  content: '28px';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="32px"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="32px"]::before {
+  content: '32px';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="36px"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="36px"]::before {
+  content: '36px';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="48px"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="48px"]::before {
+  content: '48px';
+}
+
+/* Line height picker labels */
+.rich-text-editor-container .ql-snow .ql-picker.ql-lineHeight .ql-picker-label::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-lineHeight .ql-picker-item::before {
+  content: 'Espaçamento';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-lineHeight .ql-picker-label[data-value="1"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-lineHeight .ql-picker-item[data-value="1"]::before {
+  content: '1.0';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-lineHeight .ql-picker-label[data-value="1.15"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-lineHeight .ql-picker-item[data-value="1.15"]::before {
+  content: '1.15';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-lineHeight .ql-picker-label[data-value="1.5"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-lineHeight .ql-picker-item[data-value="1.5"]::before {
+  content: '1.5';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-lineHeight .ql-picker-label[data-value="2"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-lineHeight .ql-picker-item[data-value="2"]::before {
+  content: '2.0';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-lineHeight .ql-picker-label[data-value="2.5"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-lineHeight .ql-picker-item[data-value="2.5"]::before {
+  content: '2.5';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-lineHeight .ql-picker-label[data-value="3"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-lineHeight .ql-picker-item[data-value="3"]::before {
+  content: '3.0';
+}
+
+/* Header picker labels */
+.rich-text-editor-container .ql-snow .ql-picker.ql-header .ql-picker-label::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-header .ql-picker-item::before {
+  content: 'Normal';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="1"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="1"]::before {
+  content: 'Título 1';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="2"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="2"]::before {
+  content: 'Título 2';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="3"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="3"]::before {
+  content: 'Título 3';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="4"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="4"]::before {
+  content: 'Título 4';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="5"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="5"]::before {
+  content: 'Título 5';
+}
+
+.rich-text-editor-container .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="6"]::before,
+.rich-text-editor-container .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="6"]::before {
+  content: 'Título 6';
+}
+
+/* Rich Text Content Display (for rendering Quill content outside editor) */
+.rich-text-content {
+  line-height: 1.6 !important;
+}
+
+/* Alignment classes - high specificity to override prose */
+.rich-text-content .ql-align-center,
+.rich-text-content h1.ql-align-center,
+.rich-text-content h2.ql-align-center,
+.rich-text-content h3.ql-align-center,
+.rich-text-content h4.ql-align-center,
+.rich-text-content h5.ql-align-center,
+.rich-text-content h6.ql-align-center,
+.rich-text-content p.ql-align-center,
+.rich-text-content div.ql-align-center,
+.rich-text-content [class*="ql-align-center"] {
+  text-align: center !important;
+}
+
+.rich-text-content .ql-align-right,
+.rich-text-content h1.ql-align-right,
+.rich-text-content h2.ql-align-right,
+.rich-text-content h3.ql-align-right,
+.rich-text-content h4.ql-align-right,
+.rich-text-content h5.ql-align-right,
+.rich-text-content h6.ql-align-right,
+.rich-text-content p.ql-align-right,
+.rich-text-content div.ql-align-right,
+.rich-text-content [class*="ql-align-right"] {
+  text-align: right !important;
+}
+
+.rich-text-content .ql-align-justify,
+.rich-text-content h1.ql-align-justify,
+.rich-text-content h2.ql-align-justify,
+.rich-text-content h3.ql-align-justify,
+.rich-text-content h4.ql-align-justify,
+.rich-text-content h5.ql-align-justify,
+.rich-text-content h6.ql-align-justify,
+.rich-text-content p.ql-align-justify,
+.rich-text-content div.ql-align-justify,
+.rich-text-content [class*="ql-align-justify"] {
+  text-align: justify !important;
+}
+
+/* Font size classes - high specificity */
+.rich-text-content .ql-size-small,
+.rich-text-content span.ql-size-small,
+.rich-text-content strong.ql-size-small,
+.rich-text-content em.ql-size-small,
+.rich-text-content [class*="ql-size-small"] {
+  font-size: 0.75em !important;
+}
+
+.rich-text-content .ql-size-large,
+.rich-text-content span.ql-size-large,
+.rich-text-content strong.ql-size-large,
+.rich-text-content em.ql-size-large,
+.rich-text-content [class*="ql-size-large"] {
+  font-size: 1.5em !important;
+}
+
+.rich-text-content .ql-size-huge,
+.rich-text-content span.ql-size-huge,
+.rich-text-content strong.ql-size-huge,
+.rich-text-content em.ql-size-huge,
+.rich-text-content [class*="ql-size-huge"] {
+  font-size: 2.5em !important;
+}
+
+/* Indentation */
+.rich-text-content .ql-indent-1,
+.rich-text-content [class*="ql-indent-1"] {
+  padding-left: 3em !important;
+}
+
+.rich-text-content .ql-indent-2,
+.rich-text-content [class*="ql-indent-2"] {
+  padding-left: 6em !important;
+}
+
+.rich-text-content .ql-indent-3,
+.rich-text-content [class*="ql-indent-3"] {
+  padding-left: 9em !important;
+}
+
+/* Headers */
+.rich-text-content h1, .rich-text-content h2, .rich-text-content h3, 
+.rich-text-content h4, .rich-text-content h5, .rich-text-content h6 {
+  margin-top: 1em !important;
+  margin-bottom: 0.5em !important;
+  font-weight: 600 !important;
+}
+
+.rich-text-content h1 {
+  font-size: 2em !important;
+}
+
+.rich-text-content h2 {
+  font-size: 1.5em !important;
+}
+
+.rich-text-content h3 {
+  font-size: 1.17em !important;
+}
+
+.rich-text-content p {
+  margin-bottom: 0.5em !important;
+}
+
+.rich-text-content blockquote {
+  border-left: 4px solid hsl(var(--border)) !important;
+  padding-left: 1em !important;
+  margin-left: 0 !important;
+  font-style: italic !important;
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.rich-text-content ul, .rich-text-content ol {
+  padding-left: 1.5em !important;
+  margin-bottom: 0.5em !important;
+}
+
+.rich-text-content a {
+  color: hsl(var(--primary)) !important;
+  text-decoration: underline !important;
+}
+
+/* Inline styles support */
+.rich-text-content [style*="text-align: center"],
+.rich-text-content [style*="text-align:center"] {
+  text-align: center !important;
+}
+
+.rich-text-content [style*="text-align: right"],
+.rich-text-content [style*="text-align:right"] {
+  text-align: right !important;
+}
+
+.rich-text-content [style*="text-align: justify"],
+.rich-text-content [style*="text-align:justify"] {
+  text-align: justify !important;
+}
+
+/* Color support */
+.rich-text-content [style*="color:"],
+.rich-text-content [style*="color :"] {
+  color: inherit;
+}
+
+.rich-text-content [style*="background-color:"],
+.rich-text-content [style*="background-color :"] {
+  background-color: inherit;
+}

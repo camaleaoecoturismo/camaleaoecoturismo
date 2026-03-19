@@ -1,0 +1,1 @@
+ALTER TABLE public.tasks ALTER COLUMN due_date TYPE timestamp without time zone USING due_date::timestamp without time zone;

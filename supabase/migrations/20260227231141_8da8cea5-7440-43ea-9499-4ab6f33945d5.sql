@@ -1,0 +1,1 @@
+UPDATE roca_settings SET carta_oferta = '20210809172518' WHERE id = 'a8ee87b4-a2e8-45d5-99f3-8fc5b372ca1d';
