@@ -36,6 +36,9 @@ const Admin = () => {
   const [totalReservas, setTotalReservas] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('gestao-dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem('adminSidebarCollapsed') === 'true'
+  );
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -352,15 +355,21 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-background flex w-full">
       {/* Sidebar - Desktop */}
-      <AdminSidebar 
+      <AdminSidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onSignOut={handleSignOut}
         totalReservas={totalReservas}
+        onCollapsedChange={setSidebarCollapsed}
       />
 
       {/* Main Content */}
-      <main className="flex-1 md:ml-20 lg:ml-24 pb-20 md:pb-0 min-w-0 overflow-x-hidden">
+      <main
+        className={cn(
+          "flex-1 pb-20 md:pb-0 min-w-0 overflow-x-hidden transition-[margin] duration-300",
+          sidebarCollapsed ? 'md:ml-16' : 'md:ml-60'
+        )}
+      >
         {/* Header */}
         <header className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
           <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-4">

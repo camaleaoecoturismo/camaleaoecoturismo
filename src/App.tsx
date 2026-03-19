@@ -26,6 +26,7 @@ const CheckinValidation = lazy(() => import("./pages/CheckinValidation"));
 const Embarques = lazy(() => import("./pages/Embarques"));
 const ChapadaDiamantina = lazy(() => import("./pages/ChapadaDiamantina"));
 const ExportTours = lazy(() => import("./pages/ExportTours"));
+const Passeio = lazy(() => import("./pages/Passeio"));
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => (
               <Route path="/embarques" element={<Embarques />} />
               <Route path="/chapada-diamantina" element={<ChapadaDiamantina />} />
               <Route path="/export-tours" element={<ExportTours />} />
+              <Route path="/passeio/:tourId" element={<Passeio />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
