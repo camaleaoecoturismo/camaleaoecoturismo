@@ -19,6 +19,7 @@ import { ShopModule } from "@/components/shop";
 import { JourneyModule } from "@/components/journey";
 import ExportToursModule from "@/components/ExportToursModule";
 import ExperienceProcessMap from "@/components/experience-map/ExperienceProcessMap";
+import AdminGuias from "@/components/admin/AdminGuias";
 import { useToast } from "@/hooks/use-toast";
 import { Tour } from "@/hooks/useTours";
 
@@ -280,6 +281,8 @@ const Admin = () => {
         return <AnalyticsModule subView={subSection} />;
       case 'exportar':
         return <ExportToursModule />;
+      case 'guias':
+        return <AdminGuias />;
       default:
         return <TourManagementTab tours={allToursForManagement} onRefresh={fetchTours} viewMode="dashboard" />;
     }
@@ -314,6 +317,7 @@ const Admin = () => {
       'func-pagina-sucesso': 'Funções - Página de Sucesso',
       'func-processos': 'Funções - Processos',
       'catalogo': 'Catálogo',
+      'guias': 'Guias',
       'clientes-reservas': 'Clientes - Reservas',
       'clientes-interessados': 'Clientes - Interessados',
       'clientes-atendimento': 'Clientes - Atendimento',

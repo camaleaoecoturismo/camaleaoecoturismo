@@ -206,6 +206,7 @@ const navGroups: NavGroup[] = [
           { id: 'analytics-abandono', label: 'Abandono', icon: <TrendingUp className="h-4 w-4" /> },
         ],
       },
+      { id: 'guias', label: 'Guias', icon: <Users className="h-5 w-5" /> },
       { id: 'loja', label: 'Loja', icon: <ShoppingBag className="h-5 w-5" /> },
       { id: 'mapa-processos', label: 'Processos', icon: <GitBranch className="h-5 w-5" /> },
       { id: 'exportar', label: 'Exportar', icon: <FileSpreadsheet className="h-5 w-5" /> },
