@@ -195,12 +195,13 @@ const Passeio = () => {
     tour.etiqueta !== "vagas encerradas";
 
   // Section nav items — only show sections that have content
-  const navItems = [
+  type NavItem = { id: string; label: string; icon: React.ElementType };
+  const navItems: NavItem[] = [
     { id: "sobre", label: "Sobre", icon: Info, show: !!tour.about },
     { id: "roteiro", label: "Roteiro", icon: MapIcon, show: !!tour.itinerary },
     { id: "incluso", label: "Incluso", icon: CheckSquare, show: !!(tour.includes || tour.not_includes) },
     { id: "embarques", label: "Embarques", icon: MapPin, show: true },
-  ].filter(item => item.show);
+  ].filter((item): item is NavItem & { show: boolean } => item.show).map(({ id, label, icon }) => ({ id, label, icon }));
 
   const midIndex = Math.ceil(navItems.length / 2);
 
@@ -651,51 +652,37 @@ const Passeio = () => {
       {/* ── SECTION NAV BAR with elevated center Reservar button ── */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-card/95 backdrop-blur-sm border-t border-border shadow-lg">
         <div className="flex items-end max-w-lg mx-auto px-2">
-          {[
-            ...navItems.slice(0, midIndex),
-            { id: '__reservar__', label: null, icon: null },
-            ...navItems.slice(midIndex),
-          ].map((item) => {
-            if (item.id === '__reservar__') {
-              return (
-                <div key="reservar" className="flex-1 flex flex-col items-center -mt-5 pb-2">
-                  <button
-                    onClick={
-                      isSoldOut && isFutureTour
-                        ? () => setWaitlistOpen(true)
-                        : !isSoldOut
-                        ? () => scrollTo("valores")
-                        : undefined
-                    }
-                    disabled={isSoldOut && !isFutureTour}
-                    className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center border-4 border-white dark:border-card transition-colors ${
-                      isSoldOut && isFutureTour
-                        ? "bg-orange-500 hover:bg-orange-600 text-white"
-                        : isSoldOut
-                        ? "bg-muted text-muted-foreground"
-                        : "bg-primary hover:bg-primary/90 text-primary-foreground"
-                    }`}
-                  >
-                    {isSoldOut && isFutureTour ? <Bell className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
-                  </button>
-                  <span className={`text-[10px] font-semibold leading-none mt-1 ${isSoldOut && isFutureTour ? "text-orange-500" : isSoldOut ? "text-muted-foreground" : "text-primary"}`}>
-                    {isSoldOut && isFutureTour ? "Espera" : "Reservar"}
-                  </span>
-                </div>
-              );
-            }
-            const Icon = (item as typeof navItems[0]).icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => scrollTo(item.id)}
-                className="flex-1 flex flex-col items-center gap-0.5 py-3 text-muted-foreground hover:text-primary transition-colors"
-              >
-                <Icon className="w-5 h-5" />
-                <span className="text-[10px] font-medium leading-none">{item.label}</span>
-              </button>
-            );
-          })}
+          {navItems.slice(0, midIndex).map(({ id, label, icon: Icon }) => (
+            <button key={id} onClick={() => scrollTo(id)} className="flex-1 flex flex-col items-center gap-0.5 py-3 text-muted-foreground hover:text-primary transition-colors">
+              <Icon className="w-5 h-5" />
+              <span className="text-[10px] font-medium leading-none">{label}</span>
+            </button>
+          ))}
+
+          {/* Center elevated Reservar button */}
+          <div className="flex-1 flex flex-col items-center -mt-5 pb-2">
+            <button
+              onClick={isSoldOut && isFutureTour ? () => setWaitlistOpen(true) : !isSoldOut ? () => scrollTo("valores") : undefined}
+              disabled={isSoldOut && !isFutureTour}
+              className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center border-4 border-white dark:border-card transition-colors ${
+                isSoldOut && isFutureTour ? "bg-orange-500 hover:bg-orange-600 text-white"
+                : isSoldOut ? "bg-muted text-muted-foreground"
+                : "bg-primary hover:bg-primary/90 text-primary-foreground"
+              }`}
+            >
+              {isSoldOut && isFutureTour ? <Bell className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
+            </button>
+            <span className={`text-[10px] font-semibold leading-none mt-1 ${isSoldOut && isFutureTour ? "text-orange-500" : isSoldOut ? "text-muted-foreground" : "text-primary"}`}>
+              {isSoldOut && isFutureTour ? "Espera" : "Reservar"}
+            </span>
+          </div>
+
+          {navItems.slice(midIndex).map(({ id, label, icon: Icon }) => (
+            <button key={id} onClick={() => scrollTo(id)} className="flex-1 flex flex-col items-center gap-0.5 py-3 text-muted-foreground hover:text-primary transition-colors">
+              <Icon className="w-5 h-5" />
+              <span className="text-[10px] font-medium leading-none">{label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
