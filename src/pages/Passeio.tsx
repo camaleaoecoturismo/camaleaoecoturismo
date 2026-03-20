@@ -27,7 +27,7 @@ import {
   Info,
   Map as MapIcon,
   CheckSquare,
-  CreditCard,
+  Ticket,
   Plus,
   Minus,
 } from "lucide-react";
@@ -292,7 +292,7 @@ const Passeio = () => {
             onClick={isSoldOut && isFutureTour ? () => setWaitlistOpen(true) : !isSoldOut ? () => scrollTo("valores") : undefined}
             disabled={isSoldOut && !isFutureTour}
           >
-            <CreditCard className="w-5 h-5 mr-2" />
+            <Ticket className="w-5 h-5 mr-2" />
             {isSoldOut && isFutureTour ? "Entrar na lista de espera" : isSoldOut ? "Vagas esgotadas" : "Reservar agora"}
           </Button>
           <div className="flex gap-3">
@@ -682,7 +682,7 @@ const Passeio = () => {
                 : "bg-primary hover:bg-primary/90 text-primary-foreground"
               }`}
             >
-              {isSoldOut && isFutureTour ? <Bell className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
+              {isSoldOut && isFutureTour ? <Bell className="w-5 h-5" /> : <Ticket className="w-5 h-5" />}
             </button>
             <span className={`text-[10px] font-semibold leading-none mt-1 ${isSoldOut && isFutureTour ? "text-orange-500" : isSoldOut ? "text-muted-foreground" : "text-primary"}`}>
               {isSoldOut && isFutureTour ? "Espera" : "Reservar"}
