@@ -67,7 +67,7 @@ export function TourBoardingPointsDisplay({
           {boardingPoints.map((point, index) => (
             <div 
               key={point.id} 
-              className="relative flex items-start gap-2.5 p-2 bg-gradient-to-r from-primary/5 to-transparent border border-primary/15 rounded-lg"
+              className="relative flex items-start gap-2.5 p-2 border border-border rounded-lg"
             >
               {/* Timeline connector */}
               {index < boardingPoints.length - 1 && (

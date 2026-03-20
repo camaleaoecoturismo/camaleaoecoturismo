@@ -123,12 +123,12 @@ export function ImageCropModal({
             Arraste a imagem para selecionar a região que aparecerá na capa do card. Use o zoom para ajustar o tamanho.
           </p>
           
-          {/* Preview container with 3:1 aspect ratio (3210 x 1070) */}
-          <div 
+          {/* Preview container with 4:3 aspect ratio */}
+          <div
             ref={containerRef}
             className="relative w-full overflow-hidden rounded-lg cursor-move select-none bg-muted"
-            style={{ 
-              aspectRatio: '3 / 1',
+            style={{
+              aspectRatio: '4 / 3',
               border: '3px solid hsl(var(--primary))',
             }}
             onMouseDown={handleMouseDown}
@@ -209,7 +209,7 @@ export function ImageCropModal({
           
           {/* Dimensions info */}
           <p className="text-xs text-muted-foreground text-center">
-            Proporção da capa: 3210 × 1070 px (3:1)
+            Proporção da capa: 4:3 (igual ao card)
           </p>
         </div>
 
