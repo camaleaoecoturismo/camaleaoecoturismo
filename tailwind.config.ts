@@ -22,6 +22,10 @@ export default {
     			xs: '475px'
     		},
     		fontFamily: {
+    			montserrat: [
+    				'Montserrat',
+    				'sans-serif'
+    			],
     			europa: [
     				'EuropaGrotesk',
     				'sans-serif'

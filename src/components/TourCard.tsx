@@ -26,6 +26,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
   const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
   const [showNextDates, setShowNextDates] = useState(false);
   const [nextDates, setNextDates] = useState<Tour[]>([]);
+  const [nextDateCovers, setNextDateCovers] = useState<Map<string, string>>(new Map());
   const [loadingNextDates, setLoadingNextDates] = useState(false);
   const { availability } = useTourAvailability(tour.id);
 
@@ -99,7 +100,21 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
         .gte("start_date", todayStr)
         .order("start_date", { ascending: true })
         .limit(10);
-      setNextDates((data as Tour[]) || []);
+      const list = (data as Tour[]) || [];
+      setNextDates(list);
+      if (list.length > 0) {
+        const ids = list.map(t => t.id);
+        const { data: covers } = await supabase
+          .from('tour_gallery_images')
+          .select('tour_id, image_url')
+          .in('tour_id', ids)
+          .eq('is_cover', true);
+        if (covers) {
+          const m = new Map<string, string>();
+          covers.forEach(c => m.set(c.tour_id, c.image_url));
+          setNextDateCovers(m);
+        }
+      }
       setLoadingNextDates(false);
     }
     setShowNextDates(true);
@@ -143,7 +158,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
 
             {/* Name + city — TOP LEFT */}
             <div className="absolute top-0 left-0 right-0 p-3 pr-20 z-[2]">
-              <p className="text-white font-europa text-xl md:text-2xl leading-snug line-clamp-2 drop-shadow-md tracking-wide">
+              <p className="text-white font-montserrat text-xl md:text-2xl leading-snug line-clamp-2 drop-shadow-md tracking-wide">
                 {destName}
               </p>
               {cityStateLabel && (
@@ -272,10 +287,10 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
                     onClick={() => navigate(`/passeio/${related.slug || related.id}`)}
                     className="w-40 shrink-0 snap-start text-left rounded-xl border border-border overflow-hidden hover:border-primary hover:shadow-sm transition-all bg-background"
                   >
-                    {related.image_url && (
+                    {(nextDateCovers.get(related.id) || related.image_url) && (
                       <div className="aspect-[4/3] overflow-hidden">
                         <img
-                          src={related.image_url}
+                          src={nextDateCovers.get(related.id) || related.image_url!}
                           alt={related.name}
                           className="w-full h-full object-cover"
                           loading="lazy"

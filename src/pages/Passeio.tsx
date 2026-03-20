@@ -33,8 +33,8 @@ import {
 } from "lucide-react";
 
 const INSTALLMENT_FEES: Record<number, number> = {
-  1: 0, 2: 6.5, 3: 7.5, 4: 8.6, 5: 9.6, 6: 10.7,
-  7: 14.4, 8: 15.5, 9: 16.6, 10: 17.7, 11: 18.9, 12: 20.0,
+  1: 4.20, 2: 6.09, 3: 7.01, 4: 7.91, 5: 8.80, 6: 9.67,
+  7: 12.59, 8: 13.42, 9: 14.25, 10: 15.06, 11: 15.87, 12: 16.66,
 };
 
 // WhatsApp SVG icon
@@ -63,6 +63,7 @@ const Passeio = () => {
   const [roteiroOpen, setRoteiroOpen] = useState(false);
   const [inclusoTab, setInclusoTab] = useState<"incluso" | "nao_incluso">("incluso");
   const [relatedTours, setRelatedTours] = useState<Tour[]>([]);
+  const [relatedCoverImages, setRelatedCoverImages] = useState<Map<string, string>>(new Map());
   const [depoimentos, setDepoimentos] = useState<
     Array<{ id: string; nome: string; foto_url: string | null; texto: string; nota: number }>
   >([]);
@@ -113,7 +114,21 @@ const Passeio = () => {
         .gte("start_date", today)
         .order("start_date", { ascending: true })
         .limit(8);
-      setRelatedTours((related as Tour[]) || []);
+      const relatedList = (related as Tour[]) || [];
+      setRelatedTours(relatedList);
+      if (relatedList.length > 0) {
+        const ids = relatedList.map(t => t.id);
+        const { data: covers } = await supabase
+          .from('tour_gallery_images')
+          .select('tour_id, image_url')
+          .in('tour_id', ids)
+          .eq('is_cover', true);
+        if (covers) {
+          const m = new Map<string, string>();
+          covers.forEach(c => m.set(c.tour_id, c.image_url));
+          setRelatedCoverImages(m);
+        }
+      }
 
       const { data: deps } = await supabase
         .from("depoimentos")
@@ -423,21 +438,27 @@ const Passeio = () => {
                       <span>Ver parcelamento no cartão</span>
                       {showInstallments ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     </button>
-                    {showInstallments && (
-                      <div className="space-y-1.5 text-xs border border-border rounded-xl p-3">
-                        {[1,2,3,4,6,9,12].map(n => {
-                          const total = minPrice * (1 + INSTALLMENT_FEES[n] / 100);
-                          const monthly = total / n;
-                          return (
-                            <div key={n} className="flex justify-between">
-                              <span className="text-muted-foreground">{n}x{n === 1 ? " (sem juros)" : ""}</span>
-                              <span className="font-medium">{formatCurrency(monthly)}{n > 1 ? "/mês" : ""}</span>
-                            </div>
-                          );
-                        })}
-                        <p className="text-muted-foreground text-[10px] pt-1 border-t border-border/50 mt-1">*Calculado sobre o menor pacote. Juros InfinitePay.</p>
-                      </div>
-                    )}
+                    {showInstallments && (() => {
+                      const selectedTotal = tour.pricing_options!.reduce((sum, opt) => sum + (opt.pix_price * (packageQuantities[opt.id] || 0)), 0);
+                      const installmentBase = selectedTotal > 0 ? selectedTotal : minPrice;
+                      return (
+                        <div className="space-y-1.5 text-xs border border-border rounded-xl p-3">
+                          {[1,2,3,4,6,9,12].map(n => {
+                            const total = installmentBase * (1 + INSTALLMENT_FEES[n] / 100);
+                            const monthly = total / n;
+                            return (
+                              <div key={n} className="flex justify-between">
+                                <span className="text-muted-foreground">{n === 1 ? "Crédito à vista" : `${n}x`}</span>
+                                <span className="font-medium">{formatCurrency(monthly)}{n > 1 ? "/mês" : ""}</span>
+                              </div>
+                            );
+                          })}
+                          <p className="text-muted-foreground text-[10px] pt-1 border-t border-border/50 mt-1">
+                            {selectedTotal > 0 ? "*Calculado sobre o total selecionado." : "*Calculado sobre o menor pacote."} Juros InfinitePay.
+                          </p>
+                        </div>
+                      );
+                    })()}
                   </>
                 )}
               </>
@@ -470,7 +491,7 @@ const Passeio = () => {
                           const monthly = total / n;
                           return (
                             <div key={n} className="flex justify-between">
-                              <span className="text-muted-foreground">{n}x{n === 1 ? " (sem juros)" : ""}</span>
+                              <span className="text-muted-foreground">{n === 1 ? "Crédito à vista" : `${n}x`}</span>
                               <span className="font-medium">{formatCurrency(monthly)}{n > 1 ? "/mês" : ""}</span>
                             </div>
                           );
@@ -560,9 +581,9 @@ const Passeio = () => {
                     onClick={() => navigate(`/passeio/${related.slug || related.id}`)}
                     className="w-44 shrink-0 snap-start text-left rounded-xl border border-border overflow-hidden hover:border-primary hover:shadow-sm transition-all bg-card"
                   >
-                    {related.image_url && (
+                    {(relatedCoverImages.get(related.id) || related.image_url) && (
                       <div className="aspect-[4/3] overflow-hidden">
-                        <img src={related.image_url} alt={related.name} className="w-full h-full object-cover" loading="lazy" />
+                        <img src={relatedCoverImages.get(related.id) || related.image_url!} alt={related.name} className="w-full h-full object-cover" loading="lazy" />
                       </div>
                     )}
                     <div className="p-3 space-y-0.5">
@@ -623,7 +644,7 @@ const Passeio = () => {
             Espera
           </button>
         ) : !isSoldOut ? (
-          <button onClick={() => setReservaOpen(true)} className="h-9 px-4 rounded-full shadow-md bg-primary/90 hover:bg-primary text-primary-foreground text-xs font-semibold transition-colors">
+          <button onClick={() => scrollTo("valores")} className="h-9 px-4 rounded-full shadow-md bg-primary/90 hover:bg-primary text-primary-foreground text-xs font-semibold transition-colors">
             Reservar
           </button>
         ) : null}
