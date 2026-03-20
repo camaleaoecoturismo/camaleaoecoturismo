@@ -88,7 +88,14 @@ const Index = () => {
       }));
   }, [tours, hiddenMonthYears]);
 
-  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState<string>(
+    () => sessionStorage.getItem("camaleao_selected_month") || ""
+  );
+
+  // Persist selected month so navigating back restores it
+  useEffect(() => {
+    if (selectedMonth) sessionStorage.setItem("camaleao_selected_month", selectedMonth);
+  }, [selectedMonth]);
   const [reservaModalOpen, setReservaModalOpen] = useState(false);
   const [tourParaReserva, setTourParaReserva] = useState<Tour | null>(null);
   const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
@@ -103,6 +110,11 @@ const Index = () => {
   useEffect(() => {
     if (tours.length > 0 && months.length > 0 && !selectedMonth) {
       setSelectedMonth(months[0].id);
+    } else if (tours.length > 0 && months.length > 0 && selectedMonth) {
+      // If the saved month no longer exists in the list, fall back to the first
+      if (!months.find(m => m.id === selectedMonth)) {
+        setSelectedMonth(months[0].id);
+      }
     }
   }, [tours, months, selectedMonth]);
 
