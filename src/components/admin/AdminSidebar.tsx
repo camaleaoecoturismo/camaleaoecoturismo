@@ -46,6 +46,7 @@ import {
   Route,
   X,
   ChevronRight,
+  Megaphone,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -101,7 +102,6 @@ const navGroups: NavGroup[] = [
       },
       { id: 'clientes-reservas', label: 'Reservas', icon: <ClipboardList className="h-5 w-5" /> },
       { id: 'catalogo', label: 'Catálogo', icon: <ClipboardList className="h-5 w-5" /> },
-      { id: 'jornada', label: 'Jornada', icon: <Route className="h-5 w-5" /> },
     ],
   },
   {
@@ -142,36 +142,23 @@ const navGroups: NavGroup[] = [
           { id: 'clientes-analytics', label: 'Análise', icon: <BarChart3 className="h-4 w-4" /> },
         ],
       },
-      {
-        id: 'fidelidade',
-        label: 'Fidelidade',
-        icon: <Crown className="h-5 w-5" />,
-        subItems: [
-          { id: 'fidelidade-niveis', label: 'Níveis', icon: <Trophy className="h-4 w-4" /> },
-          { id: 'fidelidade-selos', label: 'Selos', icon: <Award className="h-4 w-4" /> },
-          { id: 'fidelidade-pontos', label: 'Pontos', icon: <Star className="h-4 w-4" /> },
-          { id: 'fidelidade-recompensas', label: 'Recompensas', icon: <Gift className="h-4 w-4" /> },
-        ],
-      },
     ],
   },
   {
-    label: 'CONTEÚDO',
+    label: 'MARKETING',
     items: [
       {
-        id: 'conteudo',
-        label: 'Social',
-        icon: <Instagram className="h-5 w-5" />,
+        id: 'marketing',
+        label: 'Marketing',
+        icon: <Megaphone className="h-5 w-5" />,
         subItems: [
-          { id: 'conteudo-ideias', label: 'Ideias', icon: <Brain className="h-4 w-4" /> },
-          { id: 'conteudo-calendario', label: 'Calendário', icon: <CalendarDays className="h-4 w-4" /> },
-          { id: 'conteudo-campanhas', label: 'Campanhas', icon: <Tag className="h-4 w-4" /> },
-          { id: 'conteudo-dashboard', label: 'Visão Geral', icon: <BarChart3 className="h-4 w-4" /> },
-          { id: 'conteudo-assistente', label: 'Assistente IA', icon: <Brain className="h-4 w-4" /> },
+          { id: 'jornada', label: 'Jornada', icon: <Route className="h-4 w-4" /> },
+          { id: 'fidelidade-niveis', label: 'Fidelidade', icon: <Crown className="h-4 w-4" /> },
+          { id: 'conteudo-calendario', label: 'Social', icon: <Instagram className="h-4 w-4" /> },
+          { id: 'paginas-institucionais', label: 'Blog & FAQ', icon: <BookOpen className="h-4 w-4" /> },
         ],
       },
       { id: 'paginas', label: 'Páginas', icon: <Globe className="h-5 w-5" /> },
-      { id: 'paginas-institucionais', label: 'Blog & FAQ', icon: <BookOpen className="h-5 w-5" /> },
       { id: 'depoimentos', label: 'Depoimentos', icon: <Star className="h-5 w-5" /> },
       { id: 'formularios', label: 'Formulários', icon: <FileQuestion className="h-5 w-5" /> },
     ],
@@ -321,6 +308,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   };
 
   const isItemActive = (item: NavItem) => {
+    if (item.id === 'marketing') {
+      return activeTab === 'jornada'
+        || activeTab.startsWith('fidelidade-')
+        || activeTab.startsWith('conteudo-')
+        || activeTab === 'paginas-institucionais';
+    }
     if (item.subItems) return item.subItems.some((s) => s.id === activeTab);
     return activeTab === item.id;
   };
@@ -396,7 +389,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-3 px-1.5" style={{ scrollbarWidth: 'none' }}>
+      <nav className="flex-1 min-h-0 overflow-y-auto py-3 px-1.5" style={{ scrollbarWidth: 'none' }}>
         {navGroups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-1' : ''}>
             {group.label && (
