@@ -24,6 +24,31 @@ import { TourGalleryManager } from '@/components/TourGalleryManager';
 
 const MONTHS_PT = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
 
+const QUILL_MODULES_FULL = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    [{ size: ['small', false, 'large', 'huge'] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ color: [] }, { background: [] }],
+    [{ align: [] }],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    [{ indent: '-1' }, { indent: '+1' }],
+    ['link', 'video'],
+    ['blockquote'],
+    ['clean'],
+  ],
+};
+
+const QUILL_MODULES_LIST = {
+  toolbar: [
+    ['bold', 'italic'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    [{ align: [] }],
+    ['link'],
+    ['clean'],
+  ],
+};
+
 function generateSlug(name: string, startDate: string): string {
   const date = new Date(startDate + "T12:00:00");
   const dd = String(date.getDate()).padStart(2, "0");
@@ -891,7 +916,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                               value={field.value || ''}
                               onChange={field.onChange}
                               placeholder="Descrição do passeio"
-                              modules={{ toolbar: [['bold', 'italic'], [{ 'list': 'bullet' }], ['link']] }}
+                              modules={QUILL_MODULES_FULL}
                               style={{ minHeight: '100px' }}
                             />
                           </FormControl>
@@ -912,7 +937,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                               value={field.value || ''}
                               onChange={field.onChange}
                               placeholder="Itinerário detalhado"
-                              modules={{ toolbar: [['bold', 'italic'], [{ 'list': 'ordered' }, { 'list': 'bullet' }], ['link']] }}
+                              modules={QUILL_MODULES_FULL}
                               style={{ minHeight: '100px' }}
                             />
                           </FormControl>
@@ -934,7 +959,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                                 value={field.value || ''}
                                 onChange={field.onChange}
                                 placeholder="O que está incluído"
-                                modules={{ toolbar: [[{ 'list': 'bullet' }]] }}
+                                modules={QUILL_MODULES_LIST}
                                 style={{ minHeight: '80px' }}
                               />
                             </FormControl>
@@ -954,7 +979,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                                 value={field.value || ''}
                                 onChange={field.onChange}
                                 placeholder="O que não está incluído"
-                                modules={{ toolbar: [[{ 'list': 'bullet' }]] }}
+                                modules={QUILL_MODULES_LIST}
                                 style={{ minHeight: '80px' }}
                               />
                             </FormControl>
