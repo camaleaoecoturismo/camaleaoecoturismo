@@ -118,6 +118,15 @@ const Index = () => {
     return Array.from(seen.values()).sort();
   }, [tours]);
 
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const isFuture = (startDate: string) =>
+    new Date(startDate + "T12:00:00") >= today;
+
   // Tours filtered by month selector
   const filteredTours = useMemo(() => {
     if (!selectedMonth) return [];
@@ -125,14 +134,17 @@ const Index = () => {
     const year = parseInt(yearStr);
     return tours.filter((tour) => {
       if (!tour.is_active || !tour.start_date || tour.is_exclusive) return false;
+      if (!isFuture(tour.start_date)) return false;
       const tourDate = new Date(tour.start_date + "T12:00:00");
       return tour.month === month && tourDate.getFullYear() === year;
     });
-  }, [tours, selectedMonth]);
+  }, [tours, selectedMonth, today]);
 
   // Tours filtered by destination/preference
   const searchFilteredTours = useMemo(() => {
-    let result = tours.filter((t) => t.is_active && !t.is_exclusive);
+    let result = tours.filter(
+      (t) => t.is_active && !t.is_exclusive && t.start_date && isFuture(t.start_date)
+    );
     if (selectedDestino) {
       const key = selectedDestino.trim().toLowerCase();
       result = result.filter((t) => t.name.trim().toLowerCase() === key);
@@ -149,7 +161,7 @@ const Index = () => {
       });
     }
     return result;
-  }, [tours, selectedDestino, selectedPreferences]);
+  }, [tours, selectedDestino, selectedPreferences, today]);
 
   const isSearching = !!selectedDestino || selectedPreferences.length > 0;
 
