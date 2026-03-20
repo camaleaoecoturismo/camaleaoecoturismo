@@ -106,6 +106,7 @@ const Index = () => {
   const [selectedDestino, setSelectedDestino] = useState<string>("");
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(true);
+  const [destinoSearch, setDestinoSearch] = useState("");
 
   useEffect(() => {
     if (tours.length > 0 && months.length > 0 && !selectedMonth) {
@@ -129,6 +130,25 @@ const Index = () => {
       });
     return Array.from(seen.values()).sort();
   }, [tours]);
+
+  // Count of future tours per destination name
+  const destinationCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    tours
+      .filter((t) => t.is_active && !t.is_exclusive && t.start_date && isFuture(t.start_date))
+      .forEach((t) => {
+        const key = t.name.trim().toLowerCase();
+        counts.set(key, (counts.get(key) || 0) + 1);
+      });
+    return counts;
+  }, [tours, today]);
+
+  // Destinations filtered by search input
+  const filteredDestinations = useMemo(() => {
+    if (!destinoSearch.trim()) return destinations;
+    const q = destinoSearch.trim().toLowerCase();
+    return destinations.filter(d => d.toLowerCase().includes(q));
+  }, [destinations, destinoSearch]);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -338,30 +358,61 @@ const Index = () => {
               )}
 
               {activeFilterTab === "destino" && (
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => { setSelectedDestino(""); setFilterOpen(false); }}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                      !selectedDestino
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Todos
-                  </button>
-                  {destinations.map((dest) => (
-                    <button
-                      key={dest}
-                      onClick={() => { setSelectedDestino(dest); setFilterOpen(false); }}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                        selectedDestino === dest
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {dest}
-                    </button>
-                  ))}
+                <div className="space-y-3">
+                  {/* Search input */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Buscar passeio..."
+                      value={destinoSearch}
+                      onChange={e => setDestinoSearch(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                  {/* Destination list */}
+                  <div className="flex flex-col gap-1 max-h-56 overflow-y-auto">
+                    {!destinoSearch && (
+                      <button
+                        onClick={() => { setSelectedDestino(""); setFilterOpen(false); }}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${
+                          !selectedDestino
+                            ? "bg-primary text-primary-foreground"
+                            : "hover:bg-muted text-foreground"
+                        }`}
+                      >
+                        <span>Todos os passeios</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-md ${!selectedDestino ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"}`}>
+                          {destinations.length}
+                        </span>
+                      </button>
+                    )}
+                    {filteredDestinations.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">Nenhum passeio encontrado</p>
+                    )}
+                    {filteredDestinations.map((dest) => {
+                      const count = destinationCounts.get(dest.trim().toLowerCase()) || 0;
+                      const isSelected = selectedDestino === dest;
+                      return (
+                        <button
+                          key={dest}
+                          onClick={() => { setSelectedDestino(dest); setDestinoSearch(""); setFilterOpen(false); }}
+                          className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground"
+                              : "hover:bg-muted text-foreground"
+                          }`}
+                        >
+                          <span className="truncate">{dest}</span>
+                          {count > 0 && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded-md shrink-0 ml-2 ${isSelected ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"}`}>
+                              {count}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
