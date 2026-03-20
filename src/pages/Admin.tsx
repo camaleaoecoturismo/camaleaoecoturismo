@@ -94,6 +94,7 @@ const Admin = () => {
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
+      setLoading(false);
       navigate('/auth');
       return;
     }
@@ -106,6 +107,7 @@ const Admin = () => {
           description: "Você não tem permissão para acessar esta área.",
           variant: "destructive"
         });
+        setLoading(false);
         navigate('/auth');
         return;
       }
@@ -116,6 +118,7 @@ const Admin = () => {
         description: "Não foi possível verificar suas permissões.",
         variant: "destructive"
       });
+      setLoading(false);
       navigate('/auth');
     }
   };
