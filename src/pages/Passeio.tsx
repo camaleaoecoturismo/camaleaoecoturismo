@@ -165,6 +165,11 @@ const Passeio = () => {
     ? Math.min(...tour.pricing_options.map((o) => o.pix_price))
     : tour.valor_padrao || 0;
 
+  const selectedTotal = tour.pricing_options?.reduce
+    ? tour.pricing_options.reduce((sum, opt) => sum + (opt.pix_price * (packageQuantities[opt.id] || 0)), 0)
+    : 0;
+  const installmentBase = selectedTotal > 0 ? selectedTotal : minPrice;
+
   const formatCurrency = (v: number) =>
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 
@@ -424,27 +429,22 @@ const Passeio = () => {
                       <span>Ver parcelamento no cartão</span>
                       {showInstallments ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     </button>
-                    {showInstallments && (() => {
-                      const selectedTotal = tour.pricing_options!.reduce((sum, opt) => sum + (opt.pix_price * (packageQuantities[opt.id] || 0)), 0);
-                      const installmentBase = selectedTotal > 0 ? selectedTotal : minPrice;
-                      return (
-                        <div className="space-y-1.5 text-xs border border-border rounded-xl p-3">
-                          {[1,2,3,4,6,9,12].map(n => {
-                            const total = installmentBase * (1 + INSTALLMENT_FEES[n] / 100);
-                            const monthly = total / n;
-                            return (
-                              <div key={n} className="flex justify-between">
-                                <span className="text-muted-foreground">{n === 1 ? "Crédito à vista" : `${n}x`}</span>
-                                <span className="font-medium">{formatCurrency(monthly)}{n > 1 ? "/mês" : ""}</span>
-                              </div>
-                            );
-                          })}
-                          <p className="text-muted-foreground text-[10px] pt-1 border-t border-border/50 mt-1">
-                            {selectedTotal > 0 ? "*Calculado sobre o total selecionado." : "*Calculado sobre o menor pacote."} Juros InfinitePay.
-                          </p>
-                        </div>
-                      );
-                    })()}
+                    {showInstallments && (
+                      <div className="space-y-1.5 text-xs border border-border rounded-xl p-3">
+                        {[1,2,3,4,6,9,12].map(n => {
+                          const monthly = installmentBase * (1 + INSTALLMENT_FEES[n] / 100) / n;
+                          return (
+                            <div key={n} className="flex justify-between">
+                              <span className="text-muted-foreground">{n === 1 ? "Crédito à vista" : `${n}x`}</span>
+                              <span className="font-medium">{formatCurrency(monthly)}{n > 1 ? "/mês" : ""}</span>
+                            </div>
+                          );
+                        })}
+                        <p className="text-muted-foreground text-[10px] pt-1 border-t border-border/50 mt-1">
+                          {installmentBase > minPrice ? "*Calculado sobre o total selecionado." : "*Calculado sobre o menor pacote."} Juros InfinitePay.
+                        </p>
+                      </div>
+                    )}
                   </>
                 )}
               </>
