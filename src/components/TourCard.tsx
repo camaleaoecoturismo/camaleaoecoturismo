@@ -92,7 +92,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
                 src={imageUrl}
                 alt={tour.name}
                 className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${
-                  isSoldOut ? "brightness-75" : ""
+                  isSoldOut ? "grayscale opacity-80" : ""
                 }`}
                 loading="lazy"
               />
@@ -102,11 +102,11 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
               </div>
             )}
 
-            {/* Sold out overlay */}
+            {/* Sold out badge — top right corner */}
             {isSoldOut && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="bg-red-500 text-white text-sm font-bold px-4 py-1.5 rounded-full shadow-lg">
-                  Vagas Esgotadas
+              <div className="absolute top-2.5 right-2.5">
+                <span className="bg-black/60 backdrop-blur-sm text-white text-[11px] font-semibold px-2.5 py-1 rounded-md tracking-wide">
+                  Esgotado
                 </span>
               </div>
             )}
