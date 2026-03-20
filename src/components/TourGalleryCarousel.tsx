@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselApi } from '@/components/ui/carousel';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Images } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface GalleryImage {
@@ -17,6 +17,8 @@ interface TourGalleryCarouselProps {
   coverImage: string | null;
   tourName: string;
   isSoldOut?: boolean;
+  /** heroMode: renders only a "Ver fotos" button (no inline slider) */
+  heroMode?: boolean;
 }
 
 export function TourGalleryCarousel({
@@ -24,6 +26,7 @@ export function TourGalleryCarousel({
   coverImage,
   tourName,
   isSoldOut = false,
+  heroMode = false,
 }: TourGalleryCarouselProps) {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -79,6 +82,75 @@ export function TourGalleryCarousel({
     setLightboxIndex(index);
     setLightboxOpen(true);
   };
+
+  const renderLightbox = () => (
+    <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+      <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-0 bg-black/95 border-0 overflow-hidden flex flex-col">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-2 right-2 z-50 text-white hover:bg-white/10"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <X className="w-5 h-5" />
+        </Button>
+        <div className="flex flex-col flex-1 pt-10 pb-4 overflow-hidden">
+          <Carousel
+            setApi={setModalApi}
+            opts={{ startIndex: lightboxIndex, loop: true }}
+            className="w-full flex-1"
+          >
+            <CarouselContent className="h-full">
+              {images.map((image, index) => (
+                <CarouselItem key={image.id} className="flex items-center justify-center">
+                  <div className="flex flex-col items-center justify-center w-full px-4">
+                    <img
+                      src={image.image_url}
+                      alt={`${tourName} - Foto ${index + 1}`}
+                      className="max-h-[70vh] max-w-full w-auto h-auto object-contain rounded-lg"
+                    />
+                    {image.caption && (
+                      <p className="text-white/90 text-sm mt-3 px-4 text-center max-w-xl">{image.caption}</p>
+                    )}
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="left-2 bg-white/10 border-0 text-white hover:bg-white/20" />
+            <CarouselNext className="right-2 bg-white/10 border-0 text-white hover:bg-white/20" />
+          </Carousel>
+          <div className="flex justify-center gap-2 mt-4 px-4 overflow-x-auto shrink-0">
+            {images.map((image, index) => (
+              <button
+                key={image.id}
+                className={`flex-shrink-0 w-16 h-12 rounded overflow-hidden border-2 transition-all ${index === lightboxIndex ? 'border-primary opacity-100' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                onClick={() => setLightboxIndex(index)}
+              >
+                <img src={image.image_url} alt={`Miniatura ${index + 1}`} className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
+  // Hero mode: just a "Ver fotos" button that opens the lightbox
+  if (heroMode) {
+    if (images.length === 0) return null;
+    return (
+      <>
+        <button
+          onClick={() => openLightbox(0)}
+          className="flex items-center gap-1.5 bg-black/50 hover:bg-black/70 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors"
+        >
+          <Images className="w-3.5 h-3.5" />
+          Ver fotos ({images.length})
+        </button>
+        {lightboxOpen && renderLightbox()}
+      </>
+    );
+  }
 
   if (images.length === 0) {
     return (
@@ -140,60 +212,7 @@ export function TourGalleryCarousel({
       </div>
 
       {/* Lightbox modal */}
-      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-0 bg-black/95 border-0 overflow-hidden flex flex-col">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2 z-50 text-white hover:bg-white/10"
-            onClick={() => setLightboxOpen(false)}
-          >
-            <X className="w-5 h-5" />
-          </Button>
-
-          <div className="flex flex-col flex-1 pt-10 pb-4 overflow-hidden">
-            <Carousel
-              setApi={setModalApi}
-              opts={{ startIndex: lightboxIndex, loop: true }}
-              className="w-full flex-1"
-            >
-              <CarouselContent className="h-full">
-                {images.map((image, index) => (
-                  <CarouselItem key={image.id} className="flex items-center justify-center">
-                    <div className="flex flex-col items-center justify-center w-full px-4">
-                      <img
-                        src={image.image_url}
-                        alt={`${tourName} - Foto ${index + 1}`}
-                        className="max-h-[70vh] max-w-full w-auto h-auto object-contain rounded-lg"
-                      />
-                      {image.caption && (
-                        <p className="text-white/90 text-sm mt-3 px-4 text-center max-w-xl">
-                          {image.caption}
-                        </p>
-                      )}
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="left-2 bg-white/10 border-0 text-white hover:bg-white/20" />
-              <CarouselNext className="right-2 bg-white/10 border-0 text-white hover:bg-white/20" />
-            </Carousel>
-
-            {/* Thumbnail strip */}
-            <div className="flex justify-center gap-2 mt-4 px-4 overflow-x-auto shrink-0">
-              {images.map((image, index) => (
-                <button
-                  key={image.id}
-                  className={`flex-shrink-0 w-16 h-12 rounded overflow-hidden border-2 transition-all ${index === lightboxIndex ? 'border-primary opacity-100' : 'border-transparent opacity-60 hover:opacity-100'}`}
-                  onClick={() => setLightboxIndex(index)}
-                >
-                  <img src={image.image_url} alt={`Miniatura ${index + 1}`} className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {renderLightbox()}
     </>
   );
 }

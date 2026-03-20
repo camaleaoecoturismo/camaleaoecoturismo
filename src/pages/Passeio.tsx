@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { TopMenu } from "@/components/TopMenu";
@@ -16,7 +16,6 @@ import {
   Calendar,
   MapPin,
   Users,
-  Backpack,
   Bell,
   MessageCircle,
   ChevronDown,
@@ -47,21 +46,28 @@ const Passeio = () => {
   const [depoimentos, setDepoimentos] = useState<
     Array<{ id: string; nome: string; foto_url: string | null; texto: string; nota: number }>
   >([]);
-  const [showFloating, setShowFloating] = useState(false);
+  // Start visible — observer will hide it when booking section is on screen
+  const [showFloating, setShowFloating] = useState(true);
 
   const reservaRef = useRef<HTMLDivElement>(null);
   const { availability } = useTourAvailability(tourId || "");
 
-  // IntersectionObserver: show floating button when booking block is off-screen
+  // Re-attach IntersectionObserver after tour loads (DOM is ready)
   useEffect(() => {
-    const el = reservaRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setShowFloating(!entry.isIntersecting),
-      { threshold: 0.1 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
+    if (!tour) return;
+    const attach = () => {
+      const el = reservaRef.current;
+      if (!el) return;
+      const observer = new IntersectionObserver(
+        ([entry]) => setShowFloating(!entry.isIntersecting),
+        { threshold: 0.1 }
+      );
+      observer.observe(el);
+      return () => observer.disconnect();
+    };
+    // Small delay to ensure DOM is painted
+    const id = setTimeout(attach, 150);
+    return () => clearTimeout(id);
   }, [tour]);
 
   useEffect(() => {
@@ -175,81 +181,127 @@ const Passeio = () => {
     window.open(`https://wa.me/5582993649454?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
-  const pdfFilePath = tour.pdf_file_path || "";
+  const showEtiqueta =
+    tour.etiqueta &&
+    tour.etiqueta !== "Histórico" &&
+    tour.etiqueta !== "Vagas encerradas" &&
+    tour.etiqueta !== "vagas encerradas";
+
+  const heroImage = tour.image_url;
 
   return (
     <div className="min-h-screen bg-background">
-      <TopMenu />
+      {/* ── HERO ────────────────────────────────────────────────── */}
+      <div className="relative w-full h-[70vh] min-h-[420px] overflow-hidden">
+        {/* Cover photo */}
+        {heroImage ? (
+          <img
+            src={heroImage}
+            alt={tour.name}
+            className={`absolute inset-0 w-full h-full object-cover ${isSoldOut ? "grayscale opacity-80" : ""}`}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/40 to-primary/10" />
+        )}
 
-      <div className="max-w-2xl mx-auto px-4 pb-28">
-        {/* Back button */}
-        <div className="pt-4 mb-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Voltar
-          </button>
+        {/* Top gradient (behind menu) */}
+        <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-black/60 to-transparent z-10 pointer-events-none" />
+
+        {/* Bottom gradient (behind text) */}
+        <div className="absolute bottom-0 inset-x-0 h-2/3 bg-gradient-to-t from-black/85 via-black/40 to-transparent z-10 pointer-events-none" />
+
+        {/* TopMenu — transparent, overlaid */}
+        <div className="absolute top-0 inset-x-0 z-20">
+          <TopMenu transparent />
         </div>
 
-        {/* 1. Slider — bleed to edges on mobile */}
-        <div className="-mx-4 md:mx-0 md:rounded-2xl overflow-hidden mb-5">
+        {/* Back button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute top-[72px] left-4 z-20 flex items-center gap-1 text-white/80 hover:text-white text-sm transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Voltar
+        </button>
+
+        {/* Gallery button — opens slider */}
+        <div className="absolute bottom-5 right-4 z-20">
           <TourGalleryCarousel
             tourId={tour.id}
             coverImage={tour.image_url}
             tourName={tour.name}
             isSoldOut={isSoldOut}
+            heroMode
           />
         </div>
 
-        {/* 2. Metadata line */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground mb-2">
+        {/* Tour info — bottom left */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 px-5 pb-6 md:px-8">
+          {/* City / state */}
           {(tour.city || tour.state) && (
+            <p className="text-white/75 text-xs font-semibold uppercase tracking-widest mb-1">
+              {[tour.city, tour.state?.toUpperCase()].filter(Boolean).join(" · ")}
+            </p>
+          )}
+
+          {/* Tour name */}
+          <h1 className="font-europa text-3xl md:text-5xl font-bold text-white tracking-wide leading-tight mb-2 drop-shadow-md">
+            {tour.name}
+          </h1>
+
+          {/* Date + duration */}
+          <p className="text-white/75 text-sm flex items-center gap-3 flex-wrap">
             <span className="flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5" />
-              {[tour.city, tour.state?.toUpperCase()].filter(Boolean).join(", ")}
+              <Calendar className="w-3.5 h-3.5" />
+              {dateStr}
             </span>
-          )}
-          <span className="flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5" />
-            {dateStr}
-          </span>
-          {durationDays > 1 && (
-            <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              {durationDays} dias
-            </span>
-          )}
-          {!isSoldOut && availability && (
-            <span className="flex items-center gap-1 text-green-600">
-              <Users className="w-3.5 h-3.5" />
-              {availability.availableSpots} vagas
-            </span>
-          )}
-          {isSoldOut && (
-            <span className="text-red-500 font-medium">Vagas esgotadas</span>
-          )}
+            {durationDays > 1 && (
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                {durationDays} dias
+              </span>
+            )}
+          </p>
+
+          {/* Badges */}
+          <div className="flex flex-wrap gap-2 mt-2.5">
+            {isSoldOut && (
+              <span className="bg-red-600 text-white text-[11px] font-semibold px-2.5 py-1 rounded-md">
+                Esgotado
+              </span>
+            )}
+            {!isSoldOut && availability && (
+              <span className="bg-green-600/90 text-white text-[11px] font-semibold px-2.5 py-1 rounded-md flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                {availability.availableSpots} vagas
+              </span>
+            )}
+            {tour.is_featured && (
+              <span className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2.5 py-1 rounded-md">
+                ⭐ DESTAQUE
+              </span>
+            )}
+            {showEtiqueta && (
+              <span className="bg-primary/90 text-primary-foreground text-[11px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wide">
+                {tour.etiqueta}
+              </span>
+            )}
+          </div>
         </div>
+      </div>
 
-        {/* Title */}
-        <h1 className="font-europa text-3xl md:text-4xl font-bold text-foreground tracking-wide leading-tight mb-4">
-          {tour.name}
-        </h1>
+      {/* ── BODY ────────────────────────────────────────────────── */}
+      <div className="max-w-2xl mx-auto px-4 pb-28">
 
-        {/* 3. Short description */}
+        {/* Short description */}
         {tour.description && (
-          <p className="text-muted-foreground leading-relaxed mb-6">{tour.description}</p>
+          <p className="text-muted-foreground leading-relaxed mt-5 mb-6">{tour.description}</p>
         )}
 
-        {/* 4. Two action buttons */}
-        <div className="flex gap-3 mb-8">
+        {/* Action buttons */}
+        <div className="flex gap-3 mb-8 mt-5">
           {tour.pdf_file_path && (
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => setRoteiroOpen(true)}
-            >
+            <Button variant="outline" className="flex-1" onClick={() => setRoteiroOpen(true)}>
               <FileText className="w-4 h-4 mr-2" />
               Ver roteiro
             </Button>
@@ -264,10 +316,10 @@ const Passeio = () => {
           </Button>
         </div>
 
-        {/* 5. Sobre o passeio */}
+        {/* Sobre o passeio */}
         {tour.about && (
           <section className="mb-8">
-            <h2 className="font-semibold text-lg text-foreground mb-3">Sobre o passeio</h2>
+            <h2 className="font-semibold text-lg text-primary mb-3">Sobre o passeio</h2>
             <div
               className="prose prose-sm max-w-none text-muted-foreground leading-relaxed"
               dangerouslySetInnerHTML={{ __html: sanitize(tour.about) }}
@@ -275,10 +327,10 @@ const Passeio = () => {
           </section>
         )}
 
-        {/* 6. Roteiro */}
+        {/* Roteiro */}
         {tour.itinerary && (
           <section className="mb-8">
-            <h2 className="font-semibold text-lg text-foreground mb-3">Roteiro</h2>
+            <h2 className="font-semibold text-lg text-primary mb-3">Roteiro</h2>
             <div
               className="prose prose-sm max-w-none text-muted-foreground leading-relaxed"
               dangerouslySetInnerHTML={{ __html: sanitize(tour.itinerary) }}
@@ -286,21 +338,22 @@ const Passeio = () => {
           </section>
         )}
 
-        {/* 7. Incluso / Não incluso tabs */}
+        {/* Incluso / Não incluso */}
         {(tour.includes || tour.not_includes) && (
           <section className="mb-8">
+            <h2 className="font-semibold text-lg text-primary mb-3">Inclusos</h2>
             {tour.includes && tour.not_includes ? (
               <>
-                <div className="flex border-b border-border mb-4">
+                <div className="flex justify-center border-b border-border mb-4">
                   <button
                     onClick={() => setInclusoTab("incluso")}
-                    className={`px-4 py-2.5 text-sm font-medium transition-colors ${inclusoTab === "incluso" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                    className={`px-8 py-2.5 text-sm font-medium transition-colors ${inclusoTab === "incluso" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}
                   >
                     ✓ Incluso
                   </button>
                   <button
                     onClick={() => setInclusoTab("nao_incluso")}
-                    className={`px-4 py-2.5 text-sm font-medium transition-colors ${inclusoTab === "nao_incluso" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                    className={`px-8 py-2.5 text-sm font-medium transition-colors ${inclusoTab === "nao_incluso" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}
                   >
                     ✗ Não incluso
                   </button>
@@ -313,58 +366,24 @@ const Passeio = () => {
                 />
               </>
             ) : (
-              <>
-                {tour.includes && (
-                  <>
-                    <h2 className="font-semibold text-lg text-foreground mb-3">✓ Incluso</h2>
-                    <div
-                      className="prose prose-sm max-w-none text-foreground leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: sanitize(tour.includes) }}
-                    />
-                  </>
-                )}
-                {tour.not_includes && (
-                  <>
-                    <h2 className="font-semibold text-lg text-foreground mb-3 mt-4">✗ Não incluso</h2>
-                    <div
-                      className="prose prose-sm max-w-none text-foreground leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: sanitize(tour.not_includes) }}
-                    />
-                  </>
-                )}
-              </>
+              <div
+                className="prose prose-sm max-w-none text-foreground leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: sanitize(tour.includes || tour.not_includes) }}
+              />
             )}
           </section>
         )}
 
-        {/* What to bring */}
-        {tour.what_to_bring && (
-          <section className="mb-8">
-            <h2 className="font-semibold text-lg text-foreground mb-3 flex items-center gap-2">
-              <Backpack className="w-5 h-5" />
-              O que levar
-            </h2>
-            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-              <div
-                className="prose prose-sm max-w-none text-foreground leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: sanitize(tour.what_to_bring) }}
-              />
-            </div>
-          </section>
-        )}
-
-        {/* 8. Pontos de embarque */}
+        {/* Pontos de embarque */}
         <section className="mb-8">
-          <h2 className="font-semibold text-lg text-foreground mb-3 flex items-center gap-2">
+          <h2 className="font-semibold text-lg text-primary mb-3 flex items-center gap-2">
             <MapPin className="w-5 h-5" />
             Pontos de embarque
           </h2>
-          <div className="border border-border rounded-xl p-4">
-            <TourBoardingPointsDisplay tourId={tour.id} departures={tour.departures} />
-          </div>
+          <TourBoardingPointsDisplay tourId={tour.id} departures={tour.departures} />
         </section>
 
-        {/* Cancellation policy */}
+        {/* Política de cancelamento */}
         {tour.policy && (
           <section className="mb-8">
             <button
@@ -387,10 +406,9 @@ const Passeio = () => {
           </section>
         )}
 
-        {/* 9. Reservar block */}
+        {/* Reservar block */}
         <section ref={reservaRef} className="mb-8">
           <div className="border border-border rounded-2xl p-6 bg-card shadow-sm space-y-4">
-            {/* Price */}
             {minPrice > 0 && (
               <div>
                 <p className="text-xs text-muted-foreground">A partir de</p>
@@ -399,7 +417,6 @@ const Passeio = () => {
               </div>
             )}
 
-            {/* Pricing packages */}
             {tour.pricing_options && tour.pricing_options.length > 1 && (
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -420,7 +437,6 @@ const Passeio = () => {
               </div>
             )}
 
-            {/* Availability */}
             {!isSoldOut && availability && (
               <div className="flex items-center gap-2 text-sm text-green-600">
                 <Users className="w-4 h-4" />
@@ -428,7 +444,6 @@ const Passeio = () => {
               </div>
             )}
 
-            {/* CTA */}
             {isSoldOut ? (
               <div className="space-y-2">
                 <div className="w-full bg-muted text-muted-foreground text-center py-3 rounded-lg text-sm font-medium">
@@ -454,7 +469,6 @@ const Passeio = () => {
               </Button>
             )}
 
-            {/* WhatsApp link */}
             <button
               onClick={handleWhatsApp}
               className="w-full flex items-center justify-center gap-2 text-sm text-green-600 hover:text-green-700 transition-colors py-1"
@@ -463,7 +477,6 @@ const Passeio = () => {
               Falar com atendente
             </button>
 
-            {/* Date summary */}
             <div className="pt-2 border-t border-border text-sm text-muted-foreground space-y-1">
               <div className="flex justify-between">
                 <span>Data</span>
@@ -485,10 +498,10 @@ const Passeio = () => {
           </div>
         </section>
 
-        {/* 10. Próximas datas — horizontal scroll */}
+        {/* Próximas datas */}
         {relatedTours.length > 0 && (
           <section className="mb-8">
-            <h2 className="font-semibold text-lg text-foreground mb-3">Próximas datas</h2>
+            <h2 className="font-semibold text-lg text-primary mb-3">Próximas datas</h2>
             <div className="flex overflow-x-auto gap-3 pb-2 snap-x -mx-4 px-4">
               {relatedTours.map((related) => {
                 const relStart = new Date(related.start_date + "T12:00:00");
@@ -525,9 +538,7 @@ const Passeio = () => {
                         {relDays > 1 ? ` · ${relDays} dias` : ""}
                       </p>
                       {relPrice > 0 && (
-                        <p className="text-xs font-bold text-primary">
-                          {formatCurrency(relPrice)}
-                        </p>
+                        <p className="text-xs font-bold text-primary">{formatCurrency(relPrice)}</p>
                       )}
                     </div>
                   </button>
@@ -537,10 +548,10 @@ const Passeio = () => {
           </section>
         )}
 
-        {/* 11. Depoimentos */}
+        {/* Depoimentos */}
         {depoimentos.length > 0 && (
           <section className="mb-8">
-            <h2 className="font-semibold text-xl text-foreground mb-4 flex items-center gap-2">
+            <h2 className="font-semibold text-xl text-primary mb-4 flex items-center gap-2">
               <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
               O que dizem nossos viajantes
             </h2>
@@ -608,24 +619,15 @@ const Passeio = () => {
       </div>
 
       {/* Modals */}
-      <ReservaModal
-        isOpen={reservaOpen}
-        onClose={() => setReservaOpen(false)}
-        tour={tour}
-      />
-      <WaitlistModal
-        open={waitlistOpen}
-        onOpenChange={setWaitlistOpen}
-        tourId={tour.id}
-        tourName={tour.name}
-      />
+      <ReservaModal isOpen={reservaOpen} onClose={() => setReservaOpen(false)} tour={tour} />
+      <WaitlistModal open={waitlistOpen} onOpenChange={setWaitlistOpen} tourId={tour.id} tourName={tour.name} />
       {tour.pdf_file_path && (
         <RoteiroAccessModal
           open={roteiroOpen}
           onOpenChange={setRoteiroOpen}
           tourId={tour.id}
           tourName={tour.name}
-          pdfFilePath={pdfFilePath}
+          pdfFilePath={tour.pdf_file_path}
         />
       )}
     </div>

@@ -18,9 +18,10 @@ interface MenuItem {
 
 interface TopMenuProps {
   className?: string;
+  transparent?: boolean;
 }
 
-export const TopMenu = ({ className }: TopMenuProps = {}) => {
+export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,7 +140,7 @@ export const TopMenu = ({ className }: TopMenuProps = {}) => {
   return (
     <>
       {/* Logo Bar - Mobile Only */}
-      <div className="md:hidden bg-[#7c12d3] px-4 py-3 flex items-center justify-between">
+      <div className={`md:hidden px-4 py-3 flex items-center justify-between ${transparent ? 'bg-transparent' : 'bg-[#7c12d3]'}`}>
         <img src={logoImage} alt="Camaleão Ecoturismo" className="h-8 w-auto" width={109} height={32} />
         <div className="flex items-center gap-2">
           <Button
@@ -164,7 +165,7 @@ export const TopMenu = ({ className }: TopMenuProps = {}) => {
       </div>
 
       {/* Main Menu Bar */}
-      <nav className="hidden md:block bg-[#7c12d3] w-full" role="navigation" aria-label="Menu principal">
+      <nav className={`hidden md:block w-full ${transparent ? 'bg-transparent' : 'bg-[#7c12d3]'}`} role="navigation" aria-label="Menu principal">
         {/* Desktop Menu */}
         <div className="flex items-center justify-between px-6 py-3 max-w-7xl mx-auto w-full">
           {/* Logo */}
