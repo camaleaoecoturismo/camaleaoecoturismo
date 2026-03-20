@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html, body {
+  overflow-x: hidden;
+}
+
 @font-face {
   font-family: 'EuropaGrotesk';
   src: url('/fonts/europa-grotesk-sh-bold.otf') format('opentype');
