@@ -177,7 +177,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
                   {namePrefix}
                 </p>
               )}
-              <p className="text-white font-bebas text-3xl md:text-4xl leading-none drop-shadow-md tracking-wide">
+              <p className="text-white font-montserrat font-black text-2xl md:text-3xl leading-none drop-shadow-md tracking-tight">
                 {nameMain}
               </p>
               {cityStateLabel && (
