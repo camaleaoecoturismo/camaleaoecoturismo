@@ -62,8 +62,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
   const nameWords = tour.name.toUpperCase().split(" ");
   const namePrefix = nameWords.length > 1 ? nameWords.slice(0, -1).join(" ") : null;
   const nameMain = nameWords[nameWords.length - 1];
-  const stateAbbr = tour.state?.toUpperCase() ?? null;
-  const cityLabel = tour.city || null;
+  const cityStateLabel = [tour.city, tour.state?.toUpperCase()].filter(Boolean).join(" - ");
 
   // Date block values
   const monthAbbr = tourStartDate
@@ -138,7 +137,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
   return (
     <>
       <div
-        className="group relative bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer"
+        className="group relative bg-card rounded-xl overflow-hidden border border-border shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer"
         onClick={() => navigate(`/passeio/${tour.slug || tour.id}`)}
       >
         {/* Photo */}
@@ -174,19 +173,16 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             {/* Name + city — TOP LEFT */}
             <div className="absolute top-0 left-0 right-0 p-3 pr-20 z-[2]">
               {namePrefix && (
-                <p className="text-white text-xs font-bold tracking-widest drop-shadow leading-none mb-0.5">
+                <p className="text-white text-[11px] font-semibold tracking-widest drop-shadow leading-none mb-0.5 uppercase">
                   {namePrefix}
                 </p>
               )}
-              <p className="text-white font-montserrat text-xl md:text-2xl font-black leading-none drop-shadow-md tracking-wide">
+              <p className="text-white font-bebas text-3xl md:text-4xl leading-none drop-shadow-md tracking-wide">
                 {nameMain}
-                {stateAbbr && (
-                  <span className="text-sm font-bold ml-1.5 opacity-80">{stateAbbr}</span>
-                )}
               </p>
-              {cityLabel && (
-                <p className="text-white/70 text-[11px] font-medium mt-1 drop-shadow">
-                  {cityLabel}
+              {cityStateLabel && (
+                <p className="text-white/70 text-[11px] font-medium mt-0.5 drop-shadow">
+                  {cityStateLabel}
                 </p>
               )}
             </div>
