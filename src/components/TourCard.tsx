@@ -82,9 +82,6 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             </div>
           )}
 
-          {/* Gradient top → for name legibility */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/30" />
-
           {/* Sold out overlay */}
           {isSoldOut && (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -94,8 +91,25 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             </div>
           )}
 
-          {/* Name + state — TOP LEFT */}
-          <div className="absolute top-0 left-0 right-0 p-4">
+          {/* Gradient bottom only — for name legibility */}
+          <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/65 to-transparent" />
+
+          {/* Name + state + tags — BOTTOM LEFT */}
+          <div className="absolute bottom-0 left-0 right-0 p-3 space-y-1.5">
+            {(showEtiqueta || tour.is_featured) && (
+              <div className="flex flex-wrap gap-1.5">
+                {tour.is_featured && (
+                  <span className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2.5 py-1 rounded-md leading-none">
+                    ⭐ DESTAQUE
+                  </span>
+                )}
+                {showEtiqueta && (
+                  <span className="bg-primary text-primary-foreground text-[11px] font-bold px-2.5 py-1 rounded-md leading-none uppercase tracking-wide">
+                    {tour.etiqueta}
+                  </span>
+                )}
+              </div>
+            )}
             <p className="text-white font-black text-xl md:text-2xl leading-tight tracking-tight drop-shadow-sm">
               {destName}
               {stateAbbr && (
@@ -105,34 +119,14 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
               )}
             </p>
           </div>
-
-          {/* Tags — BOTTOM LEFT */}
-          {(showEtiqueta || tour.is_featured) && (
-            <div className="absolute bottom-0 left-0 right-0 p-3 flex flex-wrap gap-1.5">
-              {tour.is_featured && (
-                <span className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2.5 py-1 rounded-md leading-none">
-                  ⭐ DESTAQUE
-                </span>
-              )}
-              {showEtiqueta && (
-                <span className="bg-primary text-primary-foreground text-[11px] font-bold px-2.5 py-1 rounded-md leading-none uppercase tracking-wide">
-                  {tour.etiqueta}
-                </span>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Card Body */}
         <div className="p-4 space-y-3">
           {/* Description */}
-          {tour.description ? (
+          {tour.description && (
             <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
               {tour.description}
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-              {tour.name}
             </p>
           )}
 

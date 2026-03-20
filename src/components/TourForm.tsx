@@ -542,23 +542,6 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
 
                     <FormField
                       control={form.control}
-                      name="destination_name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-slate-600 text-sm">Nome do Destino</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Ex: Chapada Diamantina" {...field} className="bg-white" />
-                          </FormControl>
-                          <p className="text-xs text-muted-foreground">
-                            Aparece no card e no filtro de destinos. Se vazio, usa o nome do passeio.
-                          </p>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
                       name="description"
                       render={({ field }) => (
                         <FormItem>
