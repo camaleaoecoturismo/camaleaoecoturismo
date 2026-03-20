@@ -82,21 +82,15 @@ export function RoteiroAccessModal({
   };
   const pdfRawUrl = `https://guwplwuwriixgvkjlutg.supabase.co/storage/v1/object/public/tour-pdfs/${pdfFilePath}`;
 
-  const handleDownload = async () => {
-    try {
-      const response = await fetch(pdfRawUrl);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${tourName.replace(/\s+/g, '-')}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch {
-      window.open(pdfRawUrl, '_blank');
-    }
+  const handleDownload = () => {
+    // ?download= tells Supabase to serve Content-Disposition: attachment,
+    // which forces download on mobile browsers (including iOS Safari)
+    const a = document.createElement('a');
+    a.href = `${pdfRawUrl}?download=`;
+    a.download = `${tourName.replace(/\s+/g, '-')}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
   const pdfViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(pdfRawUrl)}&embedded=true`;
 
