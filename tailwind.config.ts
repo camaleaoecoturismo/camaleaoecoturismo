@@ -22,6 +22,10 @@ export default {
     			xs: '475px'
     		},
     		fontFamily: {
+    			europa: [
+    				'EuropaGrotesk',
+    				'sans-serif'
+    			],
     			bebas: [
     				'Bebas Neue',
     				'cursive'

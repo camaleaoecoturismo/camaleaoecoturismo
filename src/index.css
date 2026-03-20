@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'EuropaGrotesk';
+  src: url('/fonts/europa-grotesk-sh-bold.otf') format('opentype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Dual scrollbar container - shows scrollbar at top */
 .dual-scroll-container {
   display: flex;
