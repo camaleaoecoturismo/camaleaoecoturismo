@@ -59,12 +59,16 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
     });
 
   const imageUrl = preloadedCover?.imageUrl || tour.image_url;
+
+  // Use explicit text fields if set, otherwise auto-split: all but last word = prefix
   const nameWords = tour.name.toUpperCase().split(" ");
-  const splitAt = tour.card_name_split != null
-    ? tour.card_name_split
-    : nameWords.length > 1 ? nameWords.length - 1 : 0;
-  const namePrefix = splitAt > 0 ? nameWords.slice(0, splitAt).join(" ") : null;
-  const nameMain = nameWords.slice(splitAt).join(" ");
+  const namePrefix = tour.card_name_prefix
+    ? tour.card_name_prefix.toUpperCase()
+    : nameWords.length > 1 ? nameWords.slice(0, -1).join(" ") : null;
+  const nameMain = tour.card_name_main
+    ? tour.card_name_main.toUpperCase()
+    : nameWords[nameWords.length - 1];
+
   const cityStateLabel = [tour.city, tour.state?.toUpperCase()].filter(Boolean).join(" - ");
 
   const PREFIX_SIZES: Record<string, string> = {

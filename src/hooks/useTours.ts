@@ -42,7 +42,8 @@ export interface Tour {
   vagas: number | null;
   vagas_fechadas: boolean;
   slug: string | null;
-  card_name_split: number | null;
+  card_name_prefix: string | null;
+  card_name_main: string | null;
   card_prefix_size: string | null;
   card_main_size: string | null;
   payment_mode: 'whatsapp' | 'mercadopago' | 'both';

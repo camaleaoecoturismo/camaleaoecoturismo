@@ -62,7 +62,8 @@ const formSchema = z.object({
   whatsapp_group_link: z.string().optional(),
   etiqueta: z.string().optional(),
   description: z.string().optional(),
-  card_name_split: z.number().nullable().optional(),
+  card_name_prefix: z.string().optional(),
+  card_name_main: z.string().optional(),
   card_prefix_size: z.string().default('xs'),
   card_main_size: z.string().default('2xl'),
   is_exclusive: z.boolean().default(false),
@@ -122,7 +123,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
       whatsapp_group_link: '',
       etiqueta: '',
       description: '',
-      card_name_split: null,
+      card_name_prefix: '',
+      card_name_main: '',
       card_prefix_size: 'xs',
       card_main_size: '2xl',
       is_exclusive: false,
@@ -161,7 +163,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         whatsapp_group_link: (tour as any).whatsapp_group_link || '',
         etiqueta: tour.etiqueta || '',
         description: tour.description || '',
-        card_name_split: tour.card_name_split ?? null,
+        card_name_prefix: tour.card_name_prefix || '',
+        card_name_main: tour.card_name_main || '',
         card_prefix_size: tour.card_prefix_size || 'xs',
         card_main_size: tour.card_main_size || '2xl',
         is_exclusive: tour.is_exclusive || false,
@@ -240,7 +243,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         whatsapp_group_link: values.whatsapp_group_link || null,
         etiqueta: values.etiqueta || null,
         description: values.description || null,
-        card_name_split: values.card_name_split ?? null,
+        card_name_prefix: values.card_name_prefix || null,
+        card_name_main: values.card_name_main || null,
         card_prefix_size: values.card_prefix_size || 'xs',
         card_main_size: values.card_main_size || '2xl',
         slug: generateSlug(values.name, values.start_date),
@@ -371,7 +375,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         whatsapp_group_link: values.whatsapp_group_link || null,
         etiqueta: values.etiqueta || null,
         description: values.description || null,
-        card_name_split: values.card_name_split ?? null,
+        card_name_prefix: values.card_name_prefix || null,
+        card_name_main: values.card_name_main || null,
         card_prefix_size: values.card_prefix_size || 'xs',
         card_main_size: values.card_main_size || '2xl',
         slug: generateSlug(values.name, values.start_date),
@@ -571,41 +576,52 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                     {/* Nome do card — estilo */}
                     <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
                       <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Nome no card</p>
-                      <FormField
-                        control={form.control}
-                        name="card_name_split"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-slate-600 text-sm">Palavras pequenas (topo)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min={0}
-                                placeholder="Ex: 2 → primeiras 2 palavras ficam pequenas"
-                                value={field.value ?? ''}
-                                onChange={e => field.onChange(e.target.value !== '' ? parseInt(e.target.value) : null)}
-                                className="bg-white"
-                              />
-                            </FormControl>
-                            <p className="text-xs text-muted-foreground">
-                              Deixe vazio para automático (tudo menos a última palavra). 0 = sem texto pequeno.
-                            </p>
-                          </FormItem>
-                        )}
-                      />
-                      <div className="grid grid-cols-2 gap-3">
+                      <p className="text-xs text-muted-foreground -mt-1">
+                        Deixe em branco para usar o nome do passeio com divisão automática.
+                      </p>
+
+                      {/* Linha superior — texto pequeno */}
+                      <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
+                        <FormField
+                          control={form.control}
+                          name="card_name_prefix"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-slate-600 text-sm">Texto pequeno (topo)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Ex: CHAPADA DOS" {...field} className="bg-white" />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
                         <FormField
                           control={form.control}
                           name="card_prefix_size"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-slate-600 text-sm">Tamanho — pequeno</FormLabel>
+                              <FormLabel className="text-slate-600 text-sm">Tamanho</FormLabel>
                               <FormControl>
-                                <select {...field} className="w-full h-9 rounded-md border border-input bg-white px-3 text-sm">
-                                  <option value="xs">XS — muito pequeno</option>
-                                  <option value="sm">SM — pequeno</option>
-                                  <option value="base">Base — médio</option>
+                                <select {...field} className="w-28 h-9 rounded-md border border-input bg-white px-3 text-sm">
+                                  <option value="xs">XS</option>
+                                  <option value="sm">SM</option>
+                                  <option value="base">MD</option>
                                 </select>
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {/* Linha principal — texto grande */}
+                      <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
+                        <FormField
+                          control={form.control}
+                          name="card_name_main"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-slate-600 text-sm">Texto grande (destaque)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Ex: VEADEIROS" {...field} className="bg-white" />
                               </FormControl>
                             </FormItem>
                           )}
@@ -615,13 +631,13 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                           name="card_main_size"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-slate-600 text-sm">Tamanho — grande</FormLabel>
+                              <FormLabel className="text-slate-600 text-sm">Tamanho</FormLabel>
                               <FormControl>
-                                <select {...field} className="w-full h-9 rounded-md border border-input bg-white px-3 text-sm">
+                                <select {...field} className="w-28 h-9 rounded-md border border-input bg-white px-3 text-sm">
                                   <option value="xl">XL</option>
-                                  <option value="2xl">2XL — padrão</option>
-                                  <option value="3xl">3XL — grande</option>
-                                  <option value="4xl">4XL — muito grande</option>
+                                  <option value="2xl">2XL</option>
+                                  <option value="3xl">3XL</option>
+                                  <option value="4xl">4XL</option>
                                 </select>
                               </FormControl>
                             </FormItem>
