@@ -390,28 +390,27 @@ const Index = () => {
           </div>
         ) : (
           <>
-            {/* Section header */}
-            <div className="mb-6">
-              <h2 className="font-sans font-bold text-3xl md:text-4xl text-foreground tracking-wide">
-                {isSearching
-                  ? `${displayedTours.length} expedição${displayedTours.length !== 1 ? "ões" : ""} encontrada${displayedTours.length !== 1 ? "s" : ""}`
-                  : selectedMonthData
-                  ? `Expedições de ${selectedMonthData.name} ${selectedMonthData.year}`
-                  : "Próximas Expedições"}
-              </h2>
-              {isSearching && selectedDestino && (
-                <p className="text-muted-foreground text-sm mt-1">
-                  Destino: <span className="font-medium text-foreground">{selectedDestino}</span>
+            {/* Section header — only show when searching */}
+            {isSearching && (
+              <div className="mb-4">
+                <p className="text-muted-foreground text-sm">
+                  {displayedTours.length} resultado{displayedTours.length !== 1 ? "s" : ""}
+                  {selectedDestino && (
+                    <>
+                      {" para "}
+                      <span className="font-medium text-foreground">{selectedDestino}</span>
+                    </>
+                  )}
                   {" · "}
                   <button
                     onClick={() => { setSelectedDestino(""); setSelectedPreferences([]); }}
-                    className="text-primary hover:underline text-sm"
+                    className="text-primary hover:underline"
                   >
                     Limpar filtros
                   </button>
                 </p>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Month message */}
             {!isSearching && currentMonthMessage && (

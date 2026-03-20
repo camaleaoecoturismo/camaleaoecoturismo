@@ -49,7 +49,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
     });
 
   const imageUrl = preloadedCover?.imageUrl || tour.image_url;
-  const destName = tour.name.toUpperCase();
+  const destName = tour.name;
   const cityStateLabel = [tour.city, tour.state?.toUpperCase()].filter(Boolean).join(" - ");
 
   // Date block values
@@ -116,7 +116,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
 
             {/* Name + city/state — TOP LEFT */}
             <div className="absolute top-0 left-0 right-0 p-3 pr-20 z-[2]">
-              <p className="text-white font-black text-lg md:text-xl leading-tight tracking-tight line-clamp-2 drop-shadow">
+              <p className="text-white font-semibold text-base md:text-lg leading-snug line-clamp-2 drop-shadow-md">
                 {destName}
               </p>
               {cityStateLabel && (
