@@ -49,16 +49,20 @@ const Passeio = () => {
   useEffect(() => {
     if (!tourId) return;
     const fetchTour = async () => {
-      const { data, error } = await supabase
+      // Try by slug first, then fall back to id
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tourId);
+      const query = supabase
         .from("tours")
         .select(`
           *,
           pricing_options:tour_pricing_options(
             id, option_name, description, pix_price, card_price
           )
-        `)
-        .eq("id", tourId)
-        .single();
+        `);
+      const { data, error } = await (isUuid
+        ? query.eq("id", tourId)
+        : query.eq("slug", tourId)
+      ).single();
 
       if (error || !data) {
         navigate("/");

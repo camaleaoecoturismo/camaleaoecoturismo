@@ -81,7 +81,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
     <>
       <div
         className="group relative bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer"
-        onClick={() => navigate(`/passeio/${tour.id}`)}
+        onClick={() => navigate(`/passeio/${tour.slug || tour.id}`)}
       >
         {/* Photo — outer wrapper allows date block to overflow */}
         <div className="relative">

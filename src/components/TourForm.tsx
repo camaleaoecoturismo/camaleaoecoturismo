@@ -22,6 +22,22 @@ import { TourPaymentConfig } from '@/components/TourPaymentConfig';
 import { TourTransportConfig } from '@/components/transport/TourTransportConfig';
 import { TourGalleryManager } from '@/components/TourGalleryManager';
 
+const MONTHS_PT = ['janeiro','fevereiro','marco','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+function generateSlug(name: string, startDate: string): string {
+  const date = new Date(startDate + "T12:00:00");
+  const month = MONTHS_PT[date.getMonth()];
+  const year = date.getFullYear();
+  const base = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+  return `${base}-${month}-${year}`;
+}
+
 // Taxas de parcelamento InfinitePay
 const INSTALLMENT_FEES: Record<number, number> = {
   1: 4.4, 2: 6.5, 3: 7.5, 4: 8.6, 5: 9.6, 6: 10.7,
@@ -222,6 +238,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         etiqueta: values.etiqueta || null,
         destination_name: values.destination_name || null,
         description: values.description || null,
+        slug: generateSlug(values.name, values.start_date),
         is_exclusive: values.is_exclusive || false,
         is_featured: values.is_featured || false,
         has_accommodation: values.has_accommodation || false,
@@ -351,6 +368,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         etiqueta: values.etiqueta || null,
         destination_name: values.destination_name || null,
         description: values.description || null,
+        slug: generateSlug(values.name, values.start_date),
         is_exclusive: values.is_exclusive || false,
         is_featured: values.is_featured || false,
         valor_padrao: values.valor_padrao || 0,
