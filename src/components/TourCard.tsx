@@ -1,9 +1,10 @@
 import { memo, useState } from "react";
-import { MapPin } from "lucide-react";
+import { MapPin, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { Tour } from "@/hooks/useTours";
 import { WaitlistModal } from "@/components/WaitlistModal";
 import { useTourAvailability } from "@/hooks/useTourAvailability";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TourCardProps {
   tour: Tour;
@@ -18,10 +19,14 @@ interface TourCardProps {
 }
 
 const WEEKDAYS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+const MONTH_NAMES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 
 function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
   const navigate = useNavigate();
   const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
+  const [showNextDates, setShowNextDates] = useState(false);
+  const [nextDates, setNextDates] = useState<Tour[]>([]);
+  const [loadingNextDates, setLoadingNextDates] = useState(false);
   const { availability } = useTourAvailability(tour.id);
 
   const isSoldOut =
@@ -63,7 +68,6 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
   const startWeekday = WEEKDAYS[tourStartDate.getDay()];
   const endWeekday = endDate ? WEEKDAYS[endDate.getDay()] : null;
 
-  // Only show range if end day is different from start day
   const dayRange =
     endDay && endDay !== startDay ? `${startDay} à ${endDay}` : `${startDay}`;
   const weekdayRange =
@@ -77,15 +81,38 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
     tour.etiqueta !== "Vagas encerradas" &&
     tour.etiqueta !== "vagas encerradas";
 
+  const handleNextDates = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (showNextDates) {
+      setShowNextDates(false);
+      return;
+    }
+    if (nextDates.length === 0) {
+      setLoadingNextDates(true);
+      const todayStr = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("tours")
+        .select("*, pricing_options:tour_pricing_options(id, option_name, pix_price, card_price)")
+        .eq("city", tour.city)
+        .eq("is_active", true)
+        .neq("id", tour.id)
+        .gte("start_date", todayStr)
+        .order("start_date", { ascending: true })
+        .limit(10);
+      setNextDates((data as Tour[]) || []);
+      setLoadingNextDates(false);
+    }
+    setShowNextDates(true);
+  };
+
   return (
     <>
       <div
         className="group relative bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer"
         onClick={() => navigate(`/passeio/${tour.slug || tour.id}`)}
       >
-        {/* Photo — outer wrapper allows date block to overflow */}
+        {/* Photo */}
         <div className="relative">
-          {/* Image container */}
           <div className="relative aspect-[4/3] overflow-hidden">
             {imageUrl ? (
               <img
@@ -102,7 +129,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
               </div>
             )}
 
-            {/* Sold out badge — bottom left */}
+            {/* Sold out badge */}
             {isSoldOut && (
               <div className="absolute bottom-2.5 left-2.5 z-[2]">
                 <span className="bg-red-600 text-white text-[11px] font-semibold px-2.5 py-1 rounded-md tracking-wide">
@@ -111,10 +138,10 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
               </div>
             )}
 
-            {/* Top gradient only */}
+            {/* Top gradient */}
             <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/80 via-black/40 to-transparent z-[1]" />
 
-            {/* Name + city/state — TOP LEFT */}
+            {/* Name + city — TOP LEFT */}
             <div className="absolute top-0 left-0 right-0 p-3 pr-20 z-[2]">
               <p className="text-white font-europa text-xl md:text-2xl leading-snug line-clamp-2 drop-shadow-md tracking-wide">
                 {destName}
@@ -126,7 +153,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
               )}
             </div>
 
-            {/* Etiqueta tags — BOTTOM LEFT */}
+            {/* Etiqueta — BOTTOM LEFT */}
             {(showEtiqueta || tour.is_featured) && (
               <div className="absolute bottom-0 left-0 p-3 flex flex-wrap gap-1.5 z-[2]">
                 {tour.is_featured && (
@@ -142,7 +169,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
               </div>
             )}
 
-            {/* Date block — inside photo, bottom right */}
+            {/* Date block — BOTTOM RIGHT inside photo */}
             <div className="absolute bottom-3 right-3 z-[2] bg-primary/90 backdrop-blur-sm text-primary-foreground rounded-xl px-3 py-2 text-center shadow-lg min-w-[64px]">
               <p className="text-[10px] font-bold uppercase tracking-widest opacity-80 leading-none mb-1">
                 {monthAbbr}
@@ -180,15 +207,34 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             )}
 
             {isSoldOut && isFutureTour ? (
-              <button
-                className="text-xs font-semibold text-orange-600 border border-orange-400 rounded-lg px-3 py-1.5 hover:bg-orange-50 transition-colors shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setWaitlistModalOpen(true);
-                }}
-              >
-                Lista de espera
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  className="text-xs font-semibold text-orange-600 border border-orange-400 rounded-lg px-2.5 py-1.5 hover:bg-orange-50 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setWaitlistModalOpen(true);
+                  }}
+                >
+                  Lista de espera
+                </button>
+                <button
+                  className={`text-xs font-semibold border rounded-lg px-2.5 py-1.5 transition-colors flex items-center gap-1 ${
+                    showNextDates
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "text-primary border-primary hover:bg-primary/10"
+                  }`}
+                  onClick={handleNextDates}
+                >
+                  {loadingNextDates ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : showNextDates ? (
+                    <ChevronUp className="w-3 h-3" />
+                  ) : (
+                    <ChevronDown className="w-3 h-3" />
+                  )}
+                  Próximas datas
+                </button>
+              </div>
             ) : (
               <span className="text-xs font-semibold text-primary shrink-0">
                 Ver →
@@ -197,6 +243,66 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
           </div>
         </div>
       </div>
+
+      {/* Próximas datas — expandable panel below card */}
+      {showNextDates && (
+        <div
+          className="border border-border border-t-0 rounded-b-2xl bg-card px-3 pt-3 pb-4 -mt-2"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {nextDates.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-2">
+              Nenhuma data futura disponível para essa cidade.
+            </p>
+          ) : (
+            <div className="flex overflow-x-auto gap-3 pb-1 snap-x -mx-1 px-1">
+              {nextDates.map((related) => {
+                const relStart = new Date(related.start_date + "T12:00:00");
+                const relEnd = related.end_date ? new Date(related.end_date + "T12:00:00") : null;
+                const relDays = relEnd
+                  ? Math.ceil((relEnd.getTime() - relStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+                  : 1;
+                const relPrice =
+                  related.pricing_options?.length > 0
+                    ? Math.min(...related.pricing_options.map((o) => o.pix_price))
+                    : related.valor_padrao || 0;
+                return (
+                  <button
+                    key={related.id}
+                    onClick={() => navigate(`/passeio/${related.slug || related.id}`)}
+                    className="w-40 shrink-0 snap-start text-left rounded-xl border border-border overflow-hidden hover:border-primary hover:shadow-sm transition-all bg-background"
+                  >
+                    {related.image_url && (
+                      <div className="aspect-[4/3] overflow-hidden">
+                        <img
+                          src={related.image_url}
+                          alt={related.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+                    <div className="p-2.5 space-y-0.5">
+                      <p className="text-xs font-semibold text-foreground line-clamp-2 leading-snug">
+                        {related.name}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {relStart.getDate()} de {MONTH_NAMES[relStart.getMonth()]}
+                        {relDays > 1 ? ` · ${relDays} dias` : ""}
+                      </p>
+                      {relPrice > 0 && (
+                        <p className="text-xs font-bold text-primary">
+                          {relPrice.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 })}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       <WaitlistModal
         open={waitlistModalOpen}

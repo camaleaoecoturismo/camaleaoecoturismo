@@ -51,18 +51,17 @@ const formSchema = z.object({
   state: z.string().min(1, 'Estado é obrigatório'),
   start_date: z.string().min(1, 'Data de início é obrigatória'),
   end_date: z.string().optional(),
-  month: z.string().min(1, 'Mês é obrigatório'),
+  month: z.string().optional(),
   
   about: z.string().optional(),
   itinerary: z.string().optional(),
   includes: z.string().optional(),
   not_includes: z.string().optional(),
-  what_to_bring: z.string().optional(),
+  policy: z.string().optional(),
+  departures: z.string().optional(),
   pdf_file_path: z.string().optional(),
-  link_pagamento: z.string().optional(),
   whatsapp_group_link: z.string().optional(),
   etiqueta: z.string().optional(),
-  destination_name: z.string().optional(),
   description: z.string().optional(),
   is_exclusive: z.boolean().default(false),
   is_featured: z.boolean().default(false),
@@ -116,12 +115,11 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
       itinerary: '',
       includes: '',
       not_includes: '',
-      what_to_bring: '',
+      policy: '',
+      departures: '',
       pdf_file_path: '',
-      link_pagamento: '',
       whatsapp_group_link: '',
       etiqueta: '',
-      destination_name: '',
       description: '',
       is_exclusive: false,
       is_featured: false,
@@ -154,12 +152,11 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         itinerary: tour.itinerary || '',
         includes: tour.includes || '',
         not_includes: tour.not_includes || '',
-        what_to_bring: tour.what_to_bring || '',
+        policy: tour.policy || '',
+        departures: tour.departures || '',
         pdf_file_path: tour.pdf_file_path || '',
-        link_pagamento: tour.link_pagamento || '',
         whatsapp_group_link: (tour as any).whatsapp_group_link || '',
         etiqueta: tour.etiqueta || '',
-        destination_name: tour.destination_name || '',
         description: tour.description || '',
         is_exclusive: tour.is_exclusive || false,
         is_featured: (tour as any).is_featured || false,
@@ -228,16 +225,15 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         state: values.state,
         start_date: values.start_date,
         end_date: values.end_date || null,
-        month: values.month,
+        month: MONTHS_PT[new Date(values.start_date + "T12:00:00").getMonth()],
         about: values.about || null,
         itinerary: values.itinerary || null,
         includes: values.includes || null,
         not_includes: values.not_includes || null,
-        what_to_bring: values.what_to_bring || null,
-        link_pagamento: values.link_pagamento || null,
+        policy: values.policy || null,
+        departures: values.departures || null,
         whatsapp_group_link: values.whatsapp_group_link || null,
         etiqueta: values.etiqueta || null,
-        destination_name: values.destination_name || null,
         description: values.description || null,
         slug: generateSlug(values.name, values.start_date),
         is_exclusive: values.is_exclusive || false,
@@ -356,18 +352,17 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         state: values.state,
         start_date: values.start_date,
         end_date: values.end_date || null,
-        month: values.month,
+        month: MONTHS_PT[new Date(values.start_date + "T12:00:00").getMonth()],
         image_url: null,
         about: values.about || null,
         itinerary: values.itinerary || null,
         includes: values.includes || null,
         not_includes: values.not_includes || null,
-        what_to_bring: values.what_to_bring || null,
+        policy: values.policy || null,
+        departures: values.departures || null,
         pdf_file_path: pdfPath || null,
-        link_pagamento: values.link_pagamento || null,
         whatsapp_group_link: values.whatsapp_group_link || null,
         etiqueta: values.etiqueta || null,
-        destination_name: values.destination_name || null,
         description: values.description || null,
         slug: generateSlug(values.name, values.start_date),
         is_exclusive: values.is_exclusive || false,
@@ -517,7 +512,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                       />
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <FormField
                         control={form.control}
                         name="start_date"
@@ -539,19 +534,6 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                             <FormLabel className="text-slate-600 text-sm">Data Fim</FormLabel>
                             <FormControl>
                               <Input type="date" {...field} className="bg-white" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="month"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-slate-600 text-sm">Mês</FormLabel>
-                            <FormControl>
-                              <Input placeholder="AGO" {...field} className="bg-white" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -896,20 +878,40 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
 
                     <FormField
                       control={form.control}
-                      name="what_to_bring"
+                      name="policy"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-slate-600 text-sm">O que Levar</FormLabel>
+                          <FormLabel className="text-slate-600 text-sm">Política de Cancelamento</FormLabel>
                           <FormControl>
                             <ReactQuill
                               theme="snow"
                               value={field.value || ''}
                               onChange={field.onChange}
-                              placeholder="Lista do que levar"
-                              modules={{ toolbar: [[{ 'list': 'bullet' }]] }}
+                              placeholder="Descreva as condições de cancelamento e reembolso"
+                              modules={{ toolbar: [['bold', 'italic'], [{ 'list': 'bullet' }]] }}
                               style={{ minHeight: '80px' }}
                             />
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="departures"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-600 text-sm">Informações adicionais de embarque</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Ex: Ponto de encontro, orientações gerais de saída..."
+                              className="bg-white resize-none"
+                              rows={3}
+                              {...field}
+                            />
+                          </FormControl>
+                          <p className="text-xs text-muted-foreground">Exibido abaixo dos pontos de embarque na página do passeio.</p>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -930,20 +932,6 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                         <Input type="file" accept=".pdf" onChange={(e) => setPdfFile(e.target.files?.[0] || null)} className="bg-white" />
                       </div>
                     </div>
-
-                    <FormField
-                      control={form.control}
-                      name="link_pagamento"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-slate-600 text-sm">Link de Pagamento (opcional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Link externo para pagamento" {...field} className="bg-white" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
 
                     <FormField
                       control={form.control}

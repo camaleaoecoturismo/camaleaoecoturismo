@@ -268,10 +268,6 @@ const Passeio = () => {
       {/* ── BODY ── */}
       <div className="max-w-2xl mx-auto px-4 pb-40">
 
-        {tour.description && (
-          <p className="text-muted-foreground leading-relaxed mt-5 mb-5">{tour.description}</p>
-        )}
-
         {/* Action buttons */}
         <div className="flex gap-3 mb-8 mt-5">
           {tour.pdf_file_path && (
@@ -511,17 +507,16 @@ const Passeio = () => {
       </div>
 
       {/* ── FLOATING RESERVAR ── */}
-      <div className={`fixed bottom-16 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${showFloating ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}>
+      <div className={`fixed bottom-20 right-4 z-50 transition-all duration-300 ${showFloating ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}>
         {isSoldOut && isFutureTour ? (
-          <Button onClick={() => setWaitlistOpen(true)} className="h-11 px-6 rounded-full shadow-xl bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm">
-            <Bell className="w-4 h-4 mr-2" />
-            Lista de espera
-          </Button>
+          <button onClick={() => setWaitlistOpen(true)} className="h-9 px-4 rounded-full shadow-md bg-orange-500/90 hover:bg-orange-500 text-white text-xs font-semibold transition-colors">
+            <Bell className="w-3.5 h-3.5 inline mr-1.5" />
+            Espera
+          </button>
         ) : !isSoldOut ? (
-          <Button onClick={() => setReservaOpen(true)} className="h-11 px-6 rounded-full shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm">
-            Reservar agora
-            {minPrice > 0 && ` — ${formatCurrency(minPrice)}`}
-          </Button>
+          <button onClick={() => setReservaOpen(true)} className="h-9 px-4 rounded-full shadow-md bg-primary/90 hover:bg-primary text-primary-foreground text-xs font-semibold transition-colors">
+            Reservar
+          </button>
         ) : null}
       </div>
 
