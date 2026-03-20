@@ -20,6 +20,8 @@ import { JourneyModule } from "@/components/journey";
 import ExportToursModule from "@/components/ExportToursModule";
 import ExperienceProcessMap from "@/components/experience-map/ExperienceProcessMap";
 import AdminGuias from "@/components/admin/AdminGuias";
+import AdminPaginasInstitucional from "@/components/admin/AdminPaginasInstitucional";
+import AdminDepoimentos from "@/components/admin/AdminDepoimentos";
 import { useToast } from "@/hooks/use-toast";
 import { Tour } from "@/hooks/useTours";
 
@@ -230,6 +232,8 @@ const Admin = () => {
     if (activeTab.startsWith('conteudo')) return 'conteudo';
     if (activeTab.startsWith('analytics')) return 'analytics';
     if (activeTab === 'paginas') return 'paginas';
+    if (activeTab === 'paginas-institucionais') return 'paginas-institucionais';
+    if (activeTab === 'depoimentos') return 'depoimentos';
     if (activeTab === 'loja') return 'loja';
     if (activeTab === 'jornada') return 'jornada';
     if (activeTab === 'mapa-processos') return 'mapa-processos';
@@ -269,6 +273,10 @@ const Admin = () => {
         return <FormQuestionsManagement />;
       case 'paginas':
         return <LandingPagesModule />;
+      case 'paginas-institucionais':
+        return <AdminPaginasInstitucional />;
+      case 'depoimentos':
+        return <AdminDepoimentos />;
       case 'loja':
         return <ShopModule />;
       case 'jornada':
@@ -336,7 +344,9 @@ const Admin = () => {
       'conteudo-campanhas': 'Conteúdo - Campanhas',
       'conteudo-dashboard': 'Conteúdo - Visão Geral',
       'conteudo-assistente': 'Conteúdo - Assistente IA',
-      'paginas': 'Paginas',
+      'paginas': 'Páginas',
+      'paginas-institucionais': 'Páginas Institucionais',
+      'depoimentos': 'Depoimentos',
       'loja': 'Loja',
       'jornada': 'Jornada do Cliente',
       'mapa-processos': 'Mapa de Processos',

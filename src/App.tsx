@@ -28,6 +28,11 @@ const ChapadaDiamantina = lazy(() => import("./pages/ChapadaDiamantina"));
 const ExportTours = lazy(() => import("./pages/ExportTours"));
 const Passeio = lazy(() => import("./pages/Passeio"));
 const Guia = lazy(() => import("./pages/Guia"));
+const Sobre = lazy(() => import("./pages/Sobre"));
+const Blog = lazy(() => import("./pages/Blog"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const Politicas = lazy(() => import("./pages/Politicas"));
 
 const queryClient = new QueryClient();
 
@@ -67,6 +72,11 @@ const App = () => (
               <Route path="/export-tours" element={<ExportTours />} />
               <Route path="/passeio/:tourId" element={<Passeio />} />
               <Route path="/guia" element={<Guia />} />
+              <Route path="/sobre" element={<Sobre />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/politicas" element={<Politicas />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

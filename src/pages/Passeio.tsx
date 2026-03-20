@@ -26,9 +26,10 @@ import {
   ChevronUp,
   Package,
   Loader2,
+  Star,
+  CreditCard,
 } from "lucide-react";
 import { PixIcon } from "@/components/icons/PixIcon";
-import { CreditCard } from "lucide-react";
 
 const Passeio = () => {
   const { tourId } = useParams<{ tourId: string }>();
@@ -39,6 +40,9 @@ const Passeio = () => {
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
   const [relatedTours, setRelatedTours] = useState<Tour[]>([]);
+  const [depoimentos, setDepoimentos] = useState<Array<{
+    id: string; nome: string; foto_url: string | null; texto: string; nota: number;
+  }>>([]);
 
   const { availability } = useTourAvailability(tourId || "");
 
@@ -71,6 +75,21 @@ const Passeio = () => {
         .neq("id", tourId)
         .limit(4);
       setRelatedTours((related as Tour[]) || []);
+
+      // Fetch testimonials for this tour, then fallback to general ones
+      const { data: deps } = await supabase
+        .from("depoimentos")
+        .select("id, nome, foto_url, texto, nota, tour_id")
+        .eq("ativo", true)
+        .order("display_order")
+        .order("created_at", { ascending: false });
+      if (deps && deps.length > 0) {
+        // Prefer tour-specific, then fill with general
+        const tourDeps = deps.filter((d: any) => d.tour_id === tourId);
+        const generalDeps = deps.filter((d: any) => !d.tour_id);
+        const combined = [...tourDeps, ...generalDeps].slice(0, 12);
+        setDepoimentos(combined);
+      }
 
       setLoading(false);
     };
@@ -465,6 +484,50 @@ const Passeio = () => {
             </div>
           </div>
         </div>
+
+        {/* Depoimentos */}
+        {depoimentos.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
+              <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
+              O que dizem nossos viajantes
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {depoimentos.map((d) => (
+                <div
+                  key={d.id}
+                  className="bg-card border border-border rounded-xl p-5 flex flex-col gap-3"
+                >
+                  <div className="flex items-center gap-3">
+                    {d.foto_url ? (
+                      <img
+                        src={d.foto_url}
+                        alt={d.nome}
+                        className="w-10 h-10 rounded-full object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                        {d.nome.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-semibold text-foreground text-sm">{d.nome}</p>
+                      <div className="flex items-center gap-0.5 mt-0.5">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-3 w-3 ${i < d.nota ? "fill-amber-400 text-amber-400" : "text-gray-200"}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">"{d.texto}"</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Bottom CTA */}
         {!isSoldOut && (

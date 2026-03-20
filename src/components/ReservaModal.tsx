@@ -46,7 +46,6 @@ import {
 import { PixIcon } from "@/components/icons/PixIcon";
 import { TypingIndicator } from "./TypingIndicator";
 import { ChatMessage } from "./ChatMessage";
-import { MercadoPagoCheckout } from "./MercadoPagoCheckout";
 import { SeatSelectionModal } from "./transport/SeatSelectionModal";
 import { useAnalytics } from "@/hooks/useAnalyticsTracking";
 import { ParticipantsDataForm, createEmptyParticipantForm } from "./reservation/ParticipantsDataForm";
@@ -210,7 +209,6 @@ export function ReservaModal({ isOpen, onClose, tour }: ReservaModalProps) {
   const [reservaId, setReservaId] = useState<string | null>(null);
   const [showGoToPaymentButton, setShowGoToPaymentButton] = useState(false);
   const [showPaymentCard, setShowPaymentCard] = useState(false);
-  const [showCardCheckout, setShowCardCheckout] = useState(false);
   const [showPixCheckout, setShowPixCheckout] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
   const [realPaidAmount, setRealPaidAmount] = useState<number | null>(null);
@@ -457,7 +455,7 @@ export function ReservaModal({ isOpen, onClose, tour }: ReservaModalProps) {
   const getTrackingStep = (fieldName: string): number => {
     // Step 5: Payment related fields or payment card visible
     const paymentFields = ['payment_method', 'pix', 'credit_card', 'whatsapp_payment', 'card_processing', 'pix_checkout', 'card_checkout'];
-    if (paymentFields.includes(fieldName) || showPaymentCard || showPixCheckout || showCardCheckout) {
+    if (paymentFields.includes(fieldName) || showPaymentCard || showPixCheckout) {
       return 5;
     }
     
@@ -3072,7 +3070,7 @@ export function ReservaModal({ isOpen, onClose, tour }: ReservaModalProps) {
             )}
 
             {/* Payment Card integrated in chat */}
-            {showPaymentCard && !showPixCheckout && !showCardCheckout && !paymentComplete && (
+            {showPaymentCard && !showPixCheckout && !paymentComplete && (
               <div className="flex justify-start w-full">
                 <Card className="w-full bg-white shadow-lg border-purple-200">
                   <CardContent className="p-4 space-y-4">
@@ -3437,39 +3435,6 @@ export function ReservaModal({ isOpen, onClose, tour }: ReservaModalProps) {
               </Card>
             )}
 
-            {/* Card Checkout */}
-            {showCardCheckout && reservaId && (
-              <Card className="w-full">
-                <CardContent className="p-4">
-                  <Button variant="ghost" size="sm" onClick={() => setShowCardCheckout(false)} className="mb-2">
-                    <ArrowLeft className="h-4 w-4 mr-1" />
-                    Voltar
-                  </Button>
-                  <MercadoPagoCheckout
-                    reservaId={reservaId}
-                    baseAmount={afterDiscount}
-                    clientName={formData.nome_completo}
-                    clientEmail={formData.email}
-                    clientCpf={formData.cpf}
-                    tourName={tour.name}
-                    installmentsMax={tour.mp_installments_max || 12}
-                    onSuccess={(paidAmount) => {
-                      setRealPaidAmount(paidAmount);
-                      setPaymentComplete(true);
-                      setShowCardCheckout(false);
-                    }}
-                    onError={(err) =>
-                      toast({
-                        title: "Erro",
-                        description: err,
-                        variant: "destructive",
-                      })
-                    }
-                    onBack={() => setShowCardCheckout(false)}
-                  />
-                </CardContent>
-              </Card>
-            )}
 
             {/* Success */}
             {paymentComplete && (
