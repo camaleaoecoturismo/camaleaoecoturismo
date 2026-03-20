@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { TopMenu } from "@/components/TopMenu";
@@ -67,27 +67,10 @@ const Passeio = () => {
   const [depoimentos, setDepoimentos] = useState<
     Array<{ id: string; nome: string; foto_url: string | null; texto: string; nota: number }>
   >([]);
-  const [showFloating, setShowFloating] = useState(true);
   const [packageQuantities, setPackageQuantities] = useState<Record<string, number>>({});
   const [showInstallments, setShowInstallments] = useState(false);
 
-  const reservaRef = useRef<HTMLDivElement>(null);
   const { availability } = useTourAvailability(tourId || "");
-
-  useEffect(() => {
-    if (!tour) return;
-    const id = setTimeout(() => {
-      const el = reservaRef.current;
-      if (!el) return;
-      const observer = new IntersectionObserver(
-        ([entry]) => setShowFloating(!entry.isIntersecting),
-        { threshold: 0.1 }
-      );
-      observer.observe(el);
-      return () => observer.disconnect();
-    }, 150);
-    return () => clearTimeout(id);
-  }, [tour]);
 
   useEffect(() => {
     if (!tourId) return;
@@ -208,8 +191,11 @@ const Passeio = () => {
     { id: "roteiro", label: "Roteiro", icon: Map, show: !!tour.itinerary },
     { id: "incluso", label: "Incluso", icon: CheckSquare, show: !!(tour.includes || tour.not_includes) },
     { id: "embarques", label: "Embarques", icon: MapPin, show: true },
-    { id: "valores", label: "Valores", icon: CreditCard, show: true },
   ].filter(item => item.show);
+
+  const midIndex = Math.ceil(navItems.length / 2);
+  const leftNavItems = navItems.slice(0, midIndex);
+  const rightNavItems = navItems.slice(midIndex);
 
   return (
     <div className="min-h-screen bg-background">
@@ -315,7 +301,7 @@ const Passeio = () => {
         {tour.about && (
           <section id="sobre" className="mb-8 scroll-mt-4">
             <h2 className="font-semibold text-lg text-primary mb-3">Sobre o passeio</h2>
-            <div className="prose prose-sm max-w-none text-muted-foreground leading-relaxed"
+            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
               dangerouslySetInnerHTML={{ __html: sanitize(tour.about) }} />
           </section>
         )}
@@ -324,7 +310,7 @@ const Passeio = () => {
         {tour.itinerary && (
           <section id="roteiro" className="mb-8 scroll-mt-4">
             <h2 className="font-semibold text-lg text-primary mb-3">Roteiro</h2>
-            <div className="prose prose-sm max-w-none text-muted-foreground leading-relaxed"
+            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
               dangerouslySetInnerHTML={{ __html: sanitize(tour.itinerary) }} />
           </section>
         )}
@@ -349,11 +335,11 @@ const Passeio = () => {
                     ✗ Não incluso
                   </button>
                 </div>
-                <div className="prose prose-sm max-w-none text-foreground leading-relaxed"
+                <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: sanitize(inclusoTab === "incluso" ? tour.includes : tour.not_includes) }} />
               </>
             ) : (
-              <div className="prose prose-sm max-w-none text-foreground leading-relaxed"
+              <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: sanitize(tour.includes || tour.not_includes) }} />
             )}
           </section>
@@ -369,7 +355,7 @@ const Passeio = () => {
         </section>
 
         {/* Reservar / Valores */}
-        <section id="valores" ref={reservaRef} className="mb-8 scroll-mt-4">
+        <section id="valores" className="mb-8 scroll-mt-4">
           <div className="border border-border rounded-2xl p-5 bg-card shadow-sm space-y-4">
 
             {tour.pricing_options && tour.pricing_options.length > 0 ? (
@@ -628,7 +614,7 @@ const Passeio = () => {
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed">"{d.texto}"</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">"{d.texto}"</p>
                 </div>
               ))}
             </div>
@@ -636,28 +622,51 @@ const Passeio = () => {
         )}
       </div>
 
-      {/* ── FLOATING RESERVAR ── */}
-      <div className={`fixed bottom-20 right-4 z-50 transition-all duration-300 ${showFloating ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}>
-        {isSoldOut && isFutureTour ? (
-          <button onClick={() => setWaitlistOpen(true)} className="h-9 px-4 rounded-full shadow-md bg-orange-500/90 hover:bg-orange-500 text-white text-xs font-semibold transition-colors">
-            <Bell className="w-3.5 h-3.5 inline mr-1.5" />
-            Espera
-          </button>
-        ) : !isSoldOut ? (
-          <button onClick={() => scrollTo("valores")} className="h-9 px-4 rounded-full shadow-md bg-primary/90 hover:bg-primary text-primary-foreground text-xs font-semibold transition-colors">
-            Reservar
-          </button>
-        ) : null}
-      </div>
-
-      {/* ── SECTION NAV BAR ── */}
+      {/* ── SECTION NAV BAR with elevated center Reservar button ── */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-card/95 backdrop-blur-sm border-t border-border shadow-lg">
-        <div className="flex items-stretch justify-around max-w-lg mx-auto">
-          {navItems.map(({ id, label, icon: Icon }) => (
+        <div className="flex items-end justify-around max-w-lg mx-auto px-2">
+          {leftNavItems.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => scrollTo(id)}
-              className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-muted-foreground hover:text-primary transition-colors min-h-[52px]"
+              className="flex-1 flex flex-col items-center gap-0.5 py-3 text-muted-foreground hover:text-primary transition-colors"
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-[10px] font-medium leading-none">{label}</span>
+            </button>
+          ))}
+
+          {/* Center elevated button */}
+          <div className="flex flex-col items-center px-3 -mt-5 pb-2">
+            <button
+              onClick={
+                isSoldOut && isFutureTour
+                  ? () => setWaitlistOpen(true)
+                  : !isSoldOut
+                  ? () => scrollTo("valores")
+                  : undefined
+              }
+              disabled={isSoldOut && !isFutureTour}
+              className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center border-4 border-white dark:border-card transition-colors ${
+                isSoldOut && isFutureTour
+                  ? "bg-orange-500 hover:bg-orange-600 text-white"
+                  : isSoldOut
+                  ? "bg-muted text-muted-foreground"
+                  : "bg-primary hover:bg-primary/90 text-primary-foreground"
+              }`}
+            >
+              {isSoldOut && isFutureTour ? <Bell className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
+            </button>
+            <span className={`text-[10px] font-semibold leading-none mt-1 ${isSoldOut && isFutureTour ? "text-orange-500" : isSoldOut ? "text-muted-foreground" : "text-primary"}`}>
+              {isSoldOut && isFutureTour ? "Espera" : "Reservar"}
+            </span>
+          </div>
+
+          {rightNavItems.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => scrollTo(id)}
+              className="flex-1 flex flex-col items-center gap-0.5 py-3 text-muted-foreground hover:text-primary transition-colors"
             >
               <Icon className="w-5 h-5" />
               <span className="text-[10px] font-medium leading-none">{label}</span>
