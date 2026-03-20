@@ -181,8 +181,8 @@ const Passeio = () => {
 
   const sanitize = (html: string | null) =>
     DOMPurify.sanitize(html || "", {
-      ALLOWED_TAGS: ["p","br","strong","em","u","s","ul","ol","li","h1","h2","h3","h4","a","blockquote","img","details","summary","table","thead","tbody","tr","th","td","div","span","pre","code"],
-      ALLOWED_ATTR: ["href","target","rel","src","alt","class","style","open"],
+      ALLOWED_TAGS: ["p","br","strong","em","u","s","ul","ol","li","h1","h2","h3","h4","a","blockquote","img","iframe","details","summary","table","thead","tbody","tr","th","td","div","span","pre","code"],
+      ALLOWED_ATTR: ["href","target","rel","src","alt","class","style","open","frameborder","allowfullscreen","allow","width","height"],
     });
 
   const handleWhatsApp = () => {
