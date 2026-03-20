@@ -285,24 +285,35 @@ const Passeio = () => {
       <div className="max-w-2xl mx-auto px-4 pb-40">
 
         {/* Action buttons */}
-        <div className="flex gap-3 mb-8 mt-5">
-          {tour.pdf_file_path && (
-            <Button
-              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-              onClick={() => setRoteiroOpen(true)}
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Ver roteiro
-            </Button>
-          )}
+        <div className="flex flex-col gap-3 mb-8 mt-5">
           <Button
-            variant="outline"
-            className="flex-1 border-green-500 text-green-600 hover:bg-green-50"
-            onClick={handleWhatsApp}
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-base font-semibold py-6"
+            onClick={isSoldOut && isFutureTour ? () => setWaitlistOpen(true) : !isSoldOut ? () => scrollTo("valores") : undefined}
+            disabled={isSoldOut && !isFutureTour}
           >
-            <WhatsAppIcon className="w-4 h-4 mr-2" />
-            Falar com atendente
+            <CreditCard className="w-5 h-5 mr-2" />
+            {isSoldOut && isFutureTour ? "Entrar na lista de espera" : isSoldOut ? "Vagas esgotadas" : "Reservar agora"}
           </Button>
+          <div className="flex gap-3">
+            {tour.pdf_file_path && (
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setRoteiroOpen(true)}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Ver roteiro
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              className="flex-1 border-green-500 text-green-600 hover:bg-green-50"
+              onClick={handleWhatsApp}
+            >
+              <WhatsAppIcon className="w-4 h-4 mr-2" />
+              Falar com atendente
+            </Button>
+          </div>
         </div>
 
         {/* Sobre */}
