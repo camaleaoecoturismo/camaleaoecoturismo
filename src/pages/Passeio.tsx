@@ -76,7 +76,9 @@ const Passeio = () => {
     if (!tourId) return;
     const fetchTour = async () => {
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tourId);
-      const query = supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
+      const query = db
         .from("tours")
         .select(`*, pricing_options:tour_pricing_options(id, option_name, description, pix_price, card_price)`);
       const { data, error } = await (isUuid
@@ -85,10 +87,10 @@ const Passeio = () => {
       ).single();
 
       if (error || !data) { navigate("/"); return; }
-      setTour(data as Tour);
+      setTour(data as unknown as Tour);
 
       const today = new Date().toISOString().split("T")[0];
-      const { data: related } = await supabase
+      const { data: related } = await db
         .from("tours")
         .select(`*, pricing_options:tour_pricing_options(id, option_name, pix_price, card_price)`)
         .eq("city", data.city)
@@ -97,10 +99,10 @@ const Passeio = () => {
         .gte("start_date", today)
         .order("start_date", { ascending: true })
         .limit(8);
-      const relatedList = (related as Tour[]) || [];
+      const relatedList = (related as unknown as Tour[]) || [];
       setRelatedTours(relatedList);
       if (relatedList.length > 0) {
-        const ids = relatedList.map(t => t.id);
+        const ids = relatedList.map((t: Tour) => t.id);
         const { data: covers } = await supabase
           .from('tour_gallery_images')
           .select('tour_id, image_url')
@@ -113,14 +115,16 @@ const Passeio = () => {
         }
       }
 
-      const { data: deps } = await supabase
+      const { data: deps } = await db
         .from("depoimentos")
         .select("id, nome, foto_url, texto, nota, tour_id")
         .eq("ativo", true)
         .order("display_order")
         .order("created_at", { ascending: false });
       if (deps && deps.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const tourDeps = deps.filter((d: any) => d.tour_id === data.id);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const generalDeps = deps.filter((d: any) => !d.tour_id);
         setDepoimentos([...tourDeps, ...generalDeps].slice(0, 12));
       }
