@@ -639,7 +639,13 @@ const Passeio = () => {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {depoimentos.map((d) => (
-                <div key={d.id} className="bg-card border border-border rounded-xl p-5 flex flex-col gap-3">
+                <a
+                  key={d.id}
+                  href="https://share.google/oRB80KgUQKJyu51Dp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-card border border-border rounded-xl p-5 flex flex-col gap-3 hover:border-primary/40 hover:shadow-sm transition-all cursor-pointer"
+                >
                   <div className="flex items-center gap-3">
                     {d.foto_url ? (
                       <img src={d.foto_url} alt={d.nome} className="w-10 h-10 rounded-full object-cover shrink-0" />
@@ -658,7 +664,7 @@ const Passeio = () => {
                     </div>
                   </div>
                   <p className="text-sm text-gray-700 leading-relaxed">"{d.texto}"</p>
-                </div>
+                </a>
               ))}
             </div>
           </section>
