@@ -148,6 +148,7 @@ interface FormData {
   descricao_problema_saude: string;
   contato_emergencia_nome: string;
   contato_emergencia_telefone: string;
+  instagram: string;
   custom_answers: Record<string, string>;
   aceita_politica: boolean;
   payment_method: "pix" | "credit_card" | "whatsapp";
@@ -253,6 +254,7 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
     ano_nascimento: "",
     cpf: "",
     email: "",
+    instagram: "",
     numero_participantes: "1",
     ponto_embarque_id: "",
     ponto_embarque_personalizado: "",
@@ -1301,6 +1303,7 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
           descricao_problema_saude: buyerProblemaSaude ? buyerDescProblemaSaude : null,
           contato_emergencia_nome: buyerContatoNome || null,
           contato_emergencia_telefone: buyerContatoTel?.replace(/\D/g, "") || null,
+          instagram: formData.instagram?.trim() || null,
           capture_method: "website_modal",
         });
 
@@ -2224,6 +2227,18 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
               onChange={(e) => handleInputChange("email", e.target.value)}
               disabled={inputDisabled}
               onKeyPress={(e) => e.key === "Enter" && isFieldValid(question) && nextField()}
+              className={inputClass}
+            />
+          );
+        case "instagram":
+          return (
+            <Input
+              type="text"
+              placeholder="@seuinstagram"
+              value={formData.instagram}
+              onChange={(e) => handleInputChange("instagram", e.target.value.replace(/\s/g, ""))}
+              disabled={inputDisabled}
+              onKeyPress={(e) => e.key === "Enter" && nextField()}
               className={inputClass}
             />
           );
