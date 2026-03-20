@@ -164,7 +164,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
                 src={imageUrl}
                 alt={tour.name}
                 className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${
-                  isSoldOut ? "grayscale opacity-80" : ""
+                  ""
                 }`}
                 loading="lazy"
               />

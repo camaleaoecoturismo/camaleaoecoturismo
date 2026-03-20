@@ -156,7 +156,7 @@ export function TourGalleryCarousel({
         <img
           src={currentImage.image_url}
           alt={`${tourName} - Foto ${currentIndex + 1}`}
-          className={`w-full h-full object-cover transition-opacity duration-500 ${isSoldOut ? 'grayscale opacity-80' : ''}`}
+          className="w-full h-full object-cover transition-opacity duration-500"
           onClick={() => fill ? undefined : openLightbox(currentIndex)}
           style={{ cursor: fill ? 'default' : 'zoom-in' }}
         />
