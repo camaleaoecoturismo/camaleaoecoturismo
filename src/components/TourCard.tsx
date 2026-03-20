@@ -112,11 +112,11 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             )}
 
             {/* Top gradient only */}
-            <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/70 to-transparent z-[1]" />
+            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/80 via-black/40 to-transparent z-[1]" />
 
             {/* Name + city/state — TOP LEFT */}
             <div className="absolute top-0 left-0 right-0 p-3 pr-20 z-[2]">
-              <p className="text-white font-europa text-base md:text-lg leading-snug line-clamp-2 drop-shadow-md">
+              <p className="text-white font-europa text-base md:text-lg leading-snug line-clamp-2 drop-shadow-md tracking-wide">
                 {destName}
               </p>
               {cityStateLabel && (
