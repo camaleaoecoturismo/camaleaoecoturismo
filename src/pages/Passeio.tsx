@@ -49,6 +49,8 @@ const MONTH_NAMES = [
   "jul", "ago", "set", "out", "nov", "dez",
 ];
 
+type NavItem = { id: string; label: string; icon: React.ElementType };
+
 const scrollTo = (id: string) => {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 };
@@ -195,7 +197,6 @@ const Passeio = () => {
     tour.etiqueta !== "vagas encerradas";
 
   // Section nav items — only show sections that have content
-  type NavItem = { id: string; label: string; icon: React.ElementType };
   const navItems: NavItem[] = [
     { id: "sobre", label: "Sobre", icon: Info, show: !!tour.about },
     { id: "roteiro", label: "Roteiro", icon: MapIcon, show: !!tour.itinerary },
