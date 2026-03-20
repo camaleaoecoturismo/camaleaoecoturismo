@@ -51,8 +51,8 @@ const MONTH_NAMES = [
 
 type NavItem = { id: string; label: string; icon: React.ElementType };
 
-const scrollTo = (id: string) => {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+const scrollTo = (id: string, block: ScrollLogicalPosition = "start") => {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block });
 };
 
 const Passeio = () => {
@@ -289,7 +289,7 @@ const Passeio = () => {
         <div className="flex flex-col gap-3 mb-8 mt-5">
           <Button
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-base font-semibold py-6"
-            onClick={isSoldOut && isFutureTour ? () => setWaitlistOpen(true) : !isSoldOut ? () => scrollTo("valores") : undefined}
+            onClick={isSoldOut && isFutureTour ? () => setWaitlistOpen(true) : !isSoldOut ? () => scrollTo("valores", "end") : undefined}
             disabled={isSoldOut && !isFutureTour}
           >
             <Ticket className="w-5 h-5 mr-2" />
@@ -674,7 +674,7 @@ const Passeio = () => {
           {/* Center elevated Reservar button */}
           <div className="flex-1 flex flex-col items-center -mt-5 pb-2">
             <button
-              onClick={isSoldOut && isFutureTour ? () => setWaitlistOpen(true) : !isSoldOut ? () => scrollTo("valores") : undefined}
+              onClick={isSoldOut && isFutureTour ? () => setWaitlistOpen(true) : !isSoldOut ? () => scrollTo("valores", "end") : undefined}
               disabled={isSoldOut && !isFutureTour}
               className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center border-4 border-white dark:border-card transition-colors ${
                 isSoldOut && isFutureTour ? "bg-orange-500 hover:bg-orange-600 text-white"
