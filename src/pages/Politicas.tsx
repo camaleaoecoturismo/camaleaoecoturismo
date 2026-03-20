@@ -40,7 +40,7 @@ export default function Politicas() {
           <p className="text-primary-foreground/70 text-sm font-semibold uppercase tracking-widest mb-3">
             Legal
           </p>
-          <h1 className="font-display text-4xl md:text-6xl leading-none">{title.toUpperCase()}</h1>
+          <h1 className="font-sans font-bold text-4xl md:text-6xl leading-none">{title.toUpperCase()}</h1>
         </div>
       </section>
 

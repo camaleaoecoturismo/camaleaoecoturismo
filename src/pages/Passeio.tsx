@@ -179,7 +179,7 @@ const Passeio = () => {
             <MapPin className="w-3.5 h-3.5" />
             {tour.city}, {tour.state}
           </p>
-          <h1 className="font-bebas text-3xl md:text-5xl text-foreground tracking-wide leading-tight">
+          <h1 className="font-sans font-bold text-3xl md:text-5xl text-foreground tracking-wide leading-tight">
             {tour.name}
           </h1>
           <div className="flex flex-wrap gap-3 mt-3 text-sm text-muted-foreground">
@@ -532,7 +532,7 @@ const Passeio = () => {
         {/* Bottom CTA */}
         {!isSoldOut && (
           <div className="mt-12 bg-primary rounded-2xl p-8 text-center text-primary-foreground">
-            <h2 className="font-bebas text-3xl md:text-4xl tracking-wide mb-2">
+            <h2 className="font-sans font-bold text-3xl md:text-4xl tracking-wide mb-2">
               Pronto para a aventura?
             </h2>
             <p className="text-primary-foreground/80 text-sm mb-6">

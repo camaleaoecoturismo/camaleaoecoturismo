@@ -34,7 +34,7 @@ export default function Sobre() {
           <p className="text-primary-foreground/70 text-sm font-semibold uppercase tracking-widest mb-3">
             Nossa História
           </p>
-          <h1 className="font-display text-5xl md:text-7xl mb-6 leading-none">
+          <h1 className="font-sans font-bold text-5xl md:text-7xl mb-6 leading-none">
             CAMALEÃO ECOTURISMO
           </h1>
           <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed">
@@ -77,7 +77,7 @@ export default function Sobre() {
       {/* About */}
       <section className="bg-muted/30 py-16 px-4">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-display text-4xl text-foreground mb-6">QUEM SOMOS</h2>
+          <h2 className="font-sans font-bold text-4xl text-foreground mb-6">QUEM SOMOS</h2>
           <div className="prose prose-gray dark:prose-invert max-w-none space-y-4 text-muted-foreground leading-relaxed">
             <p>
               A Camaleão Ecoturismo nasceu da paixão pela natureza e pela vontade de compartilhar a beleza dos destinos do Brasil com quem busca aventura de verdade. Fundada em Lençóis, coração da Chapada Diamantina, nossa agência conecta pessoas a experiências únicas que vão muito além do turismo convencional.
@@ -97,7 +97,7 @@ export default function Sobre() {
         <section className="py-16 px-4">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-10">
-              <h2 className="font-display text-4xl text-foreground">NOSSA EQUIPE</h2>
+              <h2 className="font-sans font-bold text-4xl text-foreground">NOSSA EQUIPE</h2>
               <p className="text-muted-foreground mt-2">As pessoas por trás das aventuras</p>
             </div>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -129,7 +129,7 @@ export default function Sobre() {
       {/* CTA */}
       <section className="bg-primary text-primary-foreground py-16 px-4">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="font-display text-4xl mb-4">PRONTO PARA AVENTURAR?</h2>
+          <h2 className="font-sans font-bold text-4xl mb-4">PRONTO PARA AVENTURAR?</h2>
           <p className="text-primary-foreground/80 mb-8">
             Veja nossa agenda de passeios e reserve a sua próxima expedição.
           </p>

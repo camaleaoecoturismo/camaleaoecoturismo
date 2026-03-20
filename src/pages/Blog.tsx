@@ -43,7 +43,7 @@ export default function Blog() {
           <p className="text-primary-foreground/70 text-sm font-semibold uppercase tracking-widest mb-3">
             Conteúdo
           </p>
-          <h1 className="font-display text-5xl md:text-7xl leading-none mb-4">BLOG</h1>
+          <h1 className="font-sans font-bold text-5xl md:text-7xl leading-none mb-4">BLOG</h1>
           <p className="text-primary-foreground/80 text-lg">
             Dicas, histórias e inspiração para suas próximas aventuras
           </p>
