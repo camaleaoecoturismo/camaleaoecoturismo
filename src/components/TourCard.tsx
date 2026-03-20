@@ -1,5 +1,4 @@
 import { memo, useState } from "react";
-import { setNavDirection } from "@/lib/navigationDirection";
 import { MapPin, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { Tour } from "@/hooks/useTours";
 import { WaitlistModal } from "@/components/WaitlistModal";
@@ -155,7 +154,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
     <>
       <div
         className="group relative bg-card rounded-xl overflow-hidden border border-border [box-shadow:0_0_12px_3px_rgba(0,0,0,0.10)] hover:[box-shadow:0_0_24px_6px_rgba(0,0,0,0.16)] transition-all duration-200 cursor-pointer"
-        onClick={() => { setNavDirection('forward'); navigate(`/passeio/${tour.slug || tour.id}`); }}
+        onClick={() => navigate(`/passeio/${tour.slug || tour.id}`)}
       >
         {/* Photo */}
         <div className="relative">

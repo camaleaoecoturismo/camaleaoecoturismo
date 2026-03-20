@@ -1,13 +1,11 @@
 // App entry point
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
-import { setNavDirection } from "@/lib/navigationDirection";
 import Index from "./pages/Index";
 
 // Lazy load all non-critical routes
@@ -45,55 +43,6 @@ const PageLoader = () => (
   </div>
 );
 
-function AppRoutes() {
-  const location = useLocation();
-
-  // Detect browser back/forward button and set direction accordingly
-  useEffect(() => {
-    const handlePopState = () => setNavDirection('back');
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  return (
-    <div>
-      <AnimatePresence initial={false} mode="wait">
-        <Suspense key={location.pathname} fallback={<PageLoader />}>
-          <Routes location={location}>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/checkin" element={<Checkin />} />
-            <Route path="/reserva/:tourId" element={<Reserva />} />
-            <Route path="/reserva/sucesso" element={<ReservaSuccess />} />
-            <Route path="/reserva/falha" element={<ReservaFailed />} />
-            <Route path="/reserva/pendente" element={<ReservaPending />} />
-            <Route path="/pagamento/sucesso" element={<PagamentoSucesso />} />
-            <Route path="/pagamento/sucesso/*" element={<PagamentoSucesso />} />
-            <Route path="/cliente" element={<ClientAuth />} />
-            <Route path="/minha-conta" element={<ClientPortal />} />
-            <Route path="/ticket/:qrToken" element={<TicketView />} />
-            <Route path="/checkin/:qrToken" element={<CheckinValidation />} />
-            <Route path="/checkin-scanner" element={<CheckinScanner />} />
-            <Route path="/embarques" element={<Embarques />} />
-            <Route path="/chapada-diamantina" element={<ChapadaDiamantina />} />
-            <Route path="/export-tours" element={<ExportTours />} />
-            <Route path="/passeio/:tourId" element={<Passeio />} />
-            <Route path="/guia" element={<Guia />} />
-            <Route path="/sobre" element={<Sobre />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:slug" element={<BlogPost />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/politicas" element={<Politicas />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </AnimatePresence>
-    </div>
-  );
-}
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -101,7 +50,37 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AnalyticsProvider>
-          <AppRoutes />
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/checkin" element={<Checkin />} />
+              <Route path="/reserva/:tourId" element={<Reserva />} />
+              <Route path="/reserva/sucesso" element={<ReservaSuccess />} />
+              <Route path="/reserva/falha" element={<ReservaFailed />} />
+              <Route path="/reserva/pendente" element={<ReservaPending />} />
+              <Route path="/pagamento/sucesso" element={<PagamentoSucesso />} />
+              <Route path="/pagamento/sucesso/*" element={<PagamentoSucesso />} />
+              <Route path="/cliente" element={<ClientAuth />} />
+              <Route path="/minha-conta" element={<ClientPortal />} />
+              <Route path="/ticket/:qrToken" element={<TicketView />} />
+              <Route path="/checkin/:qrToken" element={<CheckinValidation />} />
+              <Route path="/checkin-scanner" element={<CheckinScanner />} />
+              <Route path="/embarques" element={<Embarques />} />
+              <Route path="/chapada-diamantina" element={<ChapadaDiamantina />} />
+              <Route path="/export-tours" element={<ExportTours />} />
+              <Route path="/passeio/:tourId" element={<Passeio />} />
+              <Route path="/guia" element={<Guia />} />
+              <Route path="/sobre" element={<Sobre />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/politicas" element={<Politicas />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </AnalyticsProvider>
       </BrowserRouter>
     </TooltipProvider>
