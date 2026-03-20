@@ -81,6 +81,23 @@ export function RoteiroAccessModal({
     return true;
   };
   const pdfRawUrl = `https://guwplwuwriixgvkjlutg.supabase.co/storage/v1/object/public/tour-pdfs/${pdfFilePath}`;
+
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(pdfRawUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${tourName.replace(/\s+/g, '-')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open(pdfRawUrl, '_blank');
+    }
+  };
   const pdfViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(pdfRawUrl)}&embedded=true`;
 
   const saveLead = (fullWhatsapp: string) => {
@@ -137,14 +154,14 @@ export function RoteiroAccessModal({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <a
-                href={pdfRawUrl}
-                download
+              <button
+                type="button"
+                onClick={handleDownload}
                 className="flex items-center gap-1.5 text-xs font-medium text-primary-foreground/80 hover:text-primary-foreground transition-colors px-2 py-1.5 rounded hover:bg-white/10"
               >
                 <Download className="w-4 h-4" />
                 Baixar PDF
-              </a>
+              </button>
               <button
                 onClick={() => onOpenChange(false)}
                 className="text-primary-foreground/70 hover:text-primary-foreground transition-colors p-1.5 rounded hover:bg-white/10"

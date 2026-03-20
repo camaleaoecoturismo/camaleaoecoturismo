@@ -22,7 +22,7 @@ import { TourPaymentConfig } from '@/components/TourPaymentConfig';
 import { TourTransportConfig } from '@/components/transport/TourTransportConfig';
 import { TourGalleryManager } from '@/components/TourGalleryManager';
 
-const MONTHS_PT = ['janeiro','fevereiro','marco','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const MONTHS_PT = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
 
 function generateSlug(name: string, startDate: string): string {
   const date = new Date(startDate + "T12:00:00");

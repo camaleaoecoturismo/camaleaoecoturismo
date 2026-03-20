@@ -153,7 +153,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
   return (
     <>
       <div
-        className="group relative bg-card rounded-xl overflow-hidden border border-border shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer"
+        className="group relative bg-card rounded-xl overflow-hidden border border-border [box-shadow:0_0_12px_3px_rgba(0,0,0,0.10)] hover:[box-shadow:0_0_24px_6px_rgba(0,0,0,0.16)] transition-all duration-200 cursor-pointer"
         onClick={() => navigate(`/passeio/${tour.slug || tour.id}`)}
       >
         {/* Photo */}

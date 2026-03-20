@@ -74,16 +74,16 @@ export function TourBoardingPointsDisplay({
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-medium text-foreground">{point.nome}</span>
+                  <span className="text-sm font-medium text-gray-700">{point.nome}</span>
                   {point.horario && (
-                    <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
-                      <Clock className="w-3 h-3" />
+                    <span className="inline-flex items-center gap-0.5 text-sm text-gray-500">
+                      <Clock className="w-3.5 h-3.5" />
                       {point.horario}
                     </span>
                   )}
                 </div>
                 {point.endereco && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{point.endereco}</p>
+                  <p className="text-sm text-gray-500 mt-0.5">{point.endereco}</p>
                 )}
               </div>
             </div>
@@ -93,17 +93,17 @@ export function TourBoardingPointsDisplay({
 
       {departures && (
         <div className="mt-3 pt-3 border-t border-border/50">
-          <p className="text-xs font-semibold text-muted-foreground mb-1 flex items-center gap-1">
-            <MapPin className="w-3 h-3" />
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+            <MapPin className="w-3.5 h-3.5" />
             Informações adicionais
           </p>
-          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">{departures}</p>
+          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{departures}</p>
         </div>
       )}
 
       {boardingPoints.length === 0 && !departures && (
-        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-          <MapPin className="w-3.5 h-3.5 opacity-50" />
+        <p className="text-sm text-gray-500 flex items-center gap-1.5">
+          <MapPin className="w-4 h-4 opacity-50" />
           Nenhuma informação de embarque disponível.
         </p>
       )}

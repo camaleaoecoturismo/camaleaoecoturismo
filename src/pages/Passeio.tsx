@@ -434,18 +434,25 @@ const Passeio = () => {
                       {showInstallments ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     </button>
                     {showInstallments && (
-                      <div className="space-y-1.5 text-xs border border-border rounded-xl p-3">
-                        {[1,2,3,4,6,9,12].map(n => {
-                          const monthly = installmentBase * (1 + INSTALLMENT_FEES[n] / 100) / n;
+                      <div className="border border-border rounded-xl overflow-hidden text-xs">
+                        <div className="grid grid-cols-3 bg-muted/60 px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                          <span>Parcelas</span>
+                          <span className="text-center">Valor/mês</span>
+                          <span className="text-right">Total</span>
+                        </div>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
+                          const total = installmentBase * (1 + INSTALLMENT_FEES[n] / 100);
+                          const monthly = total / n;
                           return (
-                            <div key={n} className="flex justify-between">
-                              <span className="text-muted-foreground">{n === 1 ? "Crédito à vista" : `${n}x`}</span>
-                              <span className="font-medium">{formatCurrency(monthly)}{n > 1 ? "/mês" : ""}</span>
+                            <div key={n} className="grid grid-cols-3 px-3 py-2 border-t border-border/40 items-center">
+                              <span className="font-medium text-foreground">{n === 1 ? "À vista" : `${n}x`}</span>
+                              <span className="text-center font-semibold text-primary">{formatCurrency(monthly)}</span>
+                              <span className="text-right text-muted-foreground">{formatCurrency(total)}</span>
                             </div>
                           );
                         })}
-                        <p className="text-muted-foreground text-[10px] pt-1 border-t border-border/50 mt-1">
-                          {installmentBase > minPrice ? "*Calculado sobre o total selecionado." : "*Calculado sobre o menor pacote."} Juros InfinitePay.
+                        <p className="text-muted-foreground text-[10px] px-3 py-2 border-t border-border/50 bg-muted/30">
+                          {installmentBase > minPrice ? "*Total selecionado." : "*Menor pacote."} Juros InfinitePay.
                         </p>
                       </div>
                     )}
@@ -475,18 +482,24 @@ const Passeio = () => {
                       Ver parcelamento no cartão
                     </button>
                     {showInstallments && (
-                      <div className="space-y-1.5 text-xs border border-border rounded-xl p-3">
-                        {[1,2,3,4,6,9,12].map(n => {
+                      <div className="border border-border rounded-xl overflow-hidden text-xs">
+                        <div className="grid grid-cols-3 bg-muted/60 px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                          <span>Parcelas</span>
+                          <span className="text-center">Valor/mês</span>
+                          <span className="text-right">Total</span>
+                        </div>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
                           const total = minPrice * (1 + INSTALLMENT_FEES[n] / 100);
                           const monthly = total / n;
                           return (
-                            <div key={n} className="flex justify-between">
-                              <span className="text-muted-foreground">{n === 1 ? "Crédito à vista" : `${n}x`}</span>
-                              <span className="font-medium">{formatCurrency(monthly)}{n > 1 ? "/mês" : ""}</span>
+                            <div key={n} className="grid grid-cols-3 px-3 py-2 border-t border-border/40 items-center">
+                              <span className="font-medium text-foreground">{n === 1 ? "À vista" : `${n}x`}</span>
+                              <span className="text-center font-semibold text-primary">{formatCurrency(monthly)}</span>
+                              <span className="text-right text-muted-foreground">{formatCurrency(total)}</span>
                             </div>
                           );
                         })}
-                        <p className="text-muted-foreground text-[10px] pt-1 border-t border-border/50 mt-1">*Juros InfinitePay.</p>
+                        <p className="text-muted-foreground text-[10px] px-3 py-2 border-t border-border/50 bg-muted/30">*Juros InfinitePay.</p>
                       </div>
                     )}
                   </>
