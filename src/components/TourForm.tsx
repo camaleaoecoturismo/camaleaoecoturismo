@@ -26,8 +26,9 @@ const MONTHS_PT = ['janeiro','fevereiro','marco','abril','maio','junho','julho',
 
 function generateSlug(name: string, startDate: string): string {
   const date = new Date(startDate + "T12:00:00");
-  const month = MONTHS_PT[date.getMonth()];
-  const year = date.getFullYear();
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const aaaa = date.getFullYear();
   const base = name
     .toLowerCase()
     .normalize("NFD")
@@ -35,7 +36,7 @@ function generateSlug(name: string, startDate: string): string {
     .replace(/[^a-z0-9\s]/g, "")
     .trim()
     .replace(/\s+/g, "-");
-  return `${base}-${month}-${year}`;
+  return `${base}-${dd}-${mm}-${aaaa}`;
 }
 
 // Taxas de parcelamento InfinitePay

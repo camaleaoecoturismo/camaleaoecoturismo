@@ -141,24 +141,24 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
                 )}
               </div>
             )}
-          </div>
 
-          {/* Date block — half in photo, half in body */}
-          <div className="absolute bottom-0 right-3 translate-y-1/2 z-10 bg-primary text-primary-foreground rounded-xl px-3 py-2 text-center shadow-lg min-w-[68px]">
-            <p className="text-[10px] font-bold uppercase tracking-widest opacity-80 leading-none mb-1">
-              {monthAbbr}
-            </p>
-            <p className="text-base font-black leading-tight whitespace-nowrap">
-              {dayRange}
-            </p>
-            <p className="text-[10px] font-medium opacity-80 leading-none mt-0.5 whitespace-nowrap">
-              {weekdayRange}
-            </p>
+            {/* Date block — inside photo, bottom right */}
+            <div className="absolute bottom-3 right-3 z-[2] bg-primary/90 backdrop-blur-sm text-primary-foreground rounded-xl px-3 py-2 text-center shadow-lg min-w-[64px]">
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-80 leading-none mb-1">
+                {monthAbbr}
+              </p>
+              <p className="text-base font-black leading-tight whitespace-nowrap">
+                {dayRange}
+              </p>
+              <p className="text-[10px] font-medium opacity-80 leading-none mt-0.5 whitespace-nowrap">
+                {weekdayRange}
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Card Body */}
-        <div className="px-3 pt-6 pb-3 space-y-1.5">
+        <div className="px-3 pt-3 pb-3 space-y-1.5">
           {tour.description && (
             <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
               {tour.description}
