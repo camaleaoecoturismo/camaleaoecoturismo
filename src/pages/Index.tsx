@@ -105,7 +105,7 @@ const Index = () => {
   const [activeFilterTab, setActiveFilterTab] = useState<FilterTab>("data");
   const [selectedDestino, setSelectedDestino] = useState<string>("");
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
-  const [filterOpen, setFilterOpen] = useState(true);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [destinoSearch, setDestinoSearch] = useState("");
 
   useEffect(() => {
@@ -258,9 +258,9 @@ const Index = () => {
           {/* Filter Tabs */}
           <div className="flex gap-1 bg-muted rounded-xl p-1 mb-2">
             <button
-              onClick={() => { setActiveFilterTab("data"); setFilterOpen(true); }}
+              onClick={() => activeFilterTab === "data" ? setFilterOpen(o => !o) : (setActiveFilterTab("data"), setFilterOpen(true))}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                activeFilterTab === "data"
+                activeFilterTab === "data" && filterOpen
                   ? "bg-background shadow-sm text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }`}
@@ -269,9 +269,9 @@ const Index = () => {
               Data
             </button>
             <button
-              onClick={() => { setActiveFilterTab("destino"); setFilterOpen(true); }}
+              onClick={() => activeFilterTab === "destino" ? setFilterOpen(o => !o) : (setActiveFilterTab("destino"), setFilterOpen(true))}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                activeFilterTab === "destino"
+                activeFilterTab === "destino" && filterOpen
                   ? "bg-background shadow-sm text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }`}
@@ -280,9 +280,9 @@ const Index = () => {
               {selectedDestino || "Destino"}
             </button>
             <button
-              onClick={() => { setActiveFilterTab("preferencia"); setFilterOpen(true); }}
+              onClick={() => activeFilterTab === "preferencia" ? setFilterOpen(o => !o) : (setActiveFilterTab("preferencia"), setFilterOpen(true))}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                activeFilterTab === "preferencia"
+                activeFilterTab === "preferencia" && filterOpen
                   ? "bg-background shadow-sm text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }`}
