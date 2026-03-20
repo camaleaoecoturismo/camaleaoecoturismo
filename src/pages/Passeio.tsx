@@ -201,7 +201,7 @@ const Passeio = () => {
   // Section nav items — only show sections that have content
   const navItems: NavItem[] = [
     { id: "sobre", label: "Sobre", icon: Info, show: !!tour.about },
-    { id: "roteiro", label: "Roteiro", icon: MapIcon, show: !!tour.itinerary },
+    { id: "roteiro", label: "Portfólio", icon: MapIcon, show: !!tour.itinerary },
     { id: "incluso", label: "Incluso", icon: CheckSquare, show: !!(tour.includes || tour.not_includes) },
     { id: "embarques", label: "Embarques", icon: MapPin, show: true },
   ].filter((item): item is NavItem & { show: boolean } => item.show).map(({ id, label, icon }) => ({ id, label, icon }));
@@ -306,7 +306,7 @@ const Passeio = () => {
                 onClick={() => setRoteiroOpen(true)}
               >
                 <FileText className="w-4 h-4 mr-2" />
-                Ver roteiro
+                Ver portfólio
               </Button>
             )}
             <Button
@@ -329,10 +329,10 @@ const Passeio = () => {
           </section>
         )}
 
-        {/* Roteiro */}
+        {/* Portfólio */}
         {tour.itinerary && (
           <section id="roteiro" className="mb-8 scroll-mt-4">
-            <h2 className="font-semibold text-lg text-primary mb-3">Roteiro</h2>
+            <h2 className="font-semibold text-lg text-primary mb-3">Portfólio</h2>
             <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
               dangerouslySetInnerHTML={{ __html: sanitize(tour.itinerary) }} />
           </section>

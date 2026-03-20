@@ -148,7 +148,7 @@ export function RoteiroAccessModal({
               <img src={logoBranco} alt="Logo" className="h-7 w-auto object-contain" />
               <div>
                 <DialogTitle className="text-sm font-semibold text-primary-foreground leading-none">
-                  Roteiro completo
+                  Portfólio completo
                 </DialogTitle>
                 <p className="text-primary-foreground/70 text-xs mt-0.5 line-clamp-1">{tourName}</p>
               </div>
@@ -175,7 +175,7 @@ export function RoteiroAccessModal({
           <iframe
             src={pdfViewerUrl}
             className="flex-1 w-full border-0"
-            title={`Roteiro — ${tourName}`}
+            title={`Portfólio — ${tourName}`}
             allow="autoplay"
           />
         </DialogContent>
@@ -192,7 +192,7 @@ export function RoteiroAccessModal({
             <img src={logoBranco} alt="Logo" className="w-12 h-12 object-contain flex-shrink-0" />
             <div>
               <DialogTitle className="text-xl font-bold text-primary-foreground leading-tight">
-                Roteiro completo
+                Portfólio completo
               </DialogTitle>
               <p className="text-primary-foreground/80 text-sm mt-1 line-clamp-2">{tourName}</p>
             </div>
@@ -204,7 +204,7 @@ export function RoteiroAccessModal({
             <div className="space-y-4">
               <div className="bg-white/10 rounded-lg p-3 border border-white/20">
                 <p className="text-primary-foreground text-sm">
-                  Olá, <strong>{nome}</strong>! Clique abaixo para acessar o roteiro.
+                  Olá, <strong>{nome}</strong>! Clique abaixo para acessar o portfólio.
                 </p>
                 <button type="button" onClick={() => setHasSavedData(false)} className="text-primary-foreground/70 text-xs underline mt-1 hover:text-primary-foreground">
                   Não é você? Alterar dados
@@ -212,7 +212,7 @@ export function RoteiroAccessModal({
               </div>
               <div className="flex justify-center">
                 <Button type="button" onClick={handleQuickAccess} className="h-12 px-8 bg-white text-primary hover:bg-white/90 font-semibold text-base shadow-lg">
-                  Acessar roteiro
+                  Acessar portfólio
                 </Button>
               </div>
               <p className="text-center text-primary-foreground/70 text-xs">Seus dados estão protegidos conosco.</p>
@@ -235,14 +235,14 @@ export function RoteiroAccessModal({
                 <Checkbox id="consentimento" checked={consentimento} onCheckedChange={checked => setConsentimento(checked === true)} disabled={loading} className="mt-1 border-white/60 data-[state=checked]:bg-white data-[state=checked]:text-primary" />
                 <div className="flex-1">
                   <Label htmlFor="consentimento" className="text-primary-foreground font-medium text-sm leading-snug cursor-pointer">
-                    Quero receber novidades e próximos roteiros da Camaleão Ecoturismo
+                    Quero receber novidades e próximos portfólios da Camaleão Ecoturismo
                   </Label>
                 </div>
               </div>
 
               <div className="flex justify-center mt-6">
                 <Button type="submit" className="h-12 px-8 bg-white text-primary hover:bg-white/90 font-semibold text-base shadow-lg" disabled={loading}>
-                  {loading ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" />Processando...</> : "Acessar roteiro"}
+                  {loading ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" />Processando...</> : "Acessar portfólio"}
                 </Button>
               </div>
             </>
