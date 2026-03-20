@@ -95,6 +95,14 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
 
           {/* Name + state + tags — BOTTOM LEFT */}
           <div className="absolute bottom-0 left-0 right-0 p-3 space-y-1.5">
+            <p className="text-white font-black text-xl md:text-2xl leading-tight tracking-tight drop-shadow-sm">
+              {destName}
+              {stateAbbr && (
+                <span className="text-white/75 font-semibold text-sm ml-1.5 align-middle">
+                  {stateAbbr}
+                </span>
+              )}
+            </p>
             {(showEtiqueta || tour.is_featured) && (
               <div className="flex flex-wrap gap-1.5">
                 {tour.is_featured && (
@@ -109,14 +117,6 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
                 )}
               </div>
             )}
-            <p className="text-white font-black text-xl md:text-2xl leading-tight tracking-tight drop-shadow-sm">
-              {destName}
-              {stateAbbr && (
-                <span className="text-white/75 font-semibold text-sm ml-1.5 align-middle">
-                  {stateAbbr}
-                </span>
-              )}
-            </p>
           </div>
         </div>
 
