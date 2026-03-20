@@ -10,6 +10,7 @@ import { TourBoardingPointsDisplay } from "@/components/TourBoardingPointsDispla
 import { Button } from "@/components/ui/button";
 import { useTourAvailability } from "@/hooks/useTourAvailability";
 import { Tour } from "@/hooks/useTours";
+import { PixIcon } from "@/components/icons/PixIcon";
 import DOMPurify from "dompurify";
 import {
   ChevronLeft,
@@ -19,7 +20,6 @@ import {
   Bell,
   ChevronDown,
   ChevronUp,
-  Package,
   Loader2,
   Star,
   FileText,
@@ -27,9 +27,15 @@ import {
   Info,
   Map,
   CheckSquare,
-  Navigation,
   CreditCard,
+  Plus,
+  Minus,
 } from "lucide-react";
+
+const INSTALLMENT_FEES: Record<number, number> = {
+  1: 0, 2: 6.5, 3: 7.5, 4: 8.6, 5: 9.6, 6: 10.7,
+  7: 14.4, 8: 15.5, 9: 16.6, 10: 17.7, 11: 18.9, 12: 20.0,
+};
 
 // WhatsApp SVG icon
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -55,13 +61,14 @@ const Passeio = () => {
   const [reservaOpen, setReservaOpen] = useState(false);
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const [roteiroOpen, setRoteiroOpen] = useState(false);
-  const [policyOpen, setPolicyOpen] = useState(false);
   const [inclusoTab, setInclusoTab] = useState<"incluso" | "nao_incluso">("incluso");
   const [relatedTours, setRelatedTours] = useState<Tour[]>([]);
   const [depoimentos, setDepoimentos] = useState<
     Array<{ id: string; nome: string; foto_url: string | null; texto: string; nota: number }>
   >([]);
   const [showFloating, setShowFloating] = useState(true);
+  const [packageQuantities, setPackageQuantities] = useState<Record<string, number>>({});
+  const [showInstallments, setShowInstallments] = useState(false);
 
   const reservaRef = useRef<HTMLDivElement>(null);
   const { availability } = useTourAvailability(tourId || "");
@@ -182,10 +189,10 @@ const Passeio = () => {
 
   // Section nav items — only show sections that have content
   const navItems = [
-    { id: "sobre", label: "Passeio", icon: Info, show: !!tour.about },
+    { id: "sobre", label: "Sobre", icon: Info, show: !!tour.about },
     { id: "roteiro", label: "Roteiro", icon: Map, show: !!tour.itinerary },
     { id: "incluso", label: "Incluso", icon: CheckSquare, show: !!(tour.includes || tour.not_includes) },
-    { id: "embarques", label: "Embarques", icon: Navigation, show: true },
+    { id: "embarques", label: "Embarques", icon: MapPin, show: true },
     { id: "valores", label: "Valores", icon: CreditCard, show: true },
   ].filter(item => item.show);
 
@@ -346,53 +353,145 @@ const Passeio = () => {
           <TourBoardingPointsDisplay tourId={tour.id} departures={tour.departures} />
         </section>
 
-        {/* Política */}
-        {tour.policy && (
-          <section className="mb-8">
-            <button
-              onClick={() => setPolicyOpen(!policyOpen)}
-              className="w-full flex items-center justify-between py-3 border-b border-border text-left"
-            >
-              <span className="font-semibold text-foreground">Política de cancelamento</span>
-              {policyOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
-            </button>
-            {policyOpen && (
-              <div className="pt-4 prose prose-sm max-w-none text-muted-foreground leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: sanitize(tour.policy) }} />
-            )}
-          </section>
-        )}
-
-        {/* Reservar */}
+        {/* Reservar / Valores */}
         <section id="valores" ref={reservaRef} className="mb-8 scroll-mt-4">
-          <div className="border border-border rounded-2xl p-6 bg-card shadow-sm space-y-4">
-            {minPrice > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground">A partir de</p>
-                <p className="text-3xl font-bold text-primary">{formatCurrency(minPrice)}</p>
-                <p className="text-xs text-muted-foreground">no PIX / à vista</p>
-              </div>
-            )}
-            {tour.pricing_options && tour.pricing_options.length > 1 && (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Pacotes disponíveis</p>
-                {tour.pricing_options.map((opt) => (
-                  <div key={opt.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                    <div className="flex items-center gap-2">
-                      <Package className="w-4 h-4 text-primary/60 shrink-0" />
-                      <span className="text-sm font-medium text-foreground">{opt.option_name}</span>
+          <div className="border border-border rounded-2xl p-5 bg-card shadow-sm space-y-4">
+
+            {tour.pricing_options && tour.pricing_options.length > 0 ? (
+              <>
+                {/* Package selectors */}
+                <p className="text-sm font-semibold text-foreground">Selecione os pacotes</p>
+                <div className="space-y-2">
+                  {tour.pricing_options.map((opt) => {
+                    const qty = packageQuantities[opt.id] || 0;
+                    return (
+                      <div key={opt.id} className="flex items-center justify-between p-3 rounded-xl border border-border">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{opt.option_name}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <PixIcon size={13} />
+                            <span className="text-sm font-bold text-primary">{formatCurrency(opt.pix_price)}</span>
+                            <span className="text-xs text-muted-foreground">/ pessoa</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setPackageQuantities(prev => ({ ...prev, [opt.id]: Math.max(0, (prev[opt.id] || 0) - 1) }))}
+                            disabled={qty === 0}
+                            className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-muted-foreground disabled:opacity-30 hover:border-primary hover:text-primary transition-colors"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="w-6 text-center font-bold text-sm">{qty}</span>
+                          <button
+                            onClick={() => setPackageQuantities(prev => ({ ...prev, [opt.id]: Math.min(10, (prev[opt.id] || 0) + 1) }))}
+                            className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Running total */}
+                {Object.values(packageQuantities).some(q => q > 0) && (
+                  <div className="bg-muted/50 rounded-xl p-3 space-y-1">
+                    {tour.pricing_options.filter(opt => (packageQuantities[opt.id] || 0) > 0).map(opt => (
+                      <div key={opt.id} className="flex justify-between text-xs text-muted-foreground">
+                        <span>{packageQuantities[opt.id]}x {opt.option_name}</span>
+                        <span>{formatCurrency(opt.pix_price * (packageQuantities[opt.id] || 0))}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between text-sm font-bold border-t border-border/50 pt-1 mt-1">
+                      <span>Total no PIX</span>
+                      <span className="text-primary">{formatCurrency(
+                        tour.pricing_options.reduce((sum, opt) => sum + (opt.pix_price * (packageQuantities[opt.id] || 0)), 0)
+                      )}</span>
                     </div>
-                    <span className="text-sm font-bold text-primary">{formatCurrency(opt.pix_price)}</span>
                   </div>
-                ))}
-              </div>
+                )}
+
+                {/* Installment toggle */}
+                {minPrice > 0 && (
+                  <>
+                    <button
+                      onClick={() => setShowInstallments(!showInstallments)}
+                      className="w-full flex items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <span>Ver parcelamento no cartão</span>
+                      {showInstallments ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+                    {showInstallments && (
+                      <div className="space-y-1.5 text-xs border border-border rounded-xl p-3">
+                        {[1,2,3,4,6,9,12].map(n => {
+                          const total = minPrice * (1 + INSTALLMENT_FEES[n] / 100);
+                          const monthly = total / n;
+                          return (
+                            <div key={n} className="flex justify-between">
+                              <span className="text-muted-foreground">{n}x{n === 1 ? " (sem juros)" : ""}</span>
+                              <span className="font-medium">{formatCurrency(monthly)}{n > 1 ? "/mês" : ""}</span>
+                            </div>
+                          );
+                        })}
+                        <p className="text-muted-foreground text-[10px] pt-1 border-t border-border/50 mt-1">*Calculado sobre o menor pacote. Juros InfinitePay.</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            ) : (
+              /* No pricing options — simple price display */
+              <>
+                {minPrice > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">A partir de</p>
+                    <div className="flex items-center gap-2">
+                      <PixIcon size={20} />
+                      <p className="text-3xl font-bold text-primary">{formatCurrency(minPrice)}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">no PIX / à vista</p>
+                  </div>
+                )}
+                {minPrice > 0 && (
+                  <>
+                    <button
+                      onClick={() => setShowInstallments(!showInstallments)}
+                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showInstallments ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      Ver parcelamento no cartão
+                    </button>
+                    {showInstallments && (
+                      <div className="space-y-1.5 text-xs border border-border rounded-xl p-3">
+                        {[1,2,3,4,6,9,12].map(n => {
+                          const total = minPrice * (1 + INSTALLMENT_FEES[n] / 100);
+                          const monthly = total / n;
+                          return (
+                            <div key={n} className="flex justify-between">
+                              <span className="text-muted-foreground">{n}x{n === 1 ? " (sem juros)" : ""}</span>
+                              <span className="font-medium">{formatCurrency(monthly)}{n > 1 ? "/mês" : ""}</span>
+                            </div>
+                          );
+                        })}
+                        <p className="text-muted-foreground text-[10px] pt-1 border-t border-border/50 mt-1">*Juros InfinitePay.</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
             )}
+
+            {/* Availability */}
             {!isSoldOut && availability && (
               <div className="flex items-center gap-2 text-sm text-green-600">
                 <Users className="w-4 h-4" />
                 <span>{availability.availableSpots} vagas disponíveis</span>
               </div>
             )}
+
+            {/* CTA */}
             {isSoldOut ? (
               <div className="space-y-2">
                 <div className="w-full bg-muted text-muted-foreground text-center py-3 rounded-lg text-sm font-medium">Vagas Esgotadas</div>
@@ -403,15 +502,25 @@ const Passeio = () => {
                   </Button>
                 )}
               </div>
+            ) : tour.pricing_options && tour.pricing_options.length > 0 ? (
+              <Button
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 text-base font-semibold"
+                onClick={() => setReservaOpen(true)}
+                disabled={!Object.values(packageQuantities).some(q => q > 0)}
+              >
+                {Object.values(packageQuantities).some(q => q > 0) ? "Continuar →" : "Selecione um pacote"}
+              </Button>
             ) : (
               <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 text-base font-semibold" onClick={() => setReservaOpen(true)}>
                 Reservar agora
               </Button>
             )}
+
             <button onClick={handleWhatsApp} className="w-full flex items-center justify-center gap-2 text-sm text-green-600 hover:text-green-700 transition-colors py-1">
               <WhatsAppIcon className="w-4 h-4" />
               Falar com atendente
             </button>
+
             <div className="pt-2 border-t border-border text-sm text-muted-foreground space-y-1">
               <div className="flex justify-between">
                 <span>Data</span>
@@ -537,7 +646,12 @@ const Passeio = () => {
       </div>
 
       {/* Modals */}
-      <ReservaModal isOpen={reservaOpen} onClose={() => setReservaOpen(false)} tour={tour} />
+      <ReservaModal
+        isOpen={reservaOpen}
+        onClose={() => setReservaOpen(false)}
+        tour={tour}
+        preSelectedQuantities={tour.pricing_options?.length > 0 ? packageQuantities : undefined}
+      />
       <WaitlistModal open={waitlistOpen} onOpenChange={setWaitlistOpen} tourId={tour.id} tourName={tour.name} />
       {tour.pdf_file_path && (
         <RoteiroAccessModal

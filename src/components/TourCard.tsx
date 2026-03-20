@@ -187,7 +187,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
         {/* Card Body */}
         <div className="px-3 pt-3 pb-3 space-y-1.5">
           {tour.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               {tour.description}
             </p>
           )}

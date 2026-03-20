@@ -80,6 +80,7 @@ interface ReservaModalProps {
   isOpen: boolean;
   onClose: () => void;
   tour: Tour | null;
+  preSelectedQuantities?: Record<string, number>;
 }
 
 interface OptionItem {
@@ -185,7 +186,7 @@ interface FullParticipantData {
   pricingOptionPrice: number;
   selectedOptionals: Array<{ id: string; name: string; price: number; quantity: number }>;
 }
-export function ReservaModal({ isOpen, onClose, tour }: ReservaModalProps) {
+export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: ReservaModalProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
@@ -357,11 +358,36 @@ export function ReservaModal({ isOpen, onClose, tour }: ReservaModalProps) {
   // Start chat when modal opens - show package selection first (if tour has packages)
   useEffect(() => {
     if (isOpen && questions.length > 0 && chatMessages.length === 0 && tour) {
-      // If tour has pricing options, show package selection immediately
-      if (tour.pricing_options && tour.pricing_options.length > 0) {
+      const hasPreSelection = preSelectedQuantities && Object.values(preSelectedQuantities).some(q => q > 0);
+
+      if (hasPreSelection && tour.pricing_options && tour.pricing_options.length > 0) {
+        // Packages already chosen on the page — skip selection, go straight to participants form
+        setTimeout(() => {
+          const quantities = preSelectedQuantities!;
+          setPackageQuantities(quantities);
+          const participants: FullParticipantData[] = [];
+          Object.entries(quantities).forEach(([optionId, qty]) => {
+            const option = tour.pricing_options?.find(o => o.id === optionId);
+            if (option && qty > 0) {
+              for (let i = 0; i < qty; i++) {
+                participants.push(createEmptyParticipantForm(optionId, option.option_name, option.pix_price));
+              }
+            }
+          });
+          setFullParticipantsData(participants);
+          setFormData(prev => ({ ...prev, numero_participantes: participants.length.toString() }));
+          setIsTyping(true);
+          setTimeout(() => {
+            setIsTyping(false);
+            setChatMessages([{ type: "question", text: "Preencha os dados de cada participante:" }]);
+            setShowParticipantsDataForm(true);
+          }, 800);
+          updateTrackingProgress('package_selection', 1);
+        }, 300);
+      } else if (tour.pricing_options && tour.pricing_options.length > 0) {
+        // No pre-selection: show package selection inside the modal
         setTimeout(() => {
           setShowPackageSelection(true);
-          // Track package selection step
           updateTrackingProgress('package_selection', 1);
         }, 500);
       } else {

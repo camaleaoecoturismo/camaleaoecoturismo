@@ -57,7 +57,6 @@ const formSchema = z.object({
   itinerary: z.string().optional(),
   includes: z.string().optional(),
   not_includes: z.string().optional(),
-  policy: z.string().optional(),
   departures: z.string().optional(),
   pdf_file_path: z.string().optional(),
   whatsapp_group_link: z.string().optional(),
@@ -115,7 +114,6 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
       itinerary: '',
       includes: '',
       not_includes: '',
-      policy: '',
       departures: '',
       pdf_file_path: '',
       whatsapp_group_link: '',
@@ -152,7 +150,6 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         itinerary: tour.itinerary || '',
         includes: tour.includes || '',
         not_includes: tour.not_includes || '',
-        policy: tour.policy || '',
         departures: tour.departures || '',
         pdf_file_path: tour.pdf_file_path || '',
         whatsapp_group_link: (tour as any).whatsapp_group_link || '',
@@ -230,7 +227,6 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         itinerary: values.itinerary || null,
         includes: values.includes || null,
         not_includes: values.not_includes || null,
-        policy: values.policy || null,
         departures: values.departures || null,
         whatsapp_group_link: values.whatsapp_group_link || null,
         etiqueta: values.etiqueta || null,
@@ -358,7 +354,6 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         itinerary: values.itinerary || null,
         includes: values.includes || null,
         not_includes: values.not_includes || null,
-        policy: values.policy || null,
         departures: values.departures || null,
         pdf_file_path: pdfPath || null,
         whatsapp_group_link: values.whatsapp_group_link || null,
@@ -875,27 +870,6 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                         )}
                       />
                     </div>
-
-                    <FormField
-                      control={form.control}
-                      name="policy"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-slate-600 text-sm">Política de Cancelamento</FormLabel>
-                          <FormControl>
-                            <ReactQuill
-                              theme="snow"
-                              value={field.value || ''}
-                              onChange={field.onChange}
-                              placeholder="Descreva as condições de cancelamento e reembolso"
-                              modules={{ toolbar: [['bold', 'italic'], [{ 'list': 'bullet' }]] }}
-                              style={{ minHeight: '80px' }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
 
                     <FormField
                       control={form.control}
