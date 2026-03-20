@@ -48,8 +48,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
 
   const imageUrl = preloadedCover?.imageUrl || tour.image_url;
 
-  // Destination name: use destination_name if set, otherwise fall back to name
-  const destName = (tour.destination_name || tour.name).toUpperCase();
+  const destName = tour.name.toUpperCase();
   const stateAbbr = tour.state?.toUpperCase() || "";
 
   // Etiqueta: show unless it's a control value
