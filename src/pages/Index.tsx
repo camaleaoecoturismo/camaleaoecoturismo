@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { PageTransition } from "@/components/PageTransition";
 import { Button } from "@/components/ui/button";
 import { TourCard } from "@/components/TourCard";
 import { FloatingContactButton } from "@/components/FloatingContactButton";
@@ -211,6 +212,7 @@ const Index = () => {
 
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       {/* Top Menu */}
       <TopMenu />
@@ -538,6 +540,7 @@ const Index = () => {
       {/* Floating Contact Button */}
       <FloatingContactButton />
     </div>
+    </PageTransition>
   );
 };
 

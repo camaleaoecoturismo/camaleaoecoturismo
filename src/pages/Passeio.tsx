@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { PageTransition } from "@/components/PageTransition";
+import { setNavDirection } from "@/lib/navigationDirection";
 import { supabase } from "@/integrations/supabase/client";
 import { TopMenu } from "@/components/TopMenu";
 import { ReservaModal } from "@/components/ReservaModal";
@@ -207,6 +209,7 @@ const Passeio = () => {
   const midIndex = Math.ceil(navItems.length / 2);
 
   return (
+    <PageTransition>
     <div className="min-h-screen bg-background">
       {/* ── HERO ── */}
       <div className="relative w-full h-[55vh] min-h-[340px] overflow-hidden">
@@ -231,7 +234,7 @@ const Passeio = () => {
 
         {/* Back button */}
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => { setNavDirection('back'); navigate(-1); }}
           className="absolute top-[68px] left-4 z-20 flex items-center gap-1 text-white/80 hover:text-white text-sm transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -716,6 +719,7 @@ const Passeio = () => {
         />
       )}
     </div>
+    </PageTransition>
   );
 };
 
