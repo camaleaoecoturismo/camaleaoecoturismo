@@ -22,6 +22,10 @@ export default {
     			xs: '475px'
     		},
     		fontFamily: {
+    			rubik: [
+    				'Rubik',
+    				'sans-serif'
+    			],
     			montserrat: [
     				'Montserrat',
     				'sans-serif'
