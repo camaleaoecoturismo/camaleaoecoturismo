@@ -106,15 +106,16 @@ const Index = () => {
     }
   }, [tours, months, selectedMonth]);
 
-  // All unique destination names (tour names)
+  // All unique destination names — deduplicated by normalized name
   const destinations = useMemo(() => {
-    const names = new Set(
-      tours
-        .filter((t) => t.is_active && !t.is_exclusive)
-        .map((t) => t.name)
-        .filter(Boolean)
-    );
-    return Array.from(names).sort();
+    const seen = new Map<string, string>(); // normalizedKey → original name
+    tours
+      .filter((t) => t.is_active && !t.is_exclusive && t.name)
+      .forEach((t) => {
+        const key = t.name.trim().toLowerCase();
+        if (!seen.has(key)) seen.set(key, t.name.trim());
+      });
+    return Array.from(seen.values()).sort();
   }, [tours]);
 
   // Tours filtered by month selector
@@ -133,12 +134,22 @@ const Index = () => {
   const searchFilteredTours = useMemo(() => {
     let result = tours.filter((t) => t.is_active && !t.is_exclusive);
     if (selectedDestino) {
-      result = result.filter(
-        (t) => t.name === selectedDestino
-      );
+      const key = selectedDestino.trim().toLowerCase();
+      result = result.filter((t) => t.name.trim().toLowerCase() === key);
+    }
+    if (selectedPreferences.length > 0) {
+      result = result.filter((t) => {
+        const haystack = [t.name, t.etiqueta, t.description, t.about]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return selectedPreferences.some((pref) =>
+          haystack.includes(pref.toLowerCase())
+        );
+      });
     }
     return result;
-  }, [tours, selectedDestino]);
+  }, [tours, selectedDestino, selectedPreferences]);
 
   const isSearching = !!selectedDestino || selectedPreferences.length > 0;
 
