@@ -59,8 +59,11 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
     });
 
   const imageUrl = preloadedCover?.imageUrl || tour.image_url;
-  const destName = tour.name.toUpperCase();
-  const cityStateLabel = [tour.city, tour.state?.toUpperCase()].filter(Boolean).join(" - ");
+  const nameWords = tour.name.toUpperCase().split(" ");
+  const namePrefix = nameWords.length > 1 ? nameWords.slice(0, -1).join(" ") : null;
+  const nameMain = nameWords[nameWords.length - 1];
+  const stateAbbr = tour.state?.toUpperCase() ?? null;
+  const cityLabel = tour.city || null;
 
   // Date block values
   const monthAbbr = tourStartDate
@@ -170,12 +173,20 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
 
             {/* Name + city — TOP LEFT */}
             <div className="absolute top-0 left-0 right-0 p-3 pr-20 z-[2]">
-              <p className="text-white font-montserrat text-xl md:text-2xl leading-snug line-clamp-2 drop-shadow-md tracking-wide">
-                {destName}
+              {namePrefix && (
+                <p className="text-white text-xs font-bold tracking-widest drop-shadow leading-none mb-0.5">
+                  {namePrefix}
+                </p>
+              )}
+              <p className="text-white font-montserrat text-xl md:text-2xl font-black leading-none drop-shadow-md tracking-wide">
+                {nameMain}
+                {stateAbbr && (
+                  <span className="text-sm font-bold ml-1.5 opacity-80">{stateAbbr}</span>
+                )}
               </p>
-              {cityStateLabel && (
-                <p className="text-white text-xs font-semibold mt-0.5 drop-shadow">
-                  {cityStateLabel}
+              {cityLabel && (
+                <p className="text-white/70 text-[11px] font-medium mt-1 drop-shadow">
+                  {cityLabel}
                 </p>
               )}
             </div>
@@ -234,7 +245,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             )}
 
             {isSoldOut && isFutureTour ? (
-              <div className="flex flex-col gap-1.5 shrink-0">
+              <div className="flex flex-row md:flex-col gap-1.5 shrink-0">
                 <button
                   className="text-xs font-semibold text-orange-600 border border-orange-400 rounded-lg px-2.5 py-1.5 hover:bg-orange-50 transition-colors"
                   onClick={(e) => {
