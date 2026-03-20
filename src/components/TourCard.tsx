@@ -112,10 +112,10 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             )}
 
             {/* Top gradient only */}
-            <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/70 to-transparent" />
+            <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/70 to-transparent z-[1]" />
 
             {/* Name + city/state — TOP LEFT */}
-            <div className="absolute top-0 left-0 right-0 p-3 pr-20">
+            <div className="absolute top-0 left-0 right-0 p-3 pr-20 z-[2]">
               <p className="text-white font-black text-lg md:text-xl leading-tight tracking-tight line-clamp-2 drop-shadow">
                 {destName}
               </p>
@@ -128,7 +128,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
 
             {/* Etiqueta tags — BOTTOM LEFT */}
             {(showEtiqueta || tour.is_featured) && (
-              <div className="absolute bottom-0 left-0 p-3 flex flex-wrap gap-1.5">
+              <div className="absolute bottom-0 left-0 p-3 flex flex-wrap gap-1.5 z-[2]">
                 {tour.is_featured && (
                   <span className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2.5 py-1 rounded-md leading-none">
                     ⭐ DESTAQUE

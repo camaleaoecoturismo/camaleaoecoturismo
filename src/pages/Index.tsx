@@ -222,9 +222,9 @@ const Index = () => {
 
       {/* Filter Bar — Vivalá style */}
       <div className="bg-background border-b border-border sticky top-0 z-20 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 py-3">
+        <div className="max-w-5xl mx-auto px-4 py-2">
           {/* Filter Tabs */}
-          <div className="flex gap-1 bg-muted rounded-xl p-1 mb-3">
+          <div className="flex gap-1 bg-muted rounded-xl p-1 mb-2">
             <button
               onClick={() => { setActiveFilterTab("data"); setFilterOpen(true); }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
@@ -264,7 +264,7 @@ const Index = () => {
 
           {/* Filter panel */}
           {filterOpen && (
-            <div className="pb-2">
+            <div className="pb-1">
               {activeFilterTab === "data" && (
                 <div className="relative flex items-center">
                   <button
@@ -298,7 +298,7 @@ const Index = () => {
                                 if (el) monthButtonsRef.current.set(month.id, el);
                               }}
                               onClick={() => handleMonthChange(month.id)}
-                              className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                              className={`px-4 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                                 selectedMonth === month.id && !isSearching
                                   ? "bg-primary text-primary-foreground shadow-sm"
                                   : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -382,7 +382,7 @@ const Index = () => {
       </div>
 
       {/* Tours Section */}
-      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 md:px-8 py-4">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <Loader2 className="w-10 h-10 animate-spin text-primary" />
