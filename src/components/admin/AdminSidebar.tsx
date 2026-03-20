@@ -363,9 +363,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     : null;
 
   const SidebarContent = ({ mobile = false }: { mobile?: boolean }) => (
-    <div className="flex flex-col h-full">
+    <div className="grid h-full" style={{ gridTemplateRows: '64px 1fr auto' }}>
       {/* Logo */}
-      <div className="h-16 flex items-center justify-center border-b border-border shrink-0">
+      <div className="flex items-center justify-center border-b border-border">
         <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
         <button
           onClick={() => logoInputRef.current?.click()}
@@ -389,7 +389,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 min-h-0 overflow-y-auto py-3 px-1.5" style={{ scrollbarWidth: 'none' }}>
+      <nav className="overflow-y-auto py-3 px-1.5" style={{ scrollbarWidth: 'none' }}>
         {navGroups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-1' : ''}>
             {group.label && (
@@ -443,7 +443,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       </nav>
 
       {/* Footer — sign out */}
-      <div className="shrink-0 border-t border-border p-2">
+      <div className="border-t border-border p-2">
         <button
           onClick={onSignOut}
           className="w-full flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"

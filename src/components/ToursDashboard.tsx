@@ -766,11 +766,11 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
       </div>
 
       {/* Novos Inscritos (Pagos) */}
-      <Card className="border-green-500/30 bg-green-50/30">
+      <Card>
         <CardHeader className="pb-[6px]">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <UserPlus className="h-5 w-5 text-green-600" />
+            <CardTitle className="text-base flex items-center gap-2">
+              <UserPlus className="h-4 w-4 text-muted-foreground" />
               Novos Inscritos (Pagos)
               {novosInscritos.length > 0 && <Badge className="bg-green-500 text-white">{novosInscritos.length}</Badge>}
             </CardTitle>
@@ -840,13 +840,13 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
       </Card>
 
       {/* Tentativas de Inscrição (Abandonos) */}
-      <Card className="border-orange-500/30 bg-orange-50/30">
+      <Card>
         <CardHeader className="pb-[6px]">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-orange-600" />
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-muted-foreground" />
               Tentativas de Inscrição
-              {tentativasInscricao.length > 0 && <Badge className="bg-orange-500 text-white">{tentativasInscricao.length}</Badge>}
+              {tentativasInscricao.length > 0 && <Badge variant="secondary" className="text-orange-600 bg-orange-50 border border-orange-200">{tentativasInscricao.length}</Badge>}
             </CardTitle>
           </div>
           <p className="text-xs text-muted-foreground">Pessoas que iniciaram mas não concluíram o formulário</p>
@@ -932,129 +932,131 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Box 1: Passeios */}
-          <Card className="border-0 shadow-sm">
+          <Card className="border shadow-none">
             <CardHeader className="pb-2 pt-4">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-secondary-foreground">
-                <MapPin className="h-4 w-4" />
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <MapPin className="h-3.5 w-3.5" />
                 Passeios
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 pt-0">
-              {alerts.poucasVagas.length > 0 ? <div className="p-3 bg-red-500 rounded-lg">
-                  <p className="font-medium text-white text-sm mb-1">🔴 Poucas vagas (≤5)</p>
-                  <div className="text-xs text-white/90 space-y-1">
-                    {alerts.poucasVagas.slice(0, 3).map(t => <p key={t.id}>{t.name} ({t.vagasRestantes} vagas)</p>)}
-                    {alerts.poucasVagas.length > 3 && <p className="text-white/70">+{alerts.poucasVagas.length - 3} mais</p>}
+            <CardContent className="space-y-2.5 pt-0">
+              {alerts.poucasVagas.length > 0 ? (
+                <div className="pl-3 border-l-2 border-red-400 space-y-1">
+                  <p className="text-xs font-semibold text-red-600">Poucas vagas (≤5)</p>
+                  <div className="text-xs text-muted-foreground space-y-0.5">
+                    {alerts.poucasVagas.slice(0, 3).map(t => <p key={t.id}>{t.name}</p>)}
+                    {alerts.poucasVagas.length > 3 && <p>+{alerts.poucasVagas.length - 3} mais</p>}
                   </div>
-                </div> : <div className="p-3 bg-emerald-500 rounded-lg">
-                  <p className="text-sm text-white">✓ Nenhum passeio com poucas vagas</p>
-                </div>}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">Nenhum passeio com poucas vagas</p>
+              )}
 
-              {alerts.proximosComVagas.length > 0 && <div className="p-3 bg-blue-500 rounded-lg">
-                  <p className="font-medium text-white text-sm mb-1">🔵 Próximos com vagas</p>
-                  <div className="text-xs text-white/90 space-y-1">
-                    {alerts.proximosComVagas.slice(0, 3).map(t => <p key={t.id}>{t.name} ({t.vagasRestantes} vagas, {t.diasRestantes}d)</p>)}
+              {alerts.proximosComVagas.length > 0 && (
+                <div className="pl-3 border-l-2 border-blue-400 space-y-1">
+                  <p className="text-xs font-semibold text-blue-600">Próximos com vagas</p>
+                  <div className="text-xs text-muted-foreground space-y-0.5">
+                    {alerts.proximosComVagas.slice(0, 3).map(t => <p key={t.id}>{t.name} · {t.diasRestantes}d</p>)}
                   </div>
-                </div>}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Box 2: Tarefas */}
-          <Card className="border-0 shadow-sm">
+          <Card className="border shadow-none">
             <CardHeader className="pb-2 pt-4">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-secondary-foreground">
-                <CheckSquare className="h-4 w-4" />
-                Tarefas ({taskAlerts.total} pendentes)
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <CheckSquare className="h-3.5 w-3.5" />
+                Tarefas {taskAlerts.total > 0 && `· ${taskAlerts.total}`}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 pt-0">
-              {taskAlerts.overdue.length > 0 && <div className="p-3 bg-red-500 rounded-lg">
-                  <p className="font-medium text-white text-sm mb-1">🔴 Atrasadas ({taskAlerts.overdue.length})</p>
-                  <div className="text-xs text-white/90 space-y-1">
+            <CardContent className="space-y-2.5 pt-0">
+              {taskAlerts.overdue.length > 0 && (
+                <div className="pl-3 border-l-2 border-red-400 space-y-1">
+                  <p className="text-xs font-semibold text-red-600">Atrasadas ({taskAlerts.overdue.length})</p>
+                  <div className="text-xs text-muted-foreground space-y-0.5">
                     {taskAlerts.overdue.slice(0, 3).map(t => <p key={t.id} className="truncate">{t.title}</p>)}
-                    {taskAlerts.overdue.length > 3 && <p className="text-white/70">+{taskAlerts.overdue.length - 3} mais</p>}
+                    {taskAlerts.overdue.length > 3 && <p>+{taskAlerts.overdue.length - 3} mais</p>}
                   </div>
-                </div>}
-
-              {taskAlerts.dueToday.length > 0 && <div className="p-3 bg-orange-500 rounded-lg">
-                  <p className="font-medium text-white text-sm mb-1">🟠 Vencem hoje ({taskAlerts.dueToday.length})</p>
-                  <div className="text-xs text-white/90 space-y-1">
+                </div>
+              )}
+              {taskAlerts.dueToday.length > 0 && (
+                <div className="pl-3 border-l-2 border-orange-400 space-y-1">
+                  <p className="text-xs font-semibold text-orange-600">Vencem hoje ({taskAlerts.dueToday.length})</p>
+                  <div className="text-xs text-muted-foreground space-y-0.5">
                     {taskAlerts.dueToday.slice(0, 3).map(t => <p key={t.id} className="truncate">{t.title}</p>)}
                   </div>
-                </div>}
-
-              {taskAlerts.dueThisWeek.length > 0 && <div className="p-3 bg-amber-500 rounded-lg">
-                  <p className="font-medium text-white text-sm mb-1">🟡 Esta semana ({taskAlerts.dueThisWeek.length})</p>
-                  <div className="text-xs text-white/90 space-y-1">
+                </div>
+              )}
+              {taskAlerts.dueThisWeek.length > 0 && (
+                <div className="pl-3 border-l-2 border-amber-400 space-y-1">
+                  <p className="text-xs font-semibold text-amber-600">Esta semana ({taskAlerts.dueThisWeek.length})</p>
+                  <div className="text-xs text-muted-foreground space-y-0.5">
                     {taskAlerts.dueThisWeek.slice(0, 3).map(t => <p key={t.id} className="truncate">{t.title}</p>)}
                   </div>
-                </div>}
-
-              {taskAlerts.urgentImportant.length > 0 && <div className="p-3 bg-purple-500 rounded-lg">
-                  <p className="font-medium text-white text-sm mb-1">🟣 Urgente e Importante ({taskAlerts.urgentImportant.length})</p>
-                  <div className="text-xs text-white/90 space-y-1">
+                </div>
+              )}
+              {taskAlerts.urgentImportant.length > 0 && (
+                <div className="pl-3 border-l-2 border-purple-400 space-y-1">
+                  <p className="text-xs font-semibold text-purple-600">Urgente ({taskAlerts.urgentImportant.length})</p>
+                  <div className="text-xs text-muted-foreground space-y-0.5">
                     {taskAlerts.urgentImportant.slice(0, 2).map(t => <p key={t.id} className="truncate">{t.title}</p>)}
                   </div>
-                </div>}
-
-              {taskAlerts.overdue.length === 0 && taskAlerts.dueToday.length === 0 && taskAlerts.dueThisWeek.length === 0 && <div className="p-3 bg-emerald-500 rounded-lg">
-                  <p className="text-sm text-white">✓ Nenhuma tarefa urgente</p>
-                </div>}
+                </div>
+              )}
+              {taskAlerts.overdue.length === 0 && taskAlerts.dueToday.length === 0 && taskAlerts.dueThisWeek.length === 0 && (
+                <p className="text-xs text-muted-foreground">Nenhuma tarefa urgente</p>
+              )}
             </CardContent>
           </Card>
 
           {/* Box 3: Aniversários */}
-          <Card className="border-0 shadow-sm">
+          <Card className="border shadow-none">
             <CardHeader className="pb-2 pt-4">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-secondary-foreground">
-                <Gift className="h-4 w-4" />
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <Gift className="h-3.5 w-3.5" />
                 Aniversários
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 pt-0">
-              {birthdayAlerts.today.length > 0 && <div className="p-3 bg-yellow-500 rounded-lg">
-                  <p className="font-medium text-white text-sm mb-1 flex items-center gap-1">
-                    <PartyPopper className="h-4 w-4" />
-                    Hoje! ({birthdayAlerts.today.length})
-                  </p>
-                  <div className="text-xs text-white/90 space-y-1">
-                    {birthdayAlerts.today.map(({
-                  cliente,
-                  age
-                }) => <p key={cliente.id}>
-                        🎂 <span className="font-medium">{cliente.nome_completo}</span> - {age} anos
-                      </p>)}
+            <CardContent className="space-y-2.5 pt-0">
+              {birthdayAlerts.today.length > 0 && (
+                <div className="pl-3 border-l-2 border-yellow-400 space-y-1">
+                  <p className="text-xs font-semibold text-yellow-600">Hoje ({birthdayAlerts.today.length})</p>
+                  <div className="text-xs text-muted-foreground space-y-0.5">
+                    {birthdayAlerts.today.map(({ cliente, age }) => (
+                      <p key={cliente.id}>{cliente.nome_completo} · {age} anos</p>
+                    ))}
                   </div>
-                </div>}
-
-              {birthdayAlerts.upcoming.length > 0 && <div className="p-3 bg-pink-500 rounded-lg">
-                  <p className="font-medium text-white text-sm mb-1">🎁 Próximos 2 dias</p>
-                  <div className="text-xs text-white/90 space-y-1">
-                    {birthdayAlerts.upcoming.map(({
-                  cliente,
-                  daysUntil,
-                  age
-                }) => <p key={cliente.id}>
-                        {cliente.nome_completo} - {age} anos 
-                        <span className="ml-1 bg-white/20 px-1 rounded text-[10px]">
+                </div>
+              )}
+              {birthdayAlerts.upcoming.length > 0 && (
+                <div className="pl-3 border-l-2 border-pink-300 space-y-1">
+                  <p className="text-xs font-semibold text-pink-600">Próximos 2 dias</p>
+                  <div className="text-xs text-muted-foreground space-y-0.5">
+                    {birthdayAlerts.upcoming.map(({ cliente, daysUntil, age }) => (
+                      <p key={cliente.id}>
+                        {cliente.nome_completo} · {age} anos
+                        <span className="ml-1 text-[10px] text-muted-foreground/60">
                           {daysUntil === 1 ? 'amanhã' : `${daysUntil}d`}
                         </span>
-                      </p>)}
+                      </p>
+                    ))}
                   </div>
-                </div>}
-
-              {birthdayAlerts.today.length === 0 && birthdayAlerts.upcoming.length === 0 && <div className="p-3 bg-gray-400 rounded-lg">
-                  <p className="text-sm text-white">Nenhum aniversário nos próximos 2 dias</p>
-                </div>}
+                </div>
+              )}
+              {birthdayAlerts.today.length === 0 && birthdayAlerts.upcoming.length === 0 && (
+                <p className="text-xs text-muted-foreground">Nenhum aniversário nos próximos 2 dias</p>
+              )}
             </CardContent>
           </Card>
 
           {/* Box 4: Lista de Espera */}
-          <Card className="border-0 shadow-sm">
+          <Card className="border shadow-none">
             <CardHeader className="pb-2 pt-4">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-secondary-foreground">
-                <ClipboardList className="h-4 w-4" />
-                Lista de Espera {waitlistAlerts.total > 0 && `(${waitlistAlerts.total})`}
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <ClipboardList className="h-3.5 w-3.5" />
+                Lista de Espera {waitlistAlerts.total > 0 && `· ${waitlistAlerts.total}`}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 pt-0">
@@ -1066,16 +1068,14 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
               }) => {
                 const formattedDate = tourDate ? new Date(tourDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '';
                 return (
-                  <div key={tourName} className="p-2 bg-cyan-500 rounded-lg">
-                    <p className="font-medium text-white text-xs mb-0.5">📋 {tourName} {formattedDate && `(${formattedDate})`}</p>
-                    <p className="text-[10px] text-white/90">{entries.length} pessoa{entries.length > 1 ? 's' : ''} • {totalVagas} vaga{totalVagas > 1 ? 's' : ''} desejada{totalVagas > 1 ? 's' : ''}</p>
+                  <div key={tourName} className="pl-3 border-l-2 border-cyan-400 space-y-0.5">
+                    <p className="text-xs font-medium text-foreground truncate">{tourName} {formattedDate && <span className="text-muted-foreground font-normal">· {formattedDate}</span>}</p>
+                    <p className="text-[10px] text-muted-foreground">{entries.length} pessoa{entries.length > 1 ? 's' : ''}</p>
                   </div>
                 );
-              }) : <div className="p-2 bg-gray-400 rounded-lg">
-                  <p className="text-xs text-white">Nenhuma pessoa na lista de espera</p>
-                </div>}
-              {waitlistAlerts.byTour.length > 5 && <p className="text-xs text-muted-foreground text-center">
-                  +{waitlistAlerts.byTour.length - 5} passeios com lista de espera
+              }) : <p className="text-xs text-muted-foreground">Nenhuma pessoa na lista de espera</p>}
+              {waitlistAlerts.byTour.length > 5 && <p className="text-xs text-muted-foreground">
+                  +{waitlistAlerts.byTour.length - 5} passeios
                 </p>}
             </CardContent>
           </Card>

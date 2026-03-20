@@ -16,7 +16,6 @@ import {
   ChevronLeft,
   Calendar,
   MapPin,
-  Users,
   Bell,
   ChevronDown,
   ChevronUp,
@@ -276,12 +275,6 @@ const Passeio = () => {
           <div className="flex flex-wrap gap-1.5 mt-2">
             {isSoldOut && (
               <span className="bg-red-600 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md">Esgotado</span>
-            )}
-            {!isSoldOut && availability && (
-              <span className="bg-green-600/90 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-0.5">
-                <Users className="w-2.5 h-2.5" />
-                {availability.availableSpots} vagas
-              </span>
             )}
             {tour.is_featured && (
               <span className="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded-md">⭐ DESTAQUE</span>
@@ -546,13 +539,6 @@ const Passeio = () => {
               </>
             )}
 
-            {/* Availability */}
-            {!isSoldOut && availability && (
-              <div className="flex items-center gap-2 text-sm text-green-600">
-                <Users className="w-4 h-4" />
-                <span>{availability.availableSpots} vagas disponíveis</span>
-              </div>
-            )}
 
             {/* CTA */}
             {isSoldOut ? (
