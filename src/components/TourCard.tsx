@@ -82,8 +82,8 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             </div>
           )}
 
-          {/* Dark gradient at bottom for text legibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+          {/* Gradient top → for name legibility */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/30" />
 
           {/* Sold out overlay */}
           {isSoldOut && (
@@ -94,36 +94,33 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             </div>
           )}
 
-          {/* Name + state + tags — overlaid bottom-left */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2">
-            {/* Destination name + state */}
-            <div className="leading-tight">
-              <p className="text-white font-black text-xl md:text-2xl leading-none tracking-tight drop-shadow-sm">
-                {destName}
-                {stateAbbr && (
-                  <span className="text-white/70 font-medium text-sm ml-1.5 align-middle">
-                    {stateAbbr}
-                  </span>
-                )}
-              </p>
-            </div>
-
-            {/* Tags row */}
-            {(showEtiqueta || tour.is_featured) && (
-              <div className="flex flex-wrap gap-1.5">
-                {tour.is_featured && (
-                  <span className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2.5 py-1 rounded-md leading-none">
-                    ⭐ DESTAQUE
-                  </span>
-                )}
-                {showEtiqueta && (
-                  <span className="bg-primary text-primary-foreground text-[11px] font-bold px-2.5 py-1 rounded-md leading-none uppercase tracking-wide">
-                    {tour.etiqueta}
-                  </span>
-                )}
-              </div>
-            )}
+          {/* Name + state — TOP LEFT */}
+          <div className="absolute top-0 left-0 right-0 p-4">
+            <p className="text-white font-black text-xl md:text-2xl leading-tight tracking-tight drop-shadow-sm">
+              {destName}
+              {stateAbbr && (
+                <span className="text-white/75 font-semibold text-sm ml-1.5 align-middle">
+                  {stateAbbr}
+                </span>
+              )}
+            </p>
           </div>
+
+          {/* Tags — BOTTOM LEFT */}
+          {(showEtiqueta || tour.is_featured) && (
+            <div className="absolute bottom-0 left-0 right-0 p-3 flex flex-wrap gap-1.5">
+              {tour.is_featured && (
+                <span className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2.5 py-1 rounded-md leading-none">
+                  ⭐ DESTAQUE
+                </span>
+              )}
+              {showEtiqueta && (
+                <span className="bg-primary text-primary-foreground text-[11px] font-bold px-2.5 py-1 rounded-md leading-none uppercase tracking-wide">
+                  {tour.etiqueta}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Card Body */}
