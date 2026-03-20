@@ -102,10 +102,10 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
               </div>
             )}
 
-            {/* Sold out badge — top right corner */}
+            {/* Sold out badge — bottom left */}
             {isSoldOut && (
-              <div className="absolute top-2.5 right-2.5">
-                <span className="bg-black/60 backdrop-blur-sm text-white text-[11px] font-semibold px-2.5 py-1 rounded-md tracking-wide">
+              <div className="absolute bottom-2.5 left-2.5 z-[2]">
+                <span className="bg-red-600 text-white text-[11px] font-semibold px-2.5 py-1 rounded-md tracking-wide">
                   Esgotado
                 </span>
               </div>
@@ -116,7 +116,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
 
             {/* Name + city/state — TOP LEFT */}
             <div className="absolute top-0 left-0 right-0 p-3 pr-20 z-[2]">
-              <p className="text-white font-europa text-base md:text-lg leading-snug line-clamp-2 drop-shadow-md tracking-wide">
+              <p className="text-white font-europa text-xl md:text-2xl leading-snug line-clamp-2 drop-shadow-md tracking-wide">
                 {destName}
               </p>
               {cityStateLabel && (
