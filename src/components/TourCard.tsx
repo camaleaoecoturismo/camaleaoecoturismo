@@ -5,6 +5,7 @@ import { WaitlistModal } from "@/components/WaitlistModal";
 import { useTourAvailability } from "@/hooks/useTourAvailability";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface TourCardProps {
   tour: Tour;
@@ -25,9 +26,12 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
   const navigate = useNavigate();
   const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
   const [showNextDates, setShowNextDates] = useState(false);
+  const [nextDatesModalOpen, setNextDatesModalOpen] = useState(false);
   const [nextDates, setNextDates] = useState<Tour[]>([]);
   const [nextDateCovers, setNextDateCovers] = useState<Map<string, string>>(new Map());
   const [loadingNextDates, setLoadingNextDates] = useState(false);
+
+  const isDesktop = () => window.matchMedia("(min-width: 768px)").matches;
   const { availability } = useTourAvailability(tour.id);
 
   const isSoldOut =
@@ -82,42 +86,50 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
     tour.etiqueta !== "Vagas encerradas" &&
     tour.etiqueta !== "vagas encerradas";
 
+  const fetchNextDatesData = async () => {
+    if (nextDates.length > 0) return;
+    setLoadingNextDates(true);
+    const todayStr = new Date().toISOString().split("T")[0];
+    const { data } = await supabase
+      .from("tours")
+      .select("*, pricing_options:tour_pricing_options(id, option_name, pix_price, card_price)")
+      .eq("city", tour.city)
+      .eq("is_active", true)
+      .neq("id", tour.id)
+      .gte("start_date", todayStr)
+      .order("start_date", { ascending: true })
+      .limit(10);
+    const list = (data as Tour[]) || [];
+    setNextDates(list);
+    if (list.length > 0) {
+      const ids = list.map(t => t.id);
+      const { data: covers } = await supabase
+        .from('tour_gallery_images')
+        .select('tour_id, image_url')
+        .in('tour_id', ids)
+        .eq('is_cover', true);
+      if (covers) {
+        const m = new Map<string, string>();
+        covers.forEach(c => m.set(c.tour_id, c.image_url));
+        setNextDateCovers(m);
+      }
+    }
+    setLoadingNextDates(false);
+  };
+
   const handleNextDates = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (showNextDates) {
-      setShowNextDates(false);
-      return;
-    }
-    if (nextDates.length === 0) {
-      setLoadingNextDates(true);
-      const todayStr = new Date().toISOString().split("T")[0];
-      const { data } = await supabase
-        .from("tours")
-        .select("*, pricing_options:tour_pricing_options(id, option_name, pix_price, card_price)")
-        .eq("city", tour.city)
-        .eq("is_active", true)
-        .neq("id", tour.id)
-        .gte("start_date", todayStr)
-        .order("start_date", { ascending: true })
-        .limit(10);
-      const list = (data as Tour[]) || [];
-      setNextDates(list);
-      if (list.length > 0) {
-        const ids = list.map(t => t.id);
-        const { data: covers } = await supabase
-          .from('tour_gallery_images')
-          .select('tour_id, image_url')
-          .in('tour_id', ids)
-          .eq('is_cover', true);
-        if (covers) {
-          const m = new Map<string, string>();
-          covers.forEach(c => m.set(c.tour_id, c.image_url));
-          setNextDateCovers(m);
-        }
+    if (isDesktop()) {
+      await fetchNextDatesData();
+      setNextDatesModalOpen(true);
+    } else {
+      if (showNextDates) {
+        setShowNextDates(false);
+        return;
       }
-      setLoadingNextDates(false);
+      await fetchNextDatesData();
+      setShowNextDates(true);
     }
-    setShowNextDates(true);
   };
 
   return (
@@ -222,7 +234,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             )}
 
             {isSoldOut && isFutureTour ? (
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex flex-col gap-1.5 shrink-0">
                 <button
                   className="text-xs font-semibold text-orange-600 border border-orange-400 rounded-lg px-2.5 py-1.5 hover:bg-orange-50 transition-colors"
                   onClick={(e) => {
@@ -318,6 +330,72 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
           )}
         </div>
       )}
+
+      {/* Próximas datas — desktop modal */}
+      <Dialog open={nextDatesModalOpen} onOpenChange={setNextDatesModalOpen}>
+        <DialogContent className="max-w-lg" onClick={(e) => e.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold">
+              Próximas datas — {tour.city}
+            </DialogTitle>
+          </DialogHeader>
+          {loadingNextDates ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : nextDates.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">
+              Nenhuma data futura disponível para essa cidade.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1">
+              {nextDates.map((related) => {
+                const relStart = new Date(related.start_date + "T12:00:00");
+                const relEnd = related.end_date ? new Date(related.end_date + "T12:00:00") : null;
+                const relDays = relEnd
+                  ? Math.ceil((relEnd.getTime() - relStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+                  : 1;
+                const relPrice =
+                  related.pricing_options?.length > 0
+                    ? Math.min(...related.pricing_options.map((o) => o.pix_price))
+                    : related.valor_padrao || 0;
+                return (
+                  <button
+                    key={related.id}
+                    onClick={() => { setNextDatesModalOpen(false); navigate(`/passeio/${related.slug || related.id}`); }}
+                    className="text-left rounded-xl border border-border overflow-hidden hover:border-primary hover:shadow-sm transition-all bg-background"
+                  >
+                    {(nextDateCovers.get(related.id) || related.image_url) && (
+                      <div className="aspect-[4/3] overflow-hidden">
+                        <img
+                          src={nextDateCovers.get(related.id) || related.image_url!}
+                          alt={related.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+                    <div className="p-2.5 space-y-0.5">
+                      <p className="text-xs font-semibold text-foreground line-clamp-2 leading-snug">
+                        {related.name}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {relStart.getDate()} de {MONTH_NAMES[relStart.getMonth()]}
+                        {relDays > 1 ? ` · ${relDays} dias` : ""}
+                      </p>
+                      {relPrice > 0 && (
+                        <p className="text-xs font-bold text-primary">
+                          {relPrice.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 })}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <WaitlistModal
         open={waitlistModalOpen}
