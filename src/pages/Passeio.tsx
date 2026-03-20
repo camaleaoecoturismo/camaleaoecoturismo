@@ -253,10 +253,23 @@ const Passeio = () => {
               <Calendar className="w-3 h-3" />
               {dateStr}
             </span>
-            {durationDays > 1 && (
+            {durationDays > 1 ? (
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 {durationDays} dias
+              </span>
+            ) : (tour as any).start_time ? (
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {(tour as any).start_time.slice(0, 5)}
+                {(tour as any).end_time ? ` – ${(tour as any).end_time.slice(0, 5)}` : ""}
+              </span>
+            ) : null}
+            {durationDays > 1 && (tour as any).start_time && (
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {(tour as any).start_time.slice(0, 5)}
+                {(tour as any).end_time ? ` – ${(tour as any).end_time.slice(0, 5)}` : ""}
               </span>
             )}
           </div>

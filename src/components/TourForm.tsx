@@ -76,6 +76,8 @@ const formSchema = z.object({
   state: z.string().min(1, 'Estado é obrigatório'),
   start_date: z.string().min(1, 'Data de início é obrigatória'),
   end_date: z.string().optional(),
+  start_time: z.string().optional(),
+  end_time: z.string().optional(),
   month: z.string().optional(),
   
   about: z.string().optional(),
@@ -137,6 +139,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
       state: '',
       start_date: '',
       end_date: '',
+      start_time: '',
+      end_time: '',
       month: '',
       
       about: '',
@@ -177,6 +181,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         state: tour.state || '',
         start_date: tour.start_date || '',
         end_date: tour.end_date || '',
+        start_time: (tour as any).start_time || '',
+        end_time: (tour as any).end_time || '',
         month: tour.month || '',
         
         about: tour.about || '',
@@ -259,6 +265,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         state: values.state,
         start_date: values.start_date,
         end_date: values.end_date || null,
+        start_time: values.start_time || null,
+        end_time: values.end_time || null,
         month: MONTHS_PT[new Date(values.start_date + "T12:00:00").getMonth()],
         about: values.about || null,
         itinerary: values.itinerary || null,
@@ -389,6 +397,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         state: values.state,
         start_date: values.start_date,
         end_date: values.end_date || null,
+        start_time: values.start_time || null,
+        end_time: values.end_time || null,
         month: MONTHS_PT[new Date(values.start_date + "T12:00:00").getMonth()],
         image_url: null,
         about: values.about || null,
@@ -574,6 +584,35 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                             <FormLabel className="text-slate-600 text-sm">Data Fim</FormLabel>
                             <FormControl>
                               <Input type="date" {...field} className="bg-white" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={form.control}
+                        name="start_time"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-slate-600 text-sm">Hora de Saída</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} className="bg-white" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="end_time"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-slate-600 text-sm">Hora de Retorno</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} className="bg-white" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

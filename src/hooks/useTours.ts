@@ -16,6 +16,8 @@ export interface Tour {
   state: string;
   start_date: string;
   end_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
   image_url: string | null;
   month: string;
   about: string | null;
