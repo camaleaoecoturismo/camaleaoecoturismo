@@ -51,6 +51,12 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
   const destName = tour.name.toUpperCase();
   const stateAbbr = tour.state?.toUpperCase() || "";
 
+  const cityLabel = tour.city || "";
+  const dateLabel = tourStartDate.toLocaleDateString("pt-BR", {
+    day: "numeric",
+    month: "short",
+  });
+
   // Etiqueta: show unless it's a control value
   const showEtiqueta =
     tour.etiqueta &&
@@ -91,20 +97,25 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
           )}
 
           {/* Gradient bottom only — for name legibility */}
-          <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/65 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black/70 to-transparent" />
 
-          {/* Name + state + tags — BOTTOM LEFT */}
-          <div className="absolute bottom-0 left-0 right-0 p-3 space-y-1.5">
-            <p className="text-white font-black text-xl md:text-2xl leading-tight tracking-tight drop-shadow-sm">
+          {/* Name + city/date + tags — BOTTOM LEFT */}
+          <div className="absolute bottom-0 left-0 right-0 p-3 space-y-1">
+            <p className="text-white font-black text-lg md:text-xl leading-tight tracking-tight line-clamp-2">
               {destName}
               {stateAbbr && (
-                <span className="text-white/75 font-semibold text-sm ml-1.5 align-middle">
+                <span className="text-white/70 font-semibold text-sm ml-1.5 align-middle">
                   {stateAbbr}
                 </span>
               )}
             </p>
+            {(cityLabel || dateLabel) && (
+              <p className="text-white/80 text-xs font-medium">
+                {cityLabel}{cityLabel && dateLabel ? " · " : ""}{dateLabel}
+              </p>
+            )}
             {(showEtiqueta || tour.is_featured) && (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
                 {tour.is_featured && (
                   <span className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2.5 py-1 rounded-md leading-none">
                     ⭐ DESTAQUE
