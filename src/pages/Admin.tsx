@@ -39,9 +39,7 @@ const Admin = () => {
   const [totalReservas, setTotalReservas] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('gestao-dashboard');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(
-    () => localStorage.getItem('adminSidebarCollapsed') === 'true'
-  );
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 

@@ -25,8 +25,6 @@ import {
   Ticket,
   QrCode,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   ClipboardList,
   UserPlus,
   FileSpreadsheet,
@@ -270,9 +268,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   totalReservas,
   onCollapsedChange,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    return localStorage.getItem('adminSidebarCollapsed') === 'true';
-  });
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [hoveredCollapsedItem, setHoveredCollapsedItem] = useState<string | null>(null);
@@ -316,11 +312,16 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     loadLogo();
   }, []);
 
-  const toggleCollapse = () => {
-    const next = !isCollapsed;
-    setIsCollapsed(next);
-    localStorage.setItem('adminSidebarCollapsed', String(next));
-    onCollapsedChange?.(next);
+  const handleSidebarEnter = () => {
+    setIsCollapsed(false);
+    onCollapsedChange?.(false);
+  };
+
+  const handleSidebarLeave = () => {
+    setIsCollapsed(true);
+    setExpandedItems([]);
+    setHoveredCollapsedItem(null);
+    onCollapsedChange?.(true);
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -555,23 +556,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
       {/* Footer */}
       <div className="shrink-0 border-t border-border p-2 space-y-1">
-        {/* Collapse toggle — desktop only */}
-        {!mobile && (
-          <button
-            onClick={toggleCollapse}
-            className={cn(
-              'w-full flex items-center gap-3 py-2 px-3 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors',
-              isCollapsed && 'justify-center px-2'
-            )}
-            title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
-          >
-            <span className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted-foreground/10">
-              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </span>
-            {!isCollapsed && <span className="text-sm font-medium">Recolher</span>}
-          </button>
-        )}
-
         {/* Sign out */}
         <button
           onClick={onSignOut}
@@ -594,8 +578,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     <>
       {/* Desktop sidebar */}
       <aside
+        onMouseEnter={handleSidebarEnter}
+        onMouseLeave={handleSidebarLeave}
         className={cn(
-          'hidden md:flex flex-col bg-card border-r border-border h-screen fixed left-0 top-0 z-40 transition-all duration-300 ease-in-out',
+          'hidden md:flex flex-col bg-card border-r border-border h-screen fixed left-0 top-0 z-40 transition-all duration-200 ease-in-out',
           isCollapsed ? 'w-16' : 'w-60'
         )}
       >
