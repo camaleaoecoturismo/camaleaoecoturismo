@@ -119,6 +119,15 @@ const Index = () => {
     }
   }, [tours, months, selectedMonth]);
 
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const isFuture = (startDate: string) =>
+    new Date(startDate + "T12:00:00") >= today;
+
   // All unique destination names — deduplicated by normalized name
   const destinations = useMemo(() => {
     const seen = new Map<string, string>(); // normalizedKey → original name
@@ -149,15 +158,6 @@ const Index = () => {
     const q = destinoSearch.trim().toLowerCase();
     return destinations.filter(d => d.toLowerCase().includes(q));
   }, [destinations, destinoSearch]);
-
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
-
-  const isFuture = (startDate: string) =>
-    new Date(startDate + "T12:00:00") >= today;
 
   // Tours filtered by month selector
   const filteredTours = useMemo(() => {

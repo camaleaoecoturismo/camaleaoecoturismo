@@ -1939,6 +1939,7 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
       ano_nascimento: "",
       cpf: "",
       email: "",
+      instagram: "",
       numero_participantes: "1",
       ponto_embarque_id: "",
       ponto_embarque_personalizado: "",
