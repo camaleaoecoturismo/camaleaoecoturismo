@@ -1,6 +1,5 @@
 import { memo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { MapPin, Calendar } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Tour } from "@/hooks/useTours";
 import { WaitlistModal } from "@/components/WaitlistModal";
 import { useTourAvailability } from "@/hooks/useTourAvailability";
@@ -43,48 +42,37 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
     value.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     });
-
-  const formatDate = () => {
-    const months = [
-      "jan", "fev", "mar", "abr", "mai", "jun",
-      "jul", "ago", "set", "out", "nov", "dez",
-    ];
-    const start = new Date(tour.start_date + "T12:00:00");
-    const startStr = `${start.getDate()} ${months[start.getMonth()]}`;
-    if (tour.end_date && tour.end_date !== tour.start_date) {
-      const end = new Date(tour.end_date + "T12:00:00");
-      const endMonth = months[end.getMonth()];
-      if (start.getMonth() === end.getMonth()) {
-        return `${start.getDate()} – ${end.getDate()} ${endMonth}`;
-      }
-      return `${startStr} – ${end.getDate()} ${endMonth}`;
-    }
-    return startStr;
-  };
 
   const imageUrl = preloadedCover?.imageUrl || tour.image_url;
 
-  const handleCardClick = () => {
-    navigate(`/passeio/${tour.id}`);
-  };
+  // Destination name: use destination_name if set, otherwise fall back to name
+  const destName = (tour.destination_name || tour.name).toUpperCase();
+  const stateAbbr = tour.state?.toUpperCase() || "";
+
+  // Etiqueta: show unless it's a control value
+  const showEtiqueta =
+    tour.etiqueta &&
+    tour.etiqueta !== "Histórico" &&
+    tour.etiqueta !== "Vagas encerradas" &&
+    tour.etiqueta !== "vagas encerradas";
 
   return (
     <>
-      <div className="group relative bg-card rounded-xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-shadow duration-200">
-        {/* Photo */}
-        <div
-          className="relative aspect-[4/3] overflow-hidden cursor-pointer"
-          onClick={handleCardClick}
-        >
+      <div
+        className="group relative bg-card rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer"
+        onClick={() => navigate(`/passeio/${tour.id}`)}
+      >
+        {/* Photo with overlay */}
+        <div className="relative aspect-[4/3] overflow-hidden">
           {imageUrl ? (
             <img
               src={imageUrl}
               alt={tour.name}
               className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${
-                isSoldOut ? "opacity-60" : ""
+                isSoldOut ? "brightness-75" : ""
               }`}
               loading="lazy"
             />
@@ -94,89 +82,92 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             </div>
           )}
 
+          {/* Dark gradient at bottom for text legibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+
           {/* Sold out overlay */}
           {isSoldOut && (
-            <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-              <span className="bg-red-500 text-white text-sm font-semibold px-4 py-1.5 rounded-full shadow-lg">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="bg-red-500 text-white text-sm font-bold px-4 py-1.5 rounded-full shadow-lg">
                 Vagas Esgotadas
               </span>
             </div>
           )}
 
-          {/* Featured badge */}
-          {tour.is_featured && !isSoldOut && (
-            <div className="absolute top-3 left-3 bg-yellow-400 text-yellow-900 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
-              ⭐ Destaque
+          {/* Name + state + tags — overlaid bottom-left */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2">
+            {/* Destination name + state */}
+            <div className="leading-tight">
+              <p className="text-white font-black text-xl md:text-2xl leading-none tracking-tight drop-shadow-sm">
+                {destName}
+                {stateAbbr && (
+                  <span className="text-white/70 font-medium text-sm ml-1.5 align-middle">
+                    {stateAbbr}
+                  </span>
+                )}
+              </p>
             </div>
-          )}
 
-          {/* Custom label */}
-          {tour.etiqueta &&
-            !isSoldOut &&
-            tour.etiqueta !== "Histórico" &&
-            tour.etiqueta !== "Vagas encerradas" &&
-            tour.etiqueta !== "vagas encerradas" &&
-            !tour.is_featured && (
-              <div className="absolute top-3 left-3 bg-orange-500 text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
-                {tour.etiqueta}
+            {/* Tags row */}
+            {(showEtiqueta || tour.is_featured) && (
+              <div className="flex flex-wrap gap-1.5">
+                {tour.is_featured && (
+                  <span className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2.5 py-1 rounded-md leading-none">
+                    ⭐ DESTAQUE
+                  </span>
+                )}
+                {showEtiqueta && (
+                  <span className="bg-primary text-primary-foreground text-[11px] font-bold px-2.5 py-1 rounded-md leading-none uppercase tracking-wide">
+                    {tour.etiqueta}
+                  </span>
+                )}
               </div>
             )}
-
-          {/* Date badge */}
-          <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
-            <Calendar className="w-3 h-3 opacity-80 shrink-0" />
-            {formatDate()}
           </div>
         </div>
 
         {/* Card Body */}
-        <div className="p-4">
-          <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1">
-            {tour.city}, {tour.state}
-          </p>
-          <h3
-            className="font-semibold text-foreground text-[15px] leading-snug mb-3 line-clamp-2 cursor-pointer hover:text-primary transition-colors"
-            onClick={handleCardClick}
-          >
-            {tour.name}
-          </h3>
+        <div className="p-4 space-y-3">
+          {/* Description */}
+          {tour.description ? (
+            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+              {tour.description}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+              {tour.name}
+            </p>
+          )}
 
-          <div className="flex items-end justify-between gap-2">
-            <div>
-              {minPrice > 0 ? (
-                <>
-                  <p className="text-[10px] text-muted-foreground leading-none mb-0.5">
-                    A partir de
-                  </p>
-                  <p className="text-lg font-bold text-primary leading-none">
-                    {formatCurrency(minPrice)}
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">Consulte</p>
-              )}
-            </div>
+          {/* Price + action */}
+          <div className="flex items-end justify-between gap-2 pt-1">
+            {minPrice > 0 ? (
+              <div>
+                <p className="text-[10px] text-muted-foreground leading-none mb-0.5">
+                  A partir de
+                </p>
+                <p className="text-base font-bold text-foreground leading-none">
+                  {formatCurrency(minPrice)}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Consulte</p>
+            )}
 
             {isSoldOut && isFutureTour ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs h-8 border-orange-400 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 shrink-0"
+              <button
+                className="text-xs font-semibold text-orange-600 border border-orange-400 rounded-lg px-3 py-1.5 hover:bg-orange-50 transition-colors shrink-0"
                 onClick={(e) => {
                   e.stopPropagation();
                   setWaitlistModalOpen(true);
                 }}
               >
                 Lista de espera
-              </Button>
+              </button>
             ) : (
-              <Button
-                size="sm"
-                className="text-xs h-8 bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
-                onClick={handleCardClick}
-              >
+              <span className="text-xs font-semibold text-primary shrink-0">
                 Ver →
-              </Button>
+              </span>
             )}
           </div>
         </div>

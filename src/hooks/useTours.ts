@@ -30,6 +30,7 @@ export interface Tour {
   link_pagamento: string | null;
   whatsapp_group_link: string | null;
   etiqueta: string | null;
+  destination_name: string | null;
   is_active: boolean;
   is_exclusive: boolean;
   is_featured: boolean;

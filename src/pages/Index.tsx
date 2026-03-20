@@ -98,7 +98,7 @@ const Index = () => {
   const [activeFilterTab, setActiveFilterTab] = useState<FilterTab>("data");
   const [selectedDestino, setSelectedDestino] = useState<string>("");
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(true);
 
   useEffect(() => {
     if (tours.length > 0 && months.length > 0 && !selectedMonth) {
@@ -106,15 +106,15 @@ const Index = () => {
     }
   }, [tours, months, selectedMonth]);
 
-  // All unique destinations
+  // All unique destinations — use destination_name if set, else city
   const destinations = useMemo(() => {
-    const cities = new Set(
+    const names = new Set(
       tours
         .filter((t) => t.is_active && !t.is_exclusive)
-        .map((t) => t.city)
+        .map((t) => t.destination_name || t.city)
         .filter(Boolean)
     );
-    return Array.from(cities).sort();
+    return Array.from(names).sort();
   }, [tours]);
 
   // Tours filtered by month selector
@@ -133,7 +133,9 @@ const Index = () => {
   const searchFilteredTours = useMemo(() => {
     let result = tours.filter((t) => t.is_active && !t.is_exclusive);
     if (selectedDestino) {
-      result = result.filter((t) => t.city === selectedDestino);
+      result = result.filter(
+        (t) => (t.destination_name || t.city) === selectedDestino
+      );
     }
     return result;
   }, [tours, selectedDestino]);
@@ -184,22 +186,6 @@ const Index = () => {
   const displayedTours = isSearching ? searchFilteredTours : filteredTours;
   const selectedMonthData = months.find((m) => m.id === selectedMonth);
 
-  // Swipe support
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-  const handleTouchEnd = () => {
-    const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) > 60) {
-      if (diff > 0 && currentMonthIndex < months.length - 1) {
-        handleMonthChange(months[currentMonthIndex + 1].id);
-      } else if (diff < 0 && currentMonthIndex > 0) {
-        handleMonthChange(months[currentMonthIndex - 1].id);
-      }
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -295,7 +281,9 @@ const Index = () => {
                                   : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                               }`}
                             >
-                              {selectedMonth === month.id ? month.name : month.label}
+                              {selectedMonth === month.id
+                                ? month.name.toUpperCase()
+                                : month.label.toUpperCase()}
                             </button>
                           </React.Fragment>
                         );
@@ -371,11 +359,7 @@ const Index = () => {
       </div>
 
       {/* Tours Section */}
-      <main
-        className="max-w-7xl mx-auto px-4 md:px-8 py-8"
-        onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
-        onTouchEnd={handleTouchEnd}
-      >
+      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <Loader2 className="w-10 h-10 animate-spin text-primary" />
