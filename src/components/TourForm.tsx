@@ -62,6 +62,9 @@ const formSchema = z.object({
   whatsapp_group_link: z.string().optional(),
   etiqueta: z.string().optional(),
   description: z.string().optional(),
+  card_name_split: z.number().nullable().optional(),
+  card_prefix_size: z.string().default('xs'),
+  card_main_size: z.string().default('2xl'),
   is_exclusive: z.boolean().default(false),
   is_featured: z.boolean().default(false),
   has_accommodation: z.boolean().default(false),
@@ -119,6 +122,9 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
       whatsapp_group_link: '',
       etiqueta: '',
       description: '',
+      card_name_split: null,
+      card_prefix_size: 'xs',
+      card_main_size: '2xl',
       is_exclusive: false,
       is_featured: false,
       has_accommodation: false,
@@ -155,6 +161,9 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         whatsapp_group_link: (tour as any).whatsapp_group_link || '',
         etiqueta: tour.etiqueta || '',
         description: tour.description || '',
+        card_name_split: tour.card_name_split ?? null,
+        card_prefix_size: tour.card_prefix_size || 'xs',
+        card_main_size: tour.card_main_size || '2xl',
         is_exclusive: tour.is_exclusive || false,
         is_featured: (tour as any).is_featured || false,
         has_accommodation: (tour as any).has_accommodation || false,
@@ -231,6 +240,9 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         whatsapp_group_link: values.whatsapp_group_link || null,
         etiqueta: values.etiqueta || null,
         description: values.description || null,
+        card_name_split: values.card_name_split ?? null,
+        card_prefix_size: values.card_prefix_size || 'xs',
+        card_main_size: values.card_main_size || '2xl',
         slug: generateSlug(values.name, values.start_date),
         is_exclusive: values.is_exclusive || false,
         is_featured: values.is_featured || false,
@@ -359,6 +371,9 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         whatsapp_group_link: values.whatsapp_group_link || null,
         etiqueta: values.etiqueta || null,
         description: values.description || null,
+        card_name_split: values.card_name_split ?? null,
+        card_prefix_size: values.card_prefix_size || 'xs',
+        card_main_size: values.card_main_size || '2xl',
         slug: generateSlug(values.name, values.start_date),
         is_exclusive: values.is_exclusive || false,
         is_featured: values.is_featured || false,
@@ -552,6 +567,68 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                         </FormItem>
                       )}
                     />
+
+                    {/* Nome do card — estilo */}
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+                      <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Nome no card</p>
+                      <FormField
+                        control={form.control}
+                        name="card_name_split"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-slate-600 text-sm">Palavras pequenas (topo)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min={0}
+                                placeholder="Ex: 2 → primeiras 2 palavras ficam pequenas"
+                                value={field.value ?? ''}
+                                onChange={e => field.onChange(e.target.value !== '' ? parseInt(e.target.value) : null)}
+                                className="bg-white"
+                              />
+                            </FormControl>
+                            <p className="text-xs text-muted-foreground">
+                              Deixe vazio para automático (tudo menos a última palavra). 0 = sem texto pequeno.
+                            </p>
+                          </FormItem>
+                        )}
+                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <FormField
+                          control={form.control}
+                          name="card_prefix_size"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-slate-600 text-sm">Tamanho — pequeno</FormLabel>
+                              <FormControl>
+                                <select {...field} className="w-full h-9 rounded-md border border-input bg-white px-3 text-sm">
+                                  <option value="xs">XS — muito pequeno</option>
+                                  <option value="sm">SM — pequeno</option>
+                                  <option value="base">Base — médio</option>
+                                </select>
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="card_main_size"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-slate-600 text-sm">Tamanho — grande</FormLabel>
+                              <FormControl>
+                                <select {...field} className="w-full h-9 rounded-md border border-input bg-white px-3 text-sm">
+                                  <option value="xl">XL</option>
+                                  <option value="2xl">2XL — padrão</option>
+                                  <option value="3xl">3XL — grande</option>
+                                  <option value="4xl">4XL — muito grande</option>
+                                </select>
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <FormField

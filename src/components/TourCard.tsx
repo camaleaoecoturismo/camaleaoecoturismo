@@ -60,9 +60,21 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
 
   const imageUrl = preloadedCover?.imageUrl || tour.image_url;
   const nameWords = tour.name.toUpperCase().split(" ");
-  const namePrefix = nameWords.length > 1 ? nameWords.slice(0, -1).join(" ") : null;
-  const nameMain = nameWords[nameWords.length - 1];
+  const splitAt = tour.card_name_split != null
+    ? tour.card_name_split
+    : nameWords.length > 1 ? nameWords.length - 1 : 0;
+  const namePrefix = splitAt > 0 ? nameWords.slice(0, splitAt).join(" ") : null;
+  const nameMain = nameWords.slice(splitAt).join(" ");
   const cityStateLabel = [tour.city, tour.state?.toUpperCase()].filter(Boolean).join(" - ");
+
+  const PREFIX_SIZES: Record<string, string> = {
+    xs: "text-[11px]", sm: "text-xs", base: "text-sm",
+  };
+  const MAIN_SIZES: Record<string, string> = {
+    xl: "text-xl", "2xl": "text-2xl md:text-3xl", "3xl": "text-3xl md:text-4xl", "4xl": "text-4xl md:text-5xl",
+  };
+  const prefixSizeClass = PREFIX_SIZES[tour.card_prefix_size ?? "xs"] ?? "text-[11px]";
+  const mainSizeClass = MAIN_SIZES[tour.card_main_size ?? "2xl"] ?? "text-2xl md:text-3xl";
 
   // Date block values
   const monthAbbr = tourStartDate
@@ -173,11 +185,11 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             {/* Name + city — TOP LEFT */}
             <div className="absolute top-0 left-0 right-0 p-3 pr-20 z-[2]">
               {namePrefix && (
-                <p className="text-white text-[11px] font-semibold tracking-widest drop-shadow leading-none mb-0.5 uppercase">
+                <p className={`text-white ${prefixSizeClass} font-semibold tracking-widest drop-shadow leading-none mb-0.5 uppercase`}>
                   {namePrefix}
                 </p>
               )}
-              <p className="text-white font-montserrat font-black text-2xl md:text-3xl leading-none drop-shadow-md tracking-tight">
+              <p className={`text-white font-montserrat font-black ${mainSizeClass} leading-none drop-shadow-md tracking-tight`}>
                 {nameMain}
               </p>
               {cityStateLabel && (
