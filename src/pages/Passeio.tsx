@@ -25,7 +25,7 @@ import {
   FileText,
   Clock,
   Info,
-  Map,
+  Map as MapIcon,
   CheckSquare,
   CreditCard,
   Plus,
@@ -193,7 +193,7 @@ const Passeio = () => {
   // Section nav items — only show sections that have content
   const navItems = [
     { id: "sobre", label: "Sobre", icon: Info, show: !!tour.about },
-    { id: "roteiro", label: "Roteiro", icon: Map, show: !!tour.itinerary },
+    { id: "roteiro", label: "Roteiro", icon: MapIcon, show: !!tour.itinerary },
     { id: "incluso", label: "Incluso", icon: CheckSquare, show: !!(tour.includes || tour.not_includes) },
     { id: "embarques", label: "Embarques", icon: MapPin, show: true },
   ].filter(item => item.show);
