@@ -70,7 +70,7 @@ const Passeio = () => {
   const [packageQuantities, setPackageQuantities] = useState<Record<string, number>>({});
   const [showInstallments, setShowInstallments] = useState(false);
 
-  const { availability } = useTourAvailability(tourId || "");
+  const { availability } = useTourAvailability(tour?.id);
 
   useEffect(() => {
     if (!tourId) return;
