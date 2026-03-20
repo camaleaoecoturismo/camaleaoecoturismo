@@ -106,12 +106,12 @@ const Index = () => {
     }
   }, [tours, months, selectedMonth]);
 
-  // All unique destinations by city
+  // All unique destination names (tour names)
   const destinations = useMemo(() => {
     const names = new Set(
       tours
         .filter((t) => t.is_active && !t.is_exclusive)
-        .map((t) => t.city)
+        .map((t) => t.name)
         .filter(Boolean)
     );
     return Array.from(names).sort();
@@ -134,7 +134,7 @@ const Index = () => {
     let result = tours.filter((t) => t.is_active && !t.is_exclusive);
     if (selectedDestino) {
       result = result.filter(
-        (t) => t.city === selectedDestino
+        (t) => t.name === selectedDestino
       );
     }
     return result;
