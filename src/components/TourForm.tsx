@@ -45,6 +45,8 @@ const formSchema = z.object({
   link_pagamento: z.string().optional(),
   whatsapp_group_link: z.string().optional(),
   etiqueta: z.string().optional(),
+  destination_name: z.string().optional(),
+  description: z.string().optional(),
   is_exclusive: z.boolean().default(false),
   is_featured: z.boolean().default(false),
   has_accommodation: z.boolean().default(false),
@@ -102,6 +104,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
       link_pagamento: '',
       whatsapp_group_link: '',
       etiqueta: '',
+      destination_name: '',
+      description: '',
       is_exclusive: false,
       is_featured: false,
       has_accommodation: false,
@@ -138,6 +142,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         link_pagamento: tour.link_pagamento || '',
         whatsapp_group_link: (tour as any).whatsapp_group_link || '',
         etiqueta: tour.etiqueta || '',
+        destination_name: tour.destination_name || '',
+        description: tour.description || '',
         is_exclusive: tour.is_exclusive || false,
         is_featured: (tour as any).is_featured || false,
         has_accommodation: (tour as any).has_accommodation || false,
@@ -214,6 +220,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         link_pagamento: values.link_pagamento || null,
         whatsapp_group_link: values.whatsapp_group_link || null,
         etiqueta: values.etiqueta || null,
+        destination_name: values.destination_name || null,
+        description: values.description || null,
         is_exclusive: values.is_exclusive || false,
         is_featured: values.is_featured || false,
         has_accommodation: values.has_accommodation || false,
@@ -341,6 +349,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         link_pagamento: values.link_pagamento || null,
         whatsapp_group_link: values.whatsapp_group_link || null,
         etiqueta: values.etiqueta || null,
+        destination_name: values.destination_name || null,
+        description: values.description || null,
         is_exclusive: values.is_exclusive || false,
         is_featured: values.is_featured || false,
         valor_padrao: values.valor_padrao || 0,
@@ -530,6 +540,40 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                       />
                     </div>
 
+                    <FormField
+                      control={form.control}
+                      name="destination_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-600 text-sm">Nome do Destino</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Chapada Diamantina" {...field} className="bg-white" />
+                          </FormControl>
+                          <p className="text-xs text-muted-foreground">
+                            Aparece no card e no filtro de destinos. Se vazio, usa o nome do passeio.
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-600 text-sm">Descrição curta</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Trilhas, cachoeiras e cultura indígena na Chapada" {...field} className="bg-white" />
+                          </FormControl>
+                          <p className="text-xs text-muted-foreground">
+                            Frase curta exibida abaixo do nome no card.
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
                     <div className="grid grid-cols-2 gap-3">
                       <FormField
                         control={form.control}
@@ -540,6 +584,9 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                             <FormControl>
                               <Input placeholder="Ex: Últimas vagas" {...field} className="bg-white" />
                             </FormControl>
+                            <p className="text-xs text-muted-foreground">
+                              Aparece como tag roxa no card.
+                            </p>
                             <FormMessage />
                           </FormItem>
                         )}
