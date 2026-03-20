@@ -56,8 +56,8 @@ function AppRoutes() {
   }, []);
 
   return (
-    <div style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh' }}>
-      <AnimatePresence initial={false} mode="sync">
+    <div>
+      <AnimatePresence initial={false} mode="wait">
         <Suspense key={location.pathname} fallback={<PageLoader />}>
           <Routes location={location}>
             <Route path="/" element={<Index />} />
