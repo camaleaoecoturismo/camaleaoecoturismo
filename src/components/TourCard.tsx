@@ -96,11 +96,11 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             </div>
           )}
 
-          {/* Gradient bottom only — for name legibility */}
-          <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black/70 to-transparent" />
+          {/* Gradient top — for name legibility */}
+          <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-black/65 to-transparent" />
 
-          {/* Name + city/date + tags — BOTTOM LEFT */}
-          <div className="absolute bottom-0 left-0 right-0 p-3 space-y-1">
+          {/* Name — TOP LEFT */}
+          <div className="absolute top-0 left-0 right-0 p-3">
             <p className="text-white font-black text-lg md:text-xl leading-tight tracking-tight line-clamp-2">
               {destName}
               {stateAbbr && (
@@ -109,30 +109,40 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
                 </span>
               )}
             </p>
-            {(cityLabel || dateLabel) && (
-              <p className="text-white/80 text-xs font-medium">
-                {cityLabel}{cityLabel && dateLabel ? " · " : ""}{dateLabel}
-              </p>
-            )}
-            {(showEtiqueta || tour.is_featured) && (
-              <div className="flex flex-wrap gap-1.5 pt-0.5">
-                {tour.is_featured && (
-                  <span className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2.5 py-1 rounded-md leading-none">
-                    ⭐ DESTAQUE
-                  </span>
-                )}
-                {showEtiqueta && (
-                  <span className="bg-primary text-primary-foreground text-[11px] font-bold px-2.5 py-1 rounded-md leading-none uppercase tracking-wide">
-                    {tour.etiqueta}
-                  </span>
-                )}
-              </div>
-            )}
           </div>
+
+          {/* Etiqueta tags — BOTTOM LEFT */}
+          {(showEtiqueta || tour.is_featured) && (
+            <div className="absolute bottom-0 left-0 right-0 p-3 flex flex-wrap gap-1.5">
+              {tour.is_featured && (
+                <span className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2.5 py-1 rounded-md leading-none">
+                  ⭐ DESTAQUE
+                </span>
+              )}
+              {showEtiqueta && (
+                <span className="bg-primary text-primary-foreground text-[11px] font-bold px-2.5 py-1 rounded-md leading-none uppercase tracking-wide">
+                  {tour.etiqueta}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Card Body */}
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-2">
+          {/* City + Date */}
+          <div className="flex items-center gap-2">
+            {cityLabel && (
+              <span className="text-xs text-muted-foreground font-medium">{cityLabel}</span>
+            )}
+            {cityLabel && dateLabel && <span className="text-muted-foreground/40 text-xs">·</span>}
+            {dateLabel && (
+              <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                {dateLabel}
+              </span>
+            )}
+          </div>
+
           {/* Description */}
           {tour.description && (
             <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
