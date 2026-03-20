@@ -139,7 +139,7 @@ export const TopMenu = ({ className }: TopMenuProps = {}) => {
   return (
     <>
       {/* Logo Bar - Mobile Only */}
-      <div className={`md:hidden sticky top-0 z-50 px-4 py-3 flex items-center justify-between transition-all duration-200 ${scrolled ? "bg-[#7c12d3]/95 backdrop-blur-sm shadow-md" : "bg-[#7c12d3]"}`}>
+      <div className="md:hidden bg-[#7c12d3] px-4 py-3 flex items-center justify-between">
         <img src={logoImage} alt="Camaleão Ecoturismo" className="h-8 w-auto" width={109} height={32} />
         <div className="flex items-center gap-2">
           <Button
@@ -164,7 +164,7 @@ export const TopMenu = ({ className }: TopMenuProps = {}) => {
       </div>
 
       {/* Main Menu Bar */}
-      <nav className={`hidden md:block sticky top-0 z-50 w-full transition-all duration-200 ${scrolled ? "bg-[#7c12d3]/95 backdrop-blur-sm shadow-md" : "bg-[#7c12d3]"}`} role="navigation" aria-label="Menu principal">
+      <nav className="hidden md:block bg-[#7c12d3] w-full" role="navigation" aria-label="Menu principal">
         {/* Desktop Menu */}
         <div className="flex items-center justify-between px-6 py-3 max-w-7xl mx-auto w-full">
           {/* Logo */}
