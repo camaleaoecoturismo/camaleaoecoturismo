@@ -58,6 +58,7 @@ interface ParticipantFormData {
   contato_emergencia_country_code: string;
   como_conheceu: string;
   como_conheceu_outro: string;
+  instagram: string;
   // Package info
   pricingOptionId: string;
   pricingOptionName: string;
@@ -102,6 +103,7 @@ export const createEmptyParticipantForm = (
   contato_emergencia_country_code: '+55',
   como_conheceu: '',
   como_conheceu_outro: '',
+  instagram: '',
   pricingOptionId,
   pricingOptionName,
   pricingOptionPrice,
@@ -635,58 +637,34 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                       </div>
                     </div>
 
-                    {/* Boarding point - Radio buttons */}
+                    {/* Instagram (optional) */}
+                    <div className="space-y-1">
+                      <Label className="text-xs">Instagram <span className="text-muted-foreground">(opcional)</span></Label>
+                      <Input
+                        type="text"
+                        value={participant.instagram}
+                        onChange={(e) => updateParticipant(index, 'instagram', e.target.value.replace(/\s/g, ''))}
+                        placeholder="@seuinstagram"
+                        className="text-sm"
+                      />
+                    </div>
+
+                    {/* Boarding point - Select */}
                     <div className="space-y-2">
                       <Label className="text-xs">Ponto de Embarque *</Label>
-                      <RadioGroup
+                      <select
                         value={participant.ponto_embarque_id}
-                        onValueChange={(v) => setBoardingPoint(index, v)}
-                        className="space-y-2"
+                        onChange={(e) => setBoardingPoint(index, e.target.value)}
+                        className="w-full h-10 px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                       >
+                        <option value="">Selecione o ponto de embarque...</option>
                         {boardingPoints.map((point) => (
-                          <div
-                            key={point.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => setBoardingPoint(index, point.id)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                setBoardingPoint(index, point.id);
-                              }
-                            }}
-                            className="flex items-start gap-2 p-1.5 rounded-md hover:bg-muted/50 cursor-pointer"
-                          >
-                            <RadioGroupItem
-                              value={point.id}
-                              id={`boarding-${index}-${point.id}`}
-                              className="mt-0.5 h-3.5 w-3.5"
-                            />
-                            <div className="text-xs font-normal flex-1">
-                              <span className="font-medium">{point.horario ? `${point.horario} - ` : ''}{point.nome}</span>
-                              {point.endereco && (
-                                <span className="text-muted-foreground block text-[10px]">{point.endereco}</span>
-                              )}
-                            </div>
-                          </div>
+                          <option key={point.id} value={point.id}>
+                            {point.horario ? `${point.horario} - ` : ''}{point.nome}{point.endereco ? ` (${point.endereco})` : ''}
+                          </option>
                         ))}
-
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => setBoardingPoint(index, "outro")}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              setBoardingPoint(index, "outro");
-                            }
-                          }}
-                          className="flex items-start gap-2 p-1.5 rounded-md hover:bg-muted/50 cursor-pointer"
-                        >
-                          <RadioGroupItem value="outro" id={`boarding-${index}-outro`} className="mt-0.5 h-3.5 w-3.5" />
-                          <span className="text-xs font-medium">Outro local (na rota)</span>
-                        </div>
-                      </RadioGroup>
+                        <option value="outro">Outro local (na rota)</option>
+                      </select>
                       
                       {/* Custom boarding point input and info */}
                       {participant.ponto_embarque_id === 'outro' && (
@@ -720,26 +698,19 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                       )}
                     </div>
 
-                    {/* Physical conditioning - Radio buttons - Required */}
+                    {/* Physical conditioning - Select */}
                     <div className="space-y-2">
                       <Label className="text-xs">Nível de Condicionamento Físico *</Label>
-                      <RadioGroup
+                      <select
                         value={participant.nivel_condicionamento}
-                        onValueChange={(v) => updateParticipant(index, 'nivel_condicionamento', v)}
-                        className="space-y-2"
+                        onChange={(e) => updateParticipant(index, 'nivel_condicionamento', e.target.value)}
+                        className="w-full h-10 px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                       >
+                        <option value="">Selecione seu nível...</option>
                         {NIVEL_CONDICIONAMENTO_OPTIONS.map((opt) => (
-                          <div key={opt.value} className="flex items-start space-x-2 p-1.5 rounded-md hover:bg-muted/50">
-                            <RadioGroupItem value={opt.label} id={`cond-${index}-${opt.value}`} className="mt-0.5 h-3.5 w-3.5" />
-                            <Label 
-                              htmlFor={`cond-${index}-${opt.value}`} 
-                              className="text-xs font-normal cursor-pointer flex-1"
-                            >
-                              {opt.label}
-                            </Label>
-                          </div>
+                          <option key={opt.value} value={opt.label}>{opt.label}</option>
                         ))}
-                      </RadioGroup>
+                      </select>
                     </div>
 
                     {/* Health issues */}

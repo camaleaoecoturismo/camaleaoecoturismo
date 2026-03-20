@@ -105,7 +105,7 @@ const Index = () => {
   const [activeFilterTab, setActiveFilterTab] = useState<FilterTab>("data");
   const [selectedDestino, setSelectedDestino] = useState<string>("");
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(true);
   const [destinoSearch, setDestinoSearch] = useState("");
 
   useEffect(() => {

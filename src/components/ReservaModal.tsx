@@ -1418,8 +1418,9 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
             ponto_embarque_id: p.ponto_embarque_id === 'outro' ? null : p.ponto_embarque_id,
             ponto_embarque_personalizado: p.ponto_embarque_id === 'outro' ? p.ponto_embarque_personalizado : null,
             nivel_condicionamento: p.nivel_condicionamento || null,
-            como_conheceu: p.como_conheceu === 'outro' 
-              ? `Outro: ${p.como_conheceu_outro || ''}`.trim() 
+            instagram: (p as any).instagram?.trim() || null,
+            como_conheceu: p.como_conheceu === 'outro'
+              ? `Outro: ${p.como_conheceu_outro || ''}`.trim()
               : (p.como_conheceu || null),
             pricing_option_id: p.pricingOptionId || null,
             pricing_option_name: p.pricingOptionName || null,
