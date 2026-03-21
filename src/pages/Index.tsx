@@ -9,7 +9,7 @@ import { WaitlistModal } from "@/components/WaitlistModal";
 import { useTours, Tour } from "@/hooks/useTours";
 import { useMonthMessages } from "@/hooks/useMonthMessages";
 import { useTourCoverImages } from "@/hooks/useTourCoverImages";
-import { Loader2, ChevronLeft, ChevronRight, Search, MapPin, CalendarDays, SlidersHorizontal, Info, Instagram, Mail, Phone } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, MapPin, CalendarDays, SlidersHorizontal, Info, Instagram, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logoImage from "@/assets/logo.png";
 
@@ -106,7 +106,6 @@ const Index = () => {
   const [selectedDestino, setSelectedDestino] = useState<string>("");
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(true);
-  const [destinoSearch, setDestinoSearch] = useState("");
 
   useEffect(() => {
     if (tours.length > 0 && months.length > 0 && !selectedMonth) {
@@ -152,12 +151,6 @@ const Index = () => {
     return counts;
   }, [tours, today]);
 
-  // Destinations filtered by search input
-  const filteredDestinations = useMemo(() => {
-    if (!destinoSearch.trim()) return destinations;
-    const q = destinoSearch.trim().toLowerCase();
-    return destinations.filter(d => d.toLowerCase().includes(q));
-  }, [destinations, destinoSearch]);
 
   // Tours filtered by month selector
   const filteredTours = useMemo(() => {
@@ -358,61 +351,30 @@ const Index = () => {
               )}
 
               {activeFilterTab === "destino" && (
-                <div className="space-y-3">
-                  {/* Search input */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                    <input
-                      type="text"
-                      placeholder="Buscar passeio..."
-                      value={destinoSearch}
-                      onChange={e => setDestinoSearch(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-                  </div>
-                  {/* Destination list */}
-                  <div className="flex flex-col gap-1 max-h-56 overflow-y-auto">
-                    {!destinoSearch && (
-                      <button
-                        onClick={() => { setSelectedDestino(""); setFilterOpen(false); }}
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${
-                          !selectedDestino
-                            ? "bg-primary text-primary-foreground"
-                            : "hover:bg-muted text-foreground"
-                        }`}
-                      >
-                        <span>Todos os passeios</span>
-                        <span className={`text-xs px-1.5 py-0.5 rounded-md ${!selectedDestino ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"}`}>
-                          {destinations.length}
-                        </span>
-                      </button>
-                    )}
-                    {filteredDestinations.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-4">Nenhum passeio encontrado</p>
-                    )}
-                    {filteredDestinations.map((dest) => {
-                      const count = destinationCounts.get(dest.trim().toLowerCase()) || 0;
-                      const isSelected = selectedDestino === dest;
-                      return (
-                        <button
-                          key={dest}
-                          onClick={() => { setSelectedDestino(dest); setDestinoSearch(""); setFilterOpen(false); }}
-                          className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${
-                            isSelected
-                              ? "bg-primary text-primary-foreground"
-                              : "hover:bg-muted text-foreground"
-                          }`}
-                        >
-                          <span className="truncate">{dest}</span>
-                          {count > 0 && (
-                            <span className={`text-xs px-1.5 py-0.5 rounded-md shrink-0 ml-2 ${isSelected ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"}`}>
-                              {count}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div className="flex gap-2 pb-1 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+                  <button
+                    onClick={() => { setSelectedDestino(""); setFilterOpen(false); }}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
+                      !selectedDestino
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  {destinations.map((dest) => (
+                    <button
+                      key={dest}
+                      onClick={() => { setSelectedDestino(dest); setFilterOpen(false); }}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
+                        selectedDestino === dest
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                      }`}
+                    >
+                      {dest}
+                    </button>
+                  ))}
                 </div>
               )}
 
@@ -445,7 +407,7 @@ const Index = () => {
       </div>
 
       {/* Tours Section */}
-      <main className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+      <main className={`max-w-7xl mx-auto px-4 md:px-8 py-4 ${activeFilterTab === "destino" && filterOpen ? "invisible pointer-events-none" : ""}`}>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <Loader2 className="w-10 h-10 animate-spin text-primary" />
