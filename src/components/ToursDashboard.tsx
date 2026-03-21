@@ -1158,27 +1158,30 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="p-2 sm:p-4">
-            <div className="h-[300px] -ml-2 sm:ml-0">
+            <div className="h-[420px] -ml-2 sm:ml-0">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartDataParticipants} layout="vertical" margin={{
-                top: 5,
-                right: 10,
-                left: 0,
-                bottom: 5
-              }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tick={{
-                  fontSize: 10
-                }} />
-                  <YAxis dataKey="name" type="category" width={70} tick={{
-                  fontSize: 9
-                }} tickFormatter={value => value.length > 12 ? value.substring(0, 12) + '...' : value} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{
-                  fontSize: '12px'
-                }} />
-                  <Bar dataKey="confirmados" name="Confirmados" fill="#22c55e" />
-                  <Bar dataKey="vagasDisponiveis" name="Vagas Disponíveis" fill="#3b82f6" />
+                <BarChart
+                  data={chartDataParticipants}
+                  layout="vertical"
+                  margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                  barCategoryGap="38%"
+                  barGap={4}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+                  <XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={95}
+                    tick={{ fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={value => value.length > 15 ? value.substring(0, 15) + '…' : value}
+                  />
+                  <Tooltip cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
+                  <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                  <Bar dataKey="confirmados" name="Confirmados" fill="#22c55e" radius={[0, 4, 4, 0]} barSize={10} />
+                  <Bar dataKey="vagasDisponiveis" name="Vagas Disponíveis" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={10} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

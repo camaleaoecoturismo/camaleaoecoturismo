@@ -289,8 +289,9 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         pix_discount_percent: values.pix_discount_percent || 0,
       };
 
-      const { error } = await supabase.from('tours').update(tourData).eq('id', tour.id);
+      const { data: updatedTour, error } = await supabase.from('tours').update(tourData).eq('id', tour.id).select('id').single();
       if (error) throw error;
+      if (!updatedTour) return; // tour doesn't exist in tours table (e.g. calendar_only_tour)
 
       // Update pricing options
       await supabase.from('tour_pricing_options').delete().eq('tour_id', tour.id);
@@ -423,8 +424,13 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
       };
 
       if (tour) {
-        const { error } = await supabase.from('tours').update(tourData).eq('id', tour.id);
+        const { data: updatedTour, error } = await supabase.from('tours').update(tourData).eq('id', tour.id).select('id').single();
         if (error) throw error;
+        if (!updatedTour) {
+          toast({ title: "Passeio não encontrado", description: "Este tipo de passeio não pode ser editado aqui.", variant: "destructive" });
+          setLoading(false);
+          return;
+        }
       } else {
         const { data, error } = await supabase.from('tours').insert(tourData).select().single();
         if (error) throw error;
