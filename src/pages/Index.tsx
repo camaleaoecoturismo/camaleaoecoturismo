@@ -434,7 +434,7 @@ const Index = () => {
               )}
 
               {activeFilterTab === "preferencia" && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 max-h-[55vh] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
                   {PREFERENCE_CATEGORIES.map((pref) => (
                     <button
                       key={pref}
@@ -462,7 +462,7 @@ const Index = () => {
       </div>
 
       {/* Tours Section */}
-      <main className={`max-w-7xl mx-auto px-4 md:px-8 py-4 ${activeFilterTab === "destino" && filterOpen ? "invisible pointer-events-none" : ""}`}>
+      <main className={`max-w-7xl mx-auto px-4 md:px-8 py-4 ${(activeFilterTab === "destino" || activeFilterTab === "preferencia") && filterOpen ? "invisible pointer-events-none" : ""}`}>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <Loader2 className="w-10 h-10 animate-spin text-primary" />
