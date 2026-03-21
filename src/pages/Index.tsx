@@ -388,7 +388,7 @@ const Index = () => {
                     />
                   </div>
                   {/* Destination list */}
-                  <div className="flex flex-col gap-1 max-h-52 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                  <div className="flex flex-col gap-1 max-h-[55vh] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
                     {!destinoSearch && (
                       <button
                         onClick={() => { setSelectedDestino(""); setFilterOpen(false); }}
