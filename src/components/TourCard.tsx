@@ -197,7 +197,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
                 {nameMain}
               </p>
               {cityStateLabel && (
-                <p className="text-white/70 text-[11px] font-medium mt-0.5 drop-shadow">
+                <p className="text-white text-[11px] font-medium mt-0.5 drop-shadow">
                   {cityStateLabel}
                 </p>
               )}

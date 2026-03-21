@@ -231,7 +231,7 @@ const Passeio = () => {
         {/* Back button */}
         <button
           onClick={() => navigate(-1)}
-          className="absolute top-[68px] left-4 z-20 flex items-center gap-1 text-white/80 hover:text-white text-sm transition-colors"
+          className="absolute top-[68px] left-4 z-20 flex items-center gap-1.5 text-white text-sm font-medium bg-black/30 backdrop-blur-sm hover:bg-black/50 transition-colors rounded-full pl-2.5 pr-3.5 py-1.5"
         >
           <ChevronLeft className="w-4 h-4" />
           Voltar
