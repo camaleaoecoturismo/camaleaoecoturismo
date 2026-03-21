@@ -183,8 +183,8 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
               </div>
             )}
 
-            {/* Top gradient */}
-            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/80 via-black/40 to-transparent z-[1]" />
+            {/* Top-left gradient */}
+            <div className="absolute top-0 left-0 w-3/4 h-36 bg-gradient-to-br from-black/80 via-black/40 to-transparent z-[1]" />
 
             {/* Name + city — TOP LEFT */}
             <div className="absolute top-0 left-0 right-0 p-4 pr-20 z-[2]">
