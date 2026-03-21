@@ -7,7 +7,7 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, X, Download } from "lucide-react";
+import { Loader2, X, Share2 } from "lucide-react";
 import logoBranco from "@/assets/logo-branco.png";
 interface RoteiroAccessModalProps {
   open: boolean;
@@ -82,15 +82,23 @@ export function RoteiroAccessModal({
   };
   const pdfRawUrl = `https://guwplwuwriixgvkjlutg.supabase.co/storage/v1/object/public/tour-pdfs/${pdfFilePath}`;
 
-  const handleDownload = () => {
-    // ?download= tells Supabase to serve Content-Disposition: attachment,
-    // which forces download on mobile browsers (including iOS Safari)
-    const a = document.createElement('a');
-    a.href = `${pdfRawUrl}?download=`;
-    a.download = `${tourName.replace(/\s+/g, '-')}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const handleShare = async () => {
+    const shareData = {
+      title: tourName,
+      text: `Confira o portfólio completo de ${tourName} — Camaleão Ecoturismo`,
+      url: pdfRawUrl,
+    };
+    if (navigator.share && navigator.canShare?.(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        // cancelled by user
+      }
+    } else {
+      navigator.clipboard.writeText(pdfRawUrl).then(() => {
+        toast({ title: "Link copiado!", description: "O link do PDF foi copiado para a área de transferência." });
+      });
+    }
   };
   const pdfViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(pdfRawUrl)}&embedded=true`;
 
@@ -150,11 +158,11 @@ export function RoteiroAccessModal({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={handleDownload}
+                onClick={handleShare}
                 className="flex items-center gap-1.5 text-xs font-medium text-primary-foreground/80 hover:text-primary-foreground transition-colors px-2 py-1.5 rounded hover:bg-white/10"
               >
-                <Download className="w-4 h-4" />
-                Baixar PDF
+                <Share2 className="w-4 h-4" />
+                Compartilhar
               </button>
               <button
                 onClick={() => onOpenChange(false)}
