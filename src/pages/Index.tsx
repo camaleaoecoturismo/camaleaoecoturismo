@@ -400,14 +400,13 @@ const Index = () => {
                     {PREFERENCE_CATEGORIES.map((pref) => (
                       <button
                         key={pref}
-                        onClick={() => {
+                        onClick={() =>
                           setSelectedPreferences((prev) =>
                             prev.includes(pref)
                               ? prev.filter((p) => p !== pref)
                               : [...prev, pref]
-                          );
-                          setFilterOpen(false);
-                        }}
+                          )
+                        }
                         className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                           selectedPreferences.includes(pref)
                             ? "bg-primary text-primary-foreground"
