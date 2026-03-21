@@ -9,7 +9,7 @@ import { WaitlistModal } from "@/components/WaitlistModal";
 import { useTours, Tour } from "@/hooks/useTours";
 import { useMonthMessages } from "@/hooks/useMonthMessages";
 import { useTourCoverImages } from "@/hooks/useTourCoverImages";
-import { Loader2, ChevronLeft, ChevronRight, MapPin, CalendarDays, SlidersHorizontal, Info, Instagram, Mail, Phone, Search } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, MapPin, CalendarDays, Info, Instagram, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logoImage from "@/assets/logo.png";
 
@@ -26,7 +26,7 @@ const PREFERENCE_CATEGORIES = [
   "Viagem com crianças",
 ];
 
-type FilterTab = "destino" | "data" | "preferencia";
+type FilterTab = "destino" | "data";
 
 const Index = () => {
   const { tours, loading } = useTours();
@@ -204,7 +204,7 @@ const Index = () => {
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
-        return selectedPreferences.some((pref) =>
+        return selectedPreferences.every((pref) =>
           haystack.includes(pref.toLowerCase())
         );
       });
@@ -269,11 +269,11 @@ const Index = () => {
         <BannerCarousel />
       </div>
 
-      {/* Filter Bar — Vivalá style */}
+      {/* Filter Bar */}
       <div className="bg-background border-b border-border sticky top-0 z-20 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 py-2">
-          {/* Filter Tabs */}
-          <div className="flex gap-1 bg-muted rounded-xl p-1 mb-2">
+        <div className="max-w-5xl mx-auto px-4 py-2 space-y-2">
+          {/* Tabs: Data + Destino */}
+          <div className="flex gap-1 bg-muted rounded-xl p-1">
             <button
               onClick={() => activeFilterTab === "data" ? setFilterOpen(o => !o) : (setActiveFilterTab("data"), setFilterOpen(true))}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
@@ -295,19 +295,6 @@ const Index = () => {
             >
               <MapPin className="w-4 h-4" />
               {selectedDestino || "Destino"}
-            </button>
-            <button
-              onClick={() => activeFilterTab === "preferencia" ? setFilterOpen(o => !o) : (setActiveFilterTab("preferencia"), setFilterOpen(true))}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                activeFilterTab === "preferencia" && filterOpen
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              {selectedPreferences.length > 0
-                ? `${selectedPreferences.length} filtro${selectedPreferences.length > 1 ? "s" : ""}`
-                : "Preferências"}
             </button>
           </div>
 
@@ -332,9 +319,7 @@ const Index = () => {
                   >
                     <div className="flex gap-2 pb-1 min-w-max">
                       {months.map((month, index) => {
-                        const showYear =
-                          index === 0 ||
-                          month.year !== months[index - 1].year;
+                        const showYear = index === 0 || month.year !== months[index - 1].year;
                         return (
                           <React.Fragment key={month.id}>
                             {showYear && index > 0 && (
@@ -376,59 +361,56 @@ const Index = () => {
 
               {activeFilterTab === "destino" && (
                 <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">Escolha seu destino</p>
-                <div className="flex flex-wrap gap-2 overflow-y-auto">
-                  {destinations.map((dest) => (
-                    <button
-                      key={dest}
-                      onClick={() => { setSelectedDestino(dest); setFilterOpen(false); }}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                        selectedDestino === dest
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {dest}
-                    </button>
-                  ))}
-                </div>
-                </div>
-              )}
-
-              {activeFilterTab === "preferencia" && (
-                <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">Selecione suas preferências</p>
-                <div className="flex flex-wrap gap-2 overflow-y-auto">
-                  {PREFERENCE_CATEGORIES.map((pref) => (
-                    <button
-                      key={pref}
-                      onClick={() => {
-                        setSelectedPreferences((prev) =>
-                          prev.includes(pref)
-                            ? prev.filter((p) => p !== pref)
-                            : [...prev, pref]
-                        );
-                        setFilterOpen(false);
-                      }}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                        selectedPreferences.includes(pref)
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {pref}
-                    </button>
-                  ))}
-                </div>
+                  <p className="text-xs font-medium text-muted-foreground">Escolha seu destino</p>
+                  <div className="flex flex-wrap gap-2">
+                    {destinations.map((dest) => (
+                      <button
+                        key={dest}
+                        onClick={() => { setSelectedDestino(dest); setFilterOpen(false); }}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                          selectedDestino === dest
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {dest}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
           )}
+
+          {/* Preference chips — always visible, horizontal scroll */}
+          <div className="overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+            <div className="flex gap-2 min-w-max">
+              {PREFERENCE_CATEGORIES.map((pref) => (
+                <button
+                  key={pref}
+                  onClick={() =>
+                    setSelectedPreferences((prev) =>
+                      prev.includes(pref)
+                        ? prev.filter((p) => p !== pref)
+                        : [...prev, pref]
+                    )
+                  }
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                    selectedPreferences.includes(pref)
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {pref}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Tours Section */}
-      <main className={`max-w-7xl mx-auto px-4 md:px-8 py-4 ${(activeFilterTab === "destino" || activeFilterTab === "preferencia") && filterOpen ? "invisible pointer-events-none" : ""}`}>
+      <main className={`max-w-7xl mx-auto px-4 md:px-8 py-4 ${activeFilterTab === "destino" && filterOpen ? "invisible pointer-events-none" : ""}`}>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <Loader2 className="w-10 h-10 animate-spin text-primary" />
