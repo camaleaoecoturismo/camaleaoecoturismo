@@ -505,12 +505,23 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
     const totalCapacidade = tourStats.reduce((sum, t) => sum + t.capacidade, 0);
     const mediaOcupacao = totalCapacidade > 0 ? totalConfirmados / totalCapacidade * 100 : 0;
     const proximoPasseio = tourStats.length > 0 ? Math.min(...tourStats.map(t => t.diasRestantes)) : 0;
+
+    const now = new Date();
+    const mesAtualStats = tourStats.filter(t => {
+      const d = new Date(t.start_date + 'T12:00:00');
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    });
+    const mesAtualConfirmados = mesAtualStats.reduce((sum, t) => sum + t.confirmados, 0);
+    const mesAtualCapacidade = mesAtualStats.reduce((sum, t) => sum + t.capacidade, 0);
+    const ocupacaoMesAtual = mesAtualCapacidade > 0 ? mesAtualConfirmados / mesAtualCapacidade * 100 : 0;
+
     return {
       totalPasseios: tourStats.length,
       totalVagasRestantes,
       totalConfirmados,
       totalAguardando,
       mediaOcupacao,
+      ocupacaoMesAtual,
       proximoPasseio
     };
   }, [tourStats]);
@@ -1146,9 +1157,9 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-purple-500" />
-              <span className="text-sm text-muted-foreground">Ocupação Média</span>
+              <span className="text-sm text-muted-foreground">Ocupação Mês Atual</span>
             </div>
-            <p className="text-2xl font-bold mt-2 text-center">{metrics.mediaOcupacao.toFixed(0)}%</p>
+            <p className="text-2xl font-bold mt-2 text-center">{metrics.ocupacaoMesAtual.toFixed(0)}%</p>
           </CardContent>
         </Card>
 
