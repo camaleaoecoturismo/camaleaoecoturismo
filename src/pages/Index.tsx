@@ -271,9 +271,9 @@ const Index = () => {
 
       {/* Filter Bar */}
       <div className="bg-background border-b border-border sticky top-0 z-20 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 py-2 space-y-2">
-          {/* Tabs: Data + Destino */}
-          <div className="flex gap-1 bg-muted rounded-xl p-1">
+        <div className="max-w-5xl mx-auto px-4 py-2">
+          {/* Filter Tabs */}
+          <div className="flex gap-1 bg-muted rounded-xl p-1 mb-2">
             <button
               onClick={() => activeFilterTab === "data" ? setFilterOpen(o => !o) : (setActiveFilterTab("data"), setFilterOpen(true))}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
@@ -295,6 +295,19 @@ const Index = () => {
             >
               <MapPin className="w-4 h-4" />
               {selectedDestino || "Destino"}
+            </button>
+            <button
+              onClick={() => activeFilterTab === "preferencia" ? setFilterOpen(o => !o) : (setActiveFilterTab("preferencia"), setFilterOpen(true))}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                activeFilterTab === "preferencia" && filterOpen
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              {selectedPreferences.length > 0
+                ? `${selectedPreferences.length} filtro${selectedPreferences.length > 1 ? "s" : ""}`
+                : "Preferências"}
             </button>
           </div>
 
@@ -379,38 +392,41 @@ const Index = () => {
                   </div>
                 </div>
               )}
+
+              {activeFilterTab === "preferencia" && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Selecione suas preferências</p>
+                  <div className="flex flex-wrap gap-2">
+                    {PREFERENCE_CATEGORIES.map((pref) => (
+                      <button
+                        key={pref}
+                        onClick={() => {
+                          setSelectedPreferences((prev) =>
+                            prev.includes(pref)
+                              ? prev.filter((p) => p !== pref)
+                              : [...prev, pref]
+                          );
+                          setFilterOpen(false);
+                        }}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                          selectedPreferences.includes(pref)
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {pref}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
-
-          {/* Preference chips — always visible, horizontal scroll */}
-          <div className="overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-            <div className="flex gap-2 min-w-max">
-              {PREFERENCE_CATEGORIES.map((pref) => (
-                <button
-                  key={pref}
-                  onClick={() =>
-                    setSelectedPreferences((prev) =>
-                      prev.includes(pref)
-                        ? prev.filter((p) => p !== pref)
-                        : [...prev, pref]
-                    )
-                  }
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
-                    selectedPreferences.includes(pref)
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {pref}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
 
       {/* Tours Section */}
-      <main className={`max-w-7xl mx-auto px-4 md:px-8 py-4 ${activeFilterTab === "destino" && filterOpen ? "invisible pointer-events-none" : ""}`}>
+      <main className={`max-w-7xl mx-auto px-4 md:px-8 py-4 ${(activeFilterTab === "destino" || activeFilterTab === "preferencia") && filterOpen ? "invisible pointer-events-none" : ""}`}>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <Loader2 className="w-10 h-10 animate-spin text-primary" />
