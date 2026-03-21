@@ -9,7 +9,7 @@ import { WaitlistModal } from "@/components/WaitlistModal";
 import { useTours, Tour } from "@/hooks/useTours";
 import { useMonthMessages } from "@/hooks/useMonthMessages";
 import { useTourCoverImages } from "@/hooks/useTourCoverImages";
-import { Loader2, ChevronLeft, ChevronRight, MapPin, CalendarDays, Info, Instagram, Mail, Phone } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, MapPin, CalendarDays, SlidersHorizontal, Info, Instagram, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logoImage from "@/assets/logo.png";
 
@@ -26,7 +26,7 @@ const PREFERENCE_CATEGORIES = [
   "Viagem com crianças",
 ];
 
-type FilterTab = "destino" | "data";
+type FilterTab = "destino" | "data" | "preferencia";
 
 const Index = () => {
   const { tours, loading } = useTours();

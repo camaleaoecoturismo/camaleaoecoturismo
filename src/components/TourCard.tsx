@@ -184,7 +184,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             )}
 
             {/* Top-left gradient */}
-            <div className="absolute top-0 left-0 w-3/4 h-36 bg-gradient-to-br from-black/80 via-black/40 to-transparent z-[1]" />
+            <div className="absolute inset-0 z-[1]" style={{ background: "radial-gradient(ellipse at top left, rgba(0,0,0,0.80) 0%, transparent 65%)" }} />
 
             {/* Name + city — TOP LEFT */}
             <div className="absolute top-0 left-0 right-0 p-4 pr-20 z-[2]">
