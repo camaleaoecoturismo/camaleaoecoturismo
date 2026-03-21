@@ -96,7 +96,6 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('start_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [chartPeriod, setChartPeriod] = useState('30');
   const [markingAsSeen, setMarkingAsSeen] = useState<string | null>(null);
   const [markingAllAsSeen, setMarkingAllAsSeen] = useState(false);
 
@@ -651,31 +650,50 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
     }));
   }, [filteredTours]);
 
-  // Chart data - registrations over time
-  const chartDataInscricoes = useMemo(() => {
-    const days = parseInt(chartPeriod);
-    const today = new Date();
-    const startDate = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
-    const inscricoesPorDia: Record<string, number> = {};
-    for (let i = 0; i <= days; i++) {
-      const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
-      const dateStr = date.toISOString().split('T')[0];
-      inscricoesPorDia[dateStr] = 0;
-    }
+  // Chart data - current month vs previous month comparison
+  const { chartDataComparacao, currentMonthName, prevMonthName } = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+    const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const currentMonthName = MONTHS_PT[currentMonth];
+    const prevMonthName = MONTHS_PT[prevMonth];
+
+    const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
+    const maxDays = Math.max(daysInCurrentMonth, daysInPrevMonth);
+
+    const currentCounts: Record<number, number> = {};
+    const prevCounts: Record<number, number> = {};
+    for (let d = 1; d <= maxDays; d++) { currentCounts[d] = 0; prevCounts[d] = 0; }
+
     reservas.forEach(r => {
-      const dataReserva = r.data_reserva.split('T')[0];
-      if (inscricoesPorDia[dataReserva] !== undefined) {
-        inscricoesPorDia[dataReserva] += r.numero_participantes || 1;
+      const date = new Date(r.data_reserva);
+      const y = date.getFullYear();
+      const m = date.getMonth();
+      const d = date.getDate();
+      if (y === currentYear && m === currentMonth) {
+        currentCounts[d] = (currentCounts[d] || 0) + (r.numero_participantes || 1);
+      } else if (y === prevYear && m === prevMonth) {
+        prevCounts[d] = (prevCounts[d] || 0) + (r.numero_participantes || 1);
       }
     });
-    return Object.entries(inscricoesPorDia).map(([date, count]) => ({
-      date: new Date(date).toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: 'short'
-      }),
-      inscricoes: count
-    }));
-  }, [reservas, chartPeriod]);
+
+    const todayDay = now.getDate();
+    const chartDataComparacao = Array.from({ length: maxDays }, (_, i) => {
+      const day = i + 1;
+      return {
+        dia: day,
+        mesAtual: day <= daysInCurrentMonth && day <= todayDay ? currentCounts[day] : null,
+        mesAnterior: day <= daysInPrevMonth ? prevCounts[day] : null,
+      };
+    });
+
+    return { chartDataComparacao, currentMonthName, prevMonthName };
+  }, [reservas]);
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -1188,47 +1206,59 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
           </CardContent>
         </Card>
 
-        {/* Chart 2: Registrations over time */}
+        {/* Chart 2: Current month vs previous month */}
         <Card className="overflow-hidden">
           <CardHeader className="pb-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Inscrições por Período
-              </CardTitle>
-              <Select value={chartPeriod} onValueChange={setChartPeriod}>
-                <SelectTrigger className="w-full sm:w-[140px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">Última semana</SelectItem>
-                  <SelectItem value="30">Último mês</SelectItem>
-                  <SelectItem value="90">Últimos 3 meses</SelectItem>
-                </SelectContent>
-              </Select>
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Inscrições por Mês
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {currentMonthName} vs {prevMonthName}
+                </p>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-2 sm:p-4">
             <div className="h-[300px] -ml-2 sm:ml-0">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartDataInscricoes} margin={{
-                top: 5,
-                right: 10,
-                left: 0,
-                bottom: 5
-              }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={{
-                  fontSize: 9
-                }} interval="preserveStartEnd" />
-                  <YAxis tick={{
-                  fontSize: 10
-                }} width={30} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="inscricoes" name="Inscrições" stroke="#8b5cf6" strokeWidth={2} dot={{
-                  fill: '#8b5cf6',
-                  strokeWidth: 2
-                }} />
+                <LineChart data={chartDataComparacao} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis
+                    dataKey="dia"
+                    tick={{ fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v) => `${v}`}
+                    interval={4}
+                  />
+                  <YAxis tick={{ fontSize: 10 }} width={28} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    formatter={(value: any, name: string) => [value ?? '-', name]}
+                    labelFormatter={(label) => `Dia ${label}`}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
+                  <Line
+                    type="monotone"
+                    dataKey="mesAnterior"
+                    name={prevMonthName}
+                    stroke="#c4b5fd"
+                    strokeWidth={1.5}
+                    strokeDasharray="4 3"
+                    dot={false}
+                    connectNulls={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="mesAtual"
+                    name={currentMonthName}
+                    stroke="#8b5cf6"
+                    strokeWidth={2.5}
+                    dot={{ fill: '#8b5cf6', r: 3, strokeWidth: 0 }}
+                    connectNulls={false}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>

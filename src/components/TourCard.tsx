@@ -187,13 +187,13 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/80 via-black/40 to-transparent z-[1]" />
 
             {/* Name + city — TOP LEFT */}
-            <div className="absolute top-0 left-0 right-0 p-3 pr-20 z-[2]">
+            <div className="absolute top-0 left-0 right-0 p-4 pr-20 z-[2]">
               {namePrefix && (
-                <p className={`text-white ${prefixSizeClass} font-semibold tracking-widest drop-shadow leading-none mb-0.5 uppercase`}>
+                <p className={`text-white ${prefixSizeClass} font-medium tracking-widest drop-shadow leading-none mb-0.5 uppercase`}>
                   {namePrefix}
                 </p>
               )}
-              <p className={`text-white font-rubik font-black ${mainSizeClass} leading-none drop-shadow-md tracking-tight`}>
+              <p className={`text-white font-rubik font-bold ${mainSizeClass} leading-none drop-shadow-md tracking-tight`}>
                 {nameMain}
               </p>
               {cityStateLabel && (
@@ -235,7 +235,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
         </div>
 
         {/* Card Body */}
-        <div className="px-3 pt-3 pb-3 space-y-1.5">
+        <div className="px-4 pt-4 pb-4 space-y-1.5">
           {tour.description && (
             <p className="text-sm text-muted-foreground leading-relaxed">
               {tour.description}
