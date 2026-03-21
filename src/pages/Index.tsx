@@ -375,7 +375,9 @@ const Index = () => {
               )}
 
               {activeFilterTab === "destino" && (
-                <div className="flex flex-wrap gap-2 max-h-[55vh] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Escolha seu destino</p>
+                <div className="flex flex-wrap gap-2 overflow-y-auto">
                   {destinations.map((dest) => (
                     <button
                       key={dest}
@@ -390,20 +392,24 @@ const Index = () => {
                     </button>
                   ))}
                 </div>
+                </div>
               )}
 
               {activeFilterTab === "preferencia" && (
-                <div className="flex flex-wrap gap-2 max-h-[55vh] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Selecione suas preferências</p>
+                <div className="flex flex-wrap gap-2 overflow-y-auto">
                   {PREFERENCE_CATEGORIES.map((pref) => (
                     <button
                       key={pref}
-                      onClick={() =>
+                      onClick={() => {
                         setSelectedPreferences((prev) =>
                           prev.includes(pref)
                             ? prev.filter((p) => p !== pref)
                             : [...prev, pref]
-                        )
-                      }
+                        );
+                        setFilterOpen(false);
+                      }}
                       className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                         selectedPreferences.includes(pref)
                           ? "bg-primary text-primary-foreground"
@@ -413,6 +419,7 @@ const Index = () => {
                       {pref}
                     </button>
                   ))}
+                </div>
                 </div>
               )}
             </div>
