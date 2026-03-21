@@ -375,61 +375,20 @@ const Index = () => {
               )}
 
               {activeFilterTab === "destino" && (
-                <div className="space-y-2">
-                  {/* Search */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-                    <input
-                      type="text"
-                      placeholder="Buscar destino..."
-                      value={destinoSearch}
-                      onChange={e => setDestinoSearch(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-                  </div>
-                  {/* Destination list */}
-                  <div className="flex flex-col gap-1 max-h-[55vh] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
-                    {!destinoSearch && (
-                      <button
-                        onClick={() => { setSelectedDestino(""); setFilterOpen(false); }}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${
-                          !selectedDestino ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
-                        }`}
-                      >
-                        <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center shrink-0">
-                          <MapPin className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                        <span>Todos os passeios</span>
-                      </button>
-                    )}
-                    {filteredDestinations.map((dest) => {
-                      const isSelected = selectedDestino === dest;
-                      const img = destinationImages.get(dest.trim().toLowerCase());
-                      return (
-                        <button
-                          key={dest}
-                          onClick={() => { setSelectedDestino(dest); setDestinoSearch(""); setFilterOpen(false); }}
-                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${
-                            isSelected ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
-                          }`}
-                        >
-                          <div className="w-10 h-10 rounded-md overflow-hidden shrink-0 bg-muted">
-                            {img ? (
-                              <img src={img} alt={dest} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <MapPin className="w-4 h-4 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-                          <span className="truncate">{dest}</span>
-                        </button>
-                      );
-                    })}
-                    {filteredDestinations.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-3">Nenhum destino encontrado</p>
-                    )}
-                  </div>
+                <div className="flex flex-wrap gap-2 max-h-[55vh] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                  {destinations.map((dest) => (
+                    <button
+                      key={dest}
+                      onClick={() => { setSelectedDestino(dest); setFilterOpen(false); }}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                        selectedDestino === dest
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {dest}
+                    </button>
+                  ))}
                 </div>
               )}
 
