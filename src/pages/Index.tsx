@@ -275,7 +275,10 @@ const Index = () => {
           {/* Filter Tabs */}
           <div className="flex gap-1 bg-muted rounded-xl p-1 mb-2">
             <button
-              onClick={() => activeFilterTab === "data" ? setFilterOpen(o => !o) : (setActiveFilterTab("data"), setFilterOpen(true))}
+              onClick={() => {
+                if (activeFilterTab === "data") { setFilterOpen(o => !o); }
+                else { setActiveFilterTab("data"); setFilterOpen(true); setSelectedDestino(""); setSelectedPreferences([]); }
+              }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
                 activeFilterTab === "data" && filterOpen
                   ? "bg-background shadow-sm text-foreground"
@@ -286,7 +289,10 @@ const Index = () => {
               Data
             </button>
             <button
-              onClick={() => activeFilterTab === "destino" ? setFilterOpen(o => !o) : (setActiveFilterTab("destino"), setFilterOpen(true))}
+              onClick={() => {
+                if (activeFilterTab === "destino") { setFilterOpen(o => !o); }
+                else { setActiveFilterTab("destino"); setFilterOpen(true); setSelectedPreferences([]); setSelectedDestino(""); }
+              }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
                 activeFilterTab === "destino" && filterOpen
                   ? "bg-background shadow-sm text-foreground"
@@ -297,7 +303,10 @@ const Index = () => {
               {selectedDestino || "Destino"}
             </button>
             <button
-              onClick={() => activeFilterTab === "preferencia" ? setFilterOpen(o => !o) : (setActiveFilterTab("preferencia"), setFilterOpen(true))}
+              onClick={() => {
+                if (activeFilterTab === "preferencia") { setFilterOpen(o => !o); }
+                else { setActiveFilterTab("preferencia"); setFilterOpen(true); setSelectedDestino(""); setSelectedPreferences([]); }
+              }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
                 activeFilterTab === "preferencia" && filterOpen
                   ? "bg-background shadow-sm text-foreground"
