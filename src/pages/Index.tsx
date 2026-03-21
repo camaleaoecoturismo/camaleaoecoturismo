@@ -9,7 +9,7 @@ import { WaitlistModal } from "@/components/WaitlistModal";
 import { useTours, Tour } from "@/hooks/useTours";
 import { useMonthMessages } from "@/hooks/useMonthMessages";
 import { useTourCoverImages } from "@/hooks/useTourCoverImages";
-import { Loader2, ChevronLeft, ChevronRight, MapPin, CalendarDays, SlidersHorizontal, Info, Instagram, Mail, Phone } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, MapPin, CalendarDays, SlidersHorizontal, Info, Instagram, Mail, Phone, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import logoImage from "@/assets/logo.png";
 
@@ -106,6 +106,7 @@ const Index = () => {
   const [selectedDestino, setSelectedDestino] = useState<string>("");
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(true);
+  const [destinoSearch, setDestinoSearch] = useState("");
 
   useEffect(() => {
     if (tours.length > 0 && months.length > 0 && !selectedMonth) {
@@ -138,6 +139,29 @@ const Index = () => {
       });
     return Array.from(seen.values()).sort();
   }, [tours]);
+
+  // Destinations filtered by search
+  const filteredDestinations = useMemo(() => {
+    if (!destinoSearch.trim()) return destinations;
+    const q = destinoSearch.trim().toLowerCase();
+    return destinations.filter((d) => d.toLowerCase().includes(q));
+  }, [destinations, destinoSearch]);
+
+  // Representative image per destination (first tour with an image)
+  const destinationImages = useMemo(() => {
+    const map = new Map<string, string>();
+    tours
+      .filter((t) => t.is_active && !t.is_exclusive && t.name)
+      .forEach((t) => {
+        const key = t.name.trim().toLowerCase();
+        if (!map.has(key)) {
+          const cover = getCoverImage(t.id);
+          const img = cover?.imageUrl || t.image_url;
+          if (img) map.set(key, img);
+        }
+      });
+    return map;
+  }, [tours, getCoverImage]);
 
   // Count of future tours per destination name
   const destinationCounts = useMemo(() => {
@@ -351,30 +375,61 @@ const Index = () => {
               )}
 
               {activeFilterTab === "destino" && (
-                <div className="flex gap-2 pb-1 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-                  <button
-                    onClick={() => { setSelectedDestino(""); setFilterOpen(false); }}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
-                      !selectedDestino
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                    }`}
-                  >
-                    Todos
-                  </button>
-                  {destinations.map((dest) => (
-                    <button
-                      key={dest}
-                      onClick={() => { setSelectedDestino(dest); setFilterOpen(false); }}
-                      className={`px-4 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
-                        selectedDestino === dest
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                      }`}
-                    >
-                      {dest}
-                    </button>
-                  ))}
+                <div className="space-y-2">
+                  {/* Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Buscar destino..."
+                      value={destinoSearch}
+                      onChange={e => setDestinoSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                  {/* Destination list */}
+                  <div className="flex flex-col gap-1 max-h-52 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                    {!destinoSearch && (
+                      <button
+                        onClick={() => { setSelectedDestino(""); setFilterOpen(false); }}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${
+                          !selectedDestino ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+                        }`}
+                      >
+                        <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center shrink-0">
+                          <MapPin className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                        <span>Todos os passeios</span>
+                      </button>
+                    )}
+                    {filteredDestinations.map((dest) => {
+                      const isSelected = selectedDestino === dest;
+                      const img = destinationImages.get(dest.trim().toLowerCase());
+                      return (
+                        <button
+                          key={dest}
+                          onClick={() => { setSelectedDestino(dest); setDestinoSearch(""); setFilterOpen(false); }}
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${
+                            isSelected ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
+                          }`}
+                        >
+                          <div className="w-10 h-10 rounded-md overflow-hidden shrink-0 bg-muted">
+                            {img ? (
+                              <img src={img} alt={dest} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <MapPin className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <span className="truncate">{dest}</span>
+                        </button>
+                      );
+                    })}
+                    {filteredDestinations.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-3">Nenhum destino encontrado</p>
+                    )}
+                  </div>
                 </div>
               )}
 
