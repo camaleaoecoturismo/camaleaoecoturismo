@@ -305,7 +305,7 @@ const Passeio = () => {
             {tour.pdf_file_path && (
               <Button
                 variant="outline"
-                className="flex-1"
+                className="flex-1 border-primary/40 text-primary hover:bg-primary/5 hover:border-primary"
                 onClick={() => setRoteiroOpen(true)}
               >
                 <svg viewBox="0 0 24 24" className="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
