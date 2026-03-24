@@ -389,7 +389,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       </div>
 
       {/* Nav */}
-      <nav className="overflow-y-auto py-3 px-1.5" style={{ scrollbarWidth: 'none' }}>
+      <nav className="overflow-y-auto py-3 px-1.5 relative" style={{ scrollbarWidth: 'thin', scrollbarColor: 'hsl(var(--border)) transparent' }}>
         {navGroups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-1' : ''}>
             {group.label && (
@@ -441,6 +441,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </div>
         ))}
       </nav>
+
+      {/* Scroll fade indicator */}
+      <div className="pointer-events-none absolute bottom-[72px] left-0 right-0 h-8 bg-gradient-to-t from-card to-transparent z-10" />
 
       {/* Footer — sign out */}
       <div className="border-t border-border p-2">
