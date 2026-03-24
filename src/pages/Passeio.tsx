@@ -398,35 +398,45 @@ const Passeio = () => {
             {tour.pricing_options && tour.pricing_options.length > 0 ? (
               <>
                 {/* Package selectors */}
-                <p className="text-sm font-semibold text-foreground">
-                  {isSoldOut ? "Pacotes disponíveis" : "Selecione os pacotes"}
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {isSoldOut ? "Pacotes disponíveis" : "Pacotes"}
                 </p>
                 <div className="space-y-2">
                   {tour.pricing_options.map((opt) => {
                     const qty = packageQuantities[opt.id] || 0;
+                    const isSelected = qty > 0;
                     return (
-                      <div key={opt.id} className={`flex items-center justify-between p-3 rounded-xl border ${isSoldOut ? "border-border/50 opacity-60" : "border-border"}`}>
+                      <div
+                        key={opt.id}
+                        className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
+                          isSoldOut
+                            ? "border-border/50 opacity-60"
+                            : isSelected
+                            ? "border-primary/40 bg-primary/5"
+                            : "border-border bg-muted/20 hover:border-border/80"
+                        }`}
+                      >
                         <div>
-                          <p className="text-sm font-medium text-foreground">{opt.option_name}</p>
+                          <p className="text-sm font-semibold text-foreground">{opt.option_name}</p>
                           <div className="flex items-center gap-1.5 mt-0.5">
-                            <PixIcon size={13} />
+                            <PixIcon size={12} />
                             <span className="text-sm font-bold text-primary">{formatCurrency(opt.pix_price)}</span>
                             <span className="text-xs text-muted-foreground">/ pessoa</span>
                           </div>
                         </div>
                         {!isSoldOut && (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3">
                             <button
                               onClick={() => setPackageQuantities(prev => ({ ...prev, [opt.id]: Math.max(0, (prev[opt.id] || 0) - 1) }))}
                               disabled={qty === 0}
-                              className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-muted-foreground disabled:opacity-30 hover:border-primary hover:text-primary transition-colors"
+                              className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-muted-foreground disabled:opacity-20 hover:border-primary hover:text-primary transition-colors"
                             >
                               <Minus className="w-3.5 h-3.5" />
                             </button>
-                            <span className="w-6 text-center font-bold text-sm">{qty}</span>
+                            <span className={`w-5 text-center font-bold text-sm ${isSelected ? "text-primary" : "text-muted-foreground"}`}>{qty}</span>
                             <button
                               onClick={() => setPackageQuantities(prev => ({ ...prev, [opt.id]: Math.min(10, (prev[opt.id] || 0) + 1) }))}
-                              className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+                              className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors shadow-sm"
                             >
                               <Plus className="w-3.5 h-3.5" />
                             </button>
@@ -439,14 +449,14 @@ const Passeio = () => {
 
                 {/* Running total */}
                 {Object.values(packageQuantities).some(q => q > 0) && (
-                  <div className="bg-muted/50 rounded-xl p-3 space-y-1">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-1">
                     {tour.pricing_options.filter(opt => (packageQuantities[opt.id] || 0) > 0).map(opt => (
                       <div key={opt.id} className="flex justify-between text-xs text-muted-foreground">
                         <span>{packageQuantities[opt.id]}x {opt.option_name}</span>
                         <span>{formatCurrency(opt.pix_price * (packageQuantities[opt.id] || 0))}</span>
                       </div>
                     ))}
-                    <div className="flex justify-between text-sm font-bold border-t border-border/50 pt-1 mt-1">
+                    <div className="flex justify-between text-sm font-bold border-t border-primary/20 pt-1.5 mt-1">
                       <span>Total no PIX</span>
                       <span className="text-primary">{formatCurrency(
                         tour.pricing_options.reduce((sum, opt) => sum + (opt.pix_price * (packageQuantities[opt.id] || 0)), 0)
@@ -557,7 +567,7 @@ const Passeio = () => {
                 onClick={() => setReservaOpen(true)}
                 disabled={!Object.values(packageQuantities).some(q => q > 0)}
               >
-                {Object.values(packageQuantities).some(q => q > 0) ? "Continuar →" : "Selecione um pacote"}
+                {Object.values(packageQuantities).some(q => q > 0) ? "Continuar →" : "Escolha a quantidade de vagas"}
               </Button>
             ) : (
               <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 text-base font-semibold" onClick={() => setReservaOpen(true)}>

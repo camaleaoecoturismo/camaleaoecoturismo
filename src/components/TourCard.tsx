@@ -113,6 +113,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
       .select("*, pricing_options:tour_pricing_options(id, option_name, pix_price, card_price)")
       .eq("city", tour.city)
       .eq("is_active", true)
+      .eq("is_exclusive", false)
       .neq("id", tour.id)
       .gte("start_date", todayStr)
       .order("start_date", { ascending: true })
