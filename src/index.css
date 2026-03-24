@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Quill rich text output alignment classes */
+.ql-align-justify { text-align: justify !important; }
+.ql-align-center  { text-align: center !important; }
+.ql-align-right   { text-align: right !important; }
+.ql-align-left    { text-align: left !important; }
+
 html, body {
   overflow-x: hidden;
 }
