@@ -10,8 +10,7 @@ import {
   Plus, Pencil, Trash2, Check, X, Loader2, Globe, BookOpen,
   HelpCircle, FileText, Users, Eye, EyeOff,
 } from "lucide-react";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 // ─── Blog ─────────────────────────────────────────────────────────────────────
 
@@ -25,6 +24,8 @@ interface BlogPost {
   autor: string | null;
   publicado: boolean;
   published_at: string | null;
+  meta_description: string | null;
+  tags: string[] | null;
 }
 
 function BlogManager() {
@@ -36,7 +37,9 @@ function BlogManager() {
   const [form, setForm] = useState({
     titulo: "", slug: "", excerpt: "", content_html: "",
     cover_image: "", autor: "", publicado: false,
+    meta_description: "", tags: [] as string[],
   });
+  const [tagInput, setTagInput] = useState("");
 
   useEffect(() => { load(); }, []);
 
@@ -48,14 +51,24 @@ function BlogManager() {
   };
 
   const startNew = () => {
-    setForm({ titulo: "", slug: "", excerpt: "", content_html: "", cover_image: "", autor: "", publicado: false });
+    setForm({ titulo: "", slug: "", excerpt: "", content_html: "", cover_image: "", autor: "", publicado: false, meta_description: "", tags: [] });
+    setTagInput("");
     setEditing(null); setShowForm(true);
   };
 
   const startEdit = (p: BlogPost) => {
-    setForm({ titulo: p.titulo, slug: p.slug, excerpt: p.excerpt || "", content_html: p.content_html || "", cover_image: p.cover_image || "", autor: p.autor || "", publicado: p.publicado });
+    setForm({ titulo: p.titulo, slug: p.slug, excerpt: p.excerpt || "", content_html: p.content_html || "", cover_image: p.cover_image || "", autor: p.autor || "", publicado: p.publicado, meta_description: p.meta_description || "", tags: p.tags || [] });
+    setTagInput("");
     setEditing(p); setShowForm(true);
   };
+
+  const addTag = (raw: string) => {
+    const tag = raw.trim().toLowerCase().replace(/,/g, "");
+    if (tag && !form.tags.includes(tag)) setForm(f => ({ ...f, tags: [...f.tags, tag] }));
+    setTagInput("");
+  };
+
+  const removeTag = (tag: string) => setForm(f => ({ ...f, tags: f.tags.filter(t => t !== tag) }));
 
   const generateSlug = (title: string) =>
     title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-");
@@ -69,6 +82,8 @@ function BlogManager() {
       content_html: form.content_html || null, cover_image: form.cover_image || null,
       autor: form.autor || null, publicado: form.publicado,
       published_at: form.publicado ? new Date().toISOString() : null,
+      meta_description: form.meta_description || null,
+      tags: form.tags.length > 0 ? form.tags : null,
     };
     const { error } = editing
       ? await supabase.from("blog_posts").update(data).eq("id", editing.id)
