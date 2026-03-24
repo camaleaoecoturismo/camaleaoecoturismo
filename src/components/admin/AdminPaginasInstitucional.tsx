@@ -334,11 +334,8 @@ function PoliticasManager() {
       {loading ? <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
         : (
           <>
-            <ReactQuill theme="snow" value={content} onChange={setContent}
-              modules={{ toolbar: [['bold','italic','underline'], ['blockquote'], [{ heading: [2,3,false] }], [{ list: 'ordered' }, { list: 'bullet' }], ['link'], ['clean']] }}
-              style={{ minHeight: 300 }}
-            />
-            <div className="flex justify-end">
+            <RichTextEditor value={content} onChange={setContent} />
+            <div className="flex justify-end mt-2">
               <Button onClick={save} disabled={saving} size="sm">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Check className="h-4 w-4 mr-1.5" />}
                 Salvar

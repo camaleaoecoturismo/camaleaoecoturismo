@@ -1,7 +1,6 @@
 import React from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { FormLabel } from '@/components/ui/form';
 
 // Register custom font sizes with Quill
 const Size = Quill.import('attributors/style/size');
@@ -62,7 +61,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   return (
     <div className="space-y-2">
-      {label && <FormLabel>{label}</FormLabel>}
+      {label && <label className="text-sm font-medium leading-none">{label}</label>}
       <div className="rich-text-editor-container border border-input rounded-md">
         <ReactQuill
           theme="snow"
