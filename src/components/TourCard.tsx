@@ -174,19 +174,10 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
               </div>
             )}
 
-            {/* Sold out badge */}
-            {isSoldOut && (
-              <div className="absolute bottom-2.5 left-2.5 z-[2]">
-                <span className="bg-red-600 text-white text-[11px] font-semibold px-2.5 py-1 rounded-md tracking-wide">
-                  Esgotado
-                </span>
-              </div>
-            )}
-
             {/* Top-left gradient */}
             <div className="absolute inset-0 z-[1]" style={{ background: "radial-gradient(ellipse at top left, rgba(0,0,0,0.80) 0%, transparent 65%)" }} />
 
-            {/* Name + city — TOP LEFT */}
+            {/* Name + city + sold out — TOP LEFT */}
             <div className="absolute top-0 left-0 right-0 p-4 pr-20 z-[2]">
               {namePrefix && (
                 <p className={`text-white ${prefixSizeClass} font-medium tracking-widest drop-shadow leading-none mb-0.5 uppercase`}>
@@ -200,6 +191,11 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
                 <p className="text-white text-[11px] font-medium mt-0.5 drop-shadow">
                   {cityStateLabel}
                 </p>
+              )}
+              {isSoldOut && (
+                <span className="inline-block mt-1.5 bg-red-600 text-white text-[11px] font-semibold px-2.5 py-1 rounded-md tracking-wide">
+                  Esgotado
+                </span>
               )}
             </div>
 
