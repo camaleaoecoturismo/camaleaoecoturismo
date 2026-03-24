@@ -90,6 +90,7 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
     toast
   } = useToast();
   const queryClient = useQueryClient();
+  const [comparisonMode, setComparisonMode] = useState<'prev_month' | 'same_month_last_year' | 'avg_3months' | 'avg_all'>('prev_month');
   const [periodFilter, setPeriodFilter] = useState('proximos_30');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [daysFilter, setDaysFilter] = useState('todos');
@@ -661,50 +662,109 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
     }));
   }, [filteredTours]);
 
-  // Chart data - current month vs previous month comparison
-  const { chartDataComparacao, currentMonthName, prevMonthName } = useMemo(() => {
+  // Chart data - current month vs comparison (configurable)
+  const { chartDataComparacao, currentMonthName, compareLabelName } = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
-    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    const todayDay = now.getDate();
+    const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
     const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     const currentMonthName = MONTHS_PT[currentMonth];
-    const prevMonthName = MONTHS_PT[prevMonth];
 
-    const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
-    const maxDays = Math.max(daysInCurrentMonth, daysInPrevMonth);
-
+    // Build current month counts
     const currentCounts: Record<number, number> = {};
-    const prevCounts: Record<number, number> = {};
-    for (let d = 1; d <= maxDays; d++) { currentCounts[d] = 0; prevCounts[d] = 0; }
-
+    for (let d = 1; d <= daysInCurrentMonth; d++) currentCounts[d] = 0;
     reservas.forEach(r => {
       const date = new Date(r.data_reserva);
-      const y = date.getFullYear();
-      const m = date.getMonth();
-      const d = date.getDate();
-      if (y === currentYear && m === currentMonth) {
-        currentCounts[d] = (currentCounts[d] || 0) + (r.numero_participantes || 1);
-      } else if (y === prevYear && m === prevMonth) {
-        prevCounts[d] = (prevCounts[d] || 0) + (r.numero_participantes || 1);
-      }
+      if (date.getFullYear() === currentYear && date.getMonth() === currentMonth)
+        currentCounts[date.getDate()] = (currentCounts[date.getDate()] || 0) + (r.numero_participantes || 1);
     });
 
-    const todayDay = now.getDate();
+    let compareCounts: Record<number, number> = {};
+    let compareLabelName = '';
+    let maxDays = daysInCurrentMonth;
+
+    if (comparisonMode === 'prev_month') {
+      const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+      const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+      const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
+      maxDays = Math.max(daysInCurrentMonth, daysInPrevMonth);
+      for (let d = 1; d <= maxDays; d++) compareCounts[d] = 0;
+      reservas.forEach(r => {
+        const date = new Date(r.data_reserva);
+        if (date.getFullYear() === prevYear && date.getMonth() === prevMonth)
+          compareCounts[date.getDate()] = (compareCounts[date.getDate()] || 0) + (r.numero_participantes || 1);
+      });
+      compareLabelName = MONTHS_PT[prevMonth];
+
+    } else if (comparisonMode === 'same_month_last_year') {
+      const lastYear = currentYear - 1;
+      const daysInThatMonth = new Date(lastYear, currentMonth + 1, 0).getDate();
+      maxDays = Math.max(daysInCurrentMonth, daysInThatMonth);
+      for (let d = 1; d <= maxDays; d++) compareCounts[d] = 0;
+      reservas.forEach(r => {
+        const date = new Date(r.data_reserva);
+        if (date.getFullYear() === lastYear && date.getMonth() === currentMonth)
+          compareCounts[date.getDate()] = (compareCounts[date.getDate()] || 0) + (r.numero_participantes || 1);
+      });
+      compareLabelName = `${MONTHS_PT[currentMonth]} ${lastYear}`;
+
+    } else if (comparisonMode === 'avg_3months') {
+      // Average of last 3 months per day
+      const months3: { y: number; m: number }[] = [];
+      for (let i = 1; i <= 3; i++) {
+        const m = ((currentMonth - i) % 12 + 12) % 12;
+        const y = currentMonth - i < 0 ? currentYear - 1 : currentYear;
+        months3.push({ y, m });
+      }
+      const daySums: Record<number, number> = {};
+      const dayCounts: Record<number, number> = {};
+      reservas.forEach(r => {
+        const date = new Date(r.data_reserva);
+        const ry = date.getFullYear(); const rm = date.getMonth(); const rd = date.getDate();
+        if (months3.some(x => x.y === ry && x.m === rm)) {
+          daySums[rd] = (daySums[rd] || 0) + (r.numero_participantes || 1);
+          dayCounts[rd] = (dayCounts[rd] || 0) + 1;
+        }
+      });
+      for (let d = 1; d <= daysInCurrentMonth; d++)
+        compareCounts[d] = daySums[d] ? Math.round((daySums[d] / 3) * 10) / 10 : 0;
+      compareLabelName = 'Média 3 meses';
+
+    } else if (comparisonMode === 'avg_all') {
+      // Overall daily average across all months in data
+      const monthBuckets: Record<string, Record<number, number>> = {};
+      reservas.forEach(r => {
+        const date = new Date(r.data_reserva);
+        const key = `${date.getFullYear()}-${date.getMonth()}`;
+        if (`${currentYear}-${currentMonth}` === key) return; // exclude current month
+        if (!monthBuckets[key]) monthBuckets[key] = {};
+        const d = date.getDate();
+        monthBuckets[key][d] = (monthBuckets[key][d] || 0) + (r.numero_participantes || 1);
+      });
+      const numMonths = Object.keys(monthBuckets).length || 1;
+      const daySums: Record<number, number> = {};
+      Object.values(monthBuckets).forEach(bucket => {
+        Object.entries(bucket).forEach(([d, v]) => { daySums[+d] = (daySums[+d] || 0) + v; });
+      });
+      for (let d = 1; d <= daysInCurrentMonth; d++)
+        compareCounts[d] = daySums[d] ? Math.round((daySums[d] / numMonths) * 10) / 10 : 0;
+      compareLabelName = 'Média geral';
+    }
+
     const chartDataComparacao = Array.from({ length: maxDays }, (_, i) => {
       const day = i + 1;
       return {
         dia: day,
         mesAtual: day <= daysInCurrentMonth && day <= todayDay ? currentCounts[day] : null,
-        mesAnterior: day <= daysInPrevMonth ? prevCounts[day] : null,
+        mesAnterior: day <= maxDays ? (compareCounts[day] ?? null) : null,
       };
     });
 
-    return { chartDataComparacao, currentMonthName, prevMonthName };
-  }, [reservas]);
+    return { chartDataComparacao, currentMonthName, compareLabelName };
+  }, [reservas, comparisonMode]);
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -1217,7 +1277,7 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
           </CardContent>
         </Card>
 
-        {/* Chart 2: Current month vs previous month */}
+        {/* Chart 2: Current month vs comparison */}
         <Card className="overflow-hidden">
           <CardHeader className="pb-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -1227,8 +1287,28 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
                   Inscrições por Mês
                 </CardTitle>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {currentMonthName} vs {prevMonthName}
+                  {currentMonthName} vs {compareLabelName}
                 </p>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {([
+                  { key: 'prev_month', label: 'Mês anterior' },
+                  { key: 'same_month_last_year', label: 'Ano anterior' },
+                  { key: 'avg_3months', label: 'Média 3m' },
+                  { key: 'avg_all', label: 'Média geral' },
+                ] as const).map(opt => (
+                  <button
+                    key={opt.key}
+                    onClick={() => setComparisonMode(opt.key)}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                      comparisonMode === opt.key
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
             </div>
           </CardHeader>
@@ -1254,7 +1334,7 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
                   <Line
                     type="monotone"
                     dataKey="mesAnterior"
-                    name={prevMonthName}
+                    name={compareLabelName}
                     stroke="#c4b5fd"
                     strokeWidth={1.5}
                     strokeDasharray="4 3"
