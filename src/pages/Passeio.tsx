@@ -96,6 +96,7 @@ const Passeio = () => {
         .select(`*, pricing_options:tour_pricing_options(id, option_name, pix_price, card_price)`)
         .eq("city", data.city)
         .eq("is_active", true)
+        .eq("is_exclusive", false)
         .neq("id", data.id)
         .gte("start_date", today)
         .order("start_date", { ascending: true })
