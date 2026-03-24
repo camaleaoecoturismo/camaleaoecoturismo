@@ -10,7 +10,7 @@ import {
   Plus, Pencil, Trash2, Check, X, Loader2, Globe, BookOpen,
   HelpCircle, FileText, Users, Eye, EyeOff,
 } from "lucide-react";
-import { RichTextEditor } from "@/components/RichTextEditor";
+import RichTextEditor from "@/components/RichTextEditor";
 
 // ─── Blog ─────────────────────────────────────────────────────────────────────
 
