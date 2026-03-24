@@ -132,12 +132,39 @@ function BlogManager() {
           <Textarea value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} placeholder="Breve descrição do post (aparece nos cards)" rows={2} />
         </div>
         <div className="sm:col-span-2">
-          <label className="text-sm font-medium mb-1.5 block">Conteúdo</label>
-          <ReactQuill
-            theme="snow" value={form.content_html} onChange={(v) => setForm({ ...form, content_html: v })}
-            modules={{ toolbar: [['bold','italic','underline'], [{ list: 'ordered' }, { list: 'bullet' }], ['link'], ['clean']] }}
-            style={{ minHeight: 200 }}
+          <label className="text-sm font-medium mb-1.5 block flex justify-between">
+            <span>Meta Description <span className="text-muted-foreground font-normal">(Google)</span></span>
+            <span className={`text-xs ${form.meta_description.length > 160 ? "text-destructive" : "text-muted-foreground"}`}>{form.meta_description.length}/160</span>
+          </label>
+          <Textarea
+            value={form.meta_description}
+            onChange={(e) => setForm({ ...form, meta_description: e.target.value })}
+            placeholder="Descreva com palavras-chave: trilha, cachoeira, Alagoas, Maceió..."
+            rows={2}
+            maxLength={160}
           />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="text-sm font-medium mb-1.5 block">Tags</label>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {form.tags.map(tag => (
+              <span key={tag} className="flex items-center gap-1 bg-primary/10 text-primary text-xs px-2.5 py-1 rounded-full">
+                {tag}
+                <button type="button" onClick={() => removeTag(tag)} className="hover:text-destructive transition-colors"><X className="h-3 w-3" /></button>
+              </span>
+            ))}
+          </div>
+          <Input
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(tagInput); } }}
+            onBlur={() => { if (tagInput.trim()) addTag(tagInput); }}
+            placeholder="Digite uma tag e pressione Enter (ex: cachoeira, trilha, alagoas)"
+          />
+          <p className="text-xs text-muted-foreground mt-1">Pressione Enter ou vírgula para adicionar</p>
+        </div>
+        <div className="sm:col-span-2">
+          <RichTextEditor label="Conteúdo" value={form.content_html} onChange={(v) => setForm({ ...form, content_html: v })} />
         </div>
       </div>
       <div className="flex items-center gap-3 pt-2">
