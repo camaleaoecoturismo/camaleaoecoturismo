@@ -258,112 +258,95 @@ export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) =
           </div>
         </div>
 
-        {/* Mobile Menu Panel */}
-        {isMobileMenuOpen && (
-          <>
-            {/* Backdrop - click to close */}
-            <div 
-              className="fixed inset-0 bg-black/50 z-40 md:hidden"
-              onClick={() => setIsMobileMenuOpen(false)}
-            />
-            
-            {/* Menu Panel - Right Side Drawer */}
-            <div className="fixed top-0 right-0 h-auto max-h-[85vh] w-72 bg-[#7c12d3] z-50 md:hidden rounded-bl-2xl shadow-2xl animate-in slide-in-from-right duration-200">
-              <div className="flex flex-col">
-                {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-white/20">
-                  <span className="text-white font-bold text-lg">Menu</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-white hover:bg-white/20 min-h-[44px] min-w-[44px]"
-                    aria-label="Fechar menu"
-                  >
-                    <X className="h-6 w-6" />
-                  </Button>
-                </div>
+      </nav>
 
-                {/* Menu Items */}
-                <div className="p-3 overflow-y-auto max-h-[calc(85vh-72px)]">
-                  <div className="space-y-1">
-                    {menuItems.map((item) => (
-                      <div key={item.id}>
-                        {hasChildren(item) ? (
-                          <>
-                            <button
-                              onClick={() => toggleMobileExpand(item.id)}
-                              className={`
-                                w-full text-left px-4 py-3 text-base font-bold transition-colors duration-200 rounded-lg flex items-center justify-between
-                                ${item.children?.some(c => isActiveItem(c.url))
-                                  ? 'text-menu-yellow bg-white/10' 
-                                  : 'text-white hover:text-menu-yellow hover:bg-white/10'
-                                }
-                              `}
-                            >
-                              <span>{item.name}</span>
-                              <ChevronRight className={`h-5 w-5 transition-transform ${expandedMobileItems.includes(item.id) ? 'rotate-90' : ''}`} />
-                            </button>
-                            
-                            {/* Mobile Submenu */}
-                            {expandedMobileItems.includes(item.id) && (
-                              <div className="ml-4 mt-1 space-y-1 border-l-2 border-white/20 pl-3">
-                                {item.children?.map((child) => (
-                                  <button
-                                    key={child.id}
-                                    onClick={() => handleNavigation(child)}
-                                    className={`
-                                      w-full text-left px-3 py-2.5 text-sm font-medium transition-colors duration-200 rounded-lg
-                                      ${isActiveItem(child.url) 
-                                        ? 'text-menu-yellow bg-white/10' 
-                                        : 'text-white/90 hover:text-menu-yellow hover:bg-white/10'
-                                      }
-                                    `}
-                                  >
-                                    {child.name}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </>
-                        ) : (
+      {/* Mobile Menu Panel — fora da nav hidden para aparecer no mobile */}
+      {isMobileMenuOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <div className="fixed top-0 right-0 h-auto max-h-[85vh] w-72 bg-[#7c12d3] z-50 rounded-bl-2xl shadow-2xl animate-in slide-in-from-right duration-200">
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b border-white/20">
+                <span className="text-white font-bold text-lg">Menu</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-white hover:bg-white/20 min-h-[44px] min-w-[44px]"
+                  aria-label="Fechar menu"
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+              </div>
+              <div className="p-3 overflow-y-auto max-h-[calc(85vh-72px)]">
+                <div className="space-y-1">
+                  {menuItems.map((item) => (
+                    <div key={item.id}>
+                      {hasChildren(item) ? (
+                        <>
                           <button
-                            onClick={() => handleNavigation(item)}
-                            className={`
-                              w-full text-left px-4 py-3 text-base font-bold transition-colors duration-200 rounded-lg
-                              ${isActiveItem(item.url) 
-                                ? 'text-menu-yellow bg-white/10' 
+                            onClick={() => toggleMobileExpand(item.id)}
+                            className={`w-full text-left px-4 py-3 text-base font-bold transition-colors duration-200 rounded-lg flex items-center justify-between ${
+                              item.children?.some(c => isActiveItem(c.url))
+                                ? 'text-menu-yellow bg-white/10'
                                 : 'text-white hover:text-menu-yellow hover:bg-white/10'
-                              }
-                            `}
+                            }`}
                           >
-                            {item.name}
+                            <span>{item.name}</span>
+                            <ChevronRight className={`h-5 w-5 transition-transform ${expandedMobileItems.includes(item.id) ? 'rotate-90' : ''}`} />
                           </button>
-                        )}
-                      </div>
-                    ))}
-                    
-                    {/* Área do Cliente - Mobile */}
-                    <button
-                      onClick={handleClientAreaClick}
-                      className={`
-                        w-full text-left px-4 py-3 text-base font-bold transition-colors duration-200 rounded-lg flex items-center gap-2
-                        ${location.pathname === '/cliente' || location.pathname === '/minha-conta'
-                          ? 'text-menu-yellow bg-white/10' 
-                          : 'text-white hover:text-menu-yellow hover:bg-white/10'
-                        }
-                      `}
-                    >
-                      <User className="h-5 w-5" />
-                      Área do Cliente
-                    </button>
-                  </div>
+                          {expandedMobileItems.includes(item.id) && (
+                            <div className="ml-4 mt-1 space-y-1 border-l-2 border-white/20 pl-3">
+                              {item.children?.map((child) => (
+                                <button
+                                  key={child.id}
+                                  onClick={() => handleNavigation(child)}
+                                  className={`w-full text-left px-3 py-2.5 text-sm font-medium transition-colors duration-200 rounded-lg ${
+                                    isActiveItem(child.url)
+                                      ? 'text-menu-yellow bg-white/10'
+                                      : 'text-white/90 hover:text-menu-yellow hover:bg-white/10'
+                                  }`}
+                                >
+                                  {child.name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => handleNavigation(item)}
+                          className={`w-full text-left px-4 py-3 text-base font-bold transition-colors duration-200 rounded-lg ${
+                            isActiveItem(item.url)
+                              ? 'text-menu-yellow bg-white/10'
+                              : 'text-white hover:text-menu-yellow hover:bg-white/10'
+                          }`}
+                        >
+                          {item.name}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    onClick={handleClientAreaClick}
+                    className={`w-full text-left px-4 py-3 text-base font-bold transition-colors duration-200 rounded-lg flex items-center gap-2 ${
+                      location.pathname === '/cliente' || location.pathname === '/minha-conta'
+                        ? 'text-menu-yellow bg-white/10'
+                        : 'text-white hover:text-menu-yellow hover:bg-white/10'
+                    }`}
+                  >
+                    <User className="h-5 w-5" />
+                    Área do Cliente
+                  </button>
                 </div>
               </div>
             </div>
-          </>
-        )}
-      </nav>
+          </div>
+        </>
+      )}
     </>
   );
 };
