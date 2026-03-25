@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus, Pencil, Trash2, Check, X, Loader2, Globe, BookOpen,
-  HelpCircle, FileText, Users, Eye, EyeOff,
+  HelpCircle, FileText, Users, Eye, EyeOff, Star, Building2,
 } from "lucide-react";
 import RichTextEditor from "@/components/RichTextEditor";
 
@@ -431,6 +431,194 @@ function EquipeManager() {
   );
 }
 
+// ─── Depoimentos ──────────────────────────────────────────────────────────────
+
+interface Testimonial { id: string; name: string; photo_url: string | null; text: string; rating: number; date: string | null; active: boolean; display_order: number; }
+
+function TestimonialsManager() {
+  const [items, setItems] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<Testimonial | null>(null);
+  const [form, setForm] = useState({ name: "", text: "", photo_url: "", date: "", rating: 5, active: true });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { load(); }, []);
+  const load = async () => {
+    const { data } = await (supabase as any).from("testimonials").select("*").order("display_order");
+    if (data) setItems(data);
+    setLoading(false);
+  };
+
+  const save = async () => {
+    if (!form.name.trim() || !form.text.trim()) { toast.error("Nome e depoimento obrigatórios"); return; }
+    setSaving(true);
+    const payload = { name: form.name, text: form.text, photo_url: form.photo_url || null, date: form.date || null, rating: form.rating, active: form.active, display_order: editing?.display_order ?? items.length };
+    const { error } = editing
+      ? await (supabase as any).from("testimonials").update(payload).eq("id", editing.id)
+      : await (supabase as any).from("testimonials").insert(payload);
+    if (error) toast.error(error.message);
+    else { toast.success(editing ? "Atualizado" : "Criado"); setShowForm(false); load(); }
+    setSaving(false);
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Remover depoimento?")) return;
+    await (supabase as any).from("testimonials").delete().eq("id", id);
+    load();
+  };
+
+  const startEdit = (t: Testimonial) => {
+    setForm({ name: t.name, text: t.text, photo_url: t.photo_url || "", date: t.date || "", rating: t.rating, active: t.active });
+    setEditing(t); setShowForm(true);
+  };
+
+  return (
+    <div className="space-y-4">
+      {showForm ? (
+        <div className="space-y-3 p-4 rounded-xl border border-border bg-card">
+          <h3 className="font-semibold text-sm">{editing ? "Editar Depoimento" : "Novo Depoimento"}</h3>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nome do viajante" />
+            <Input value={form.photo_url} onChange={(e) => setForm({ ...form, photo_url: e.target.value })} placeholder="URL da foto (opcional)" />
+            <Input value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} placeholder="Data (ex: Janeiro 2025)" />
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Nota:</span>
+              {[1,2,3,4,5].map(n => (
+                <button key={n} type="button" onClick={() => setForm({ ...form, rating: n })} className={`text-lg ${n <= form.rating ? 'text-yellow-400' : 'text-muted-foreground'}`}>★</button>
+              ))}
+            </div>
+            <Textarea className="sm:col-span-2" value={form.text} onChange={(e) => setForm({ ...form, text: e.target.value })} placeholder="Texto do depoimento" rows={3} />
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="rounded" />
+              <span className="text-sm">Ativo (visível no site)</span>
+            </label>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancelar</Button>
+            <Button size="sm" onClick={save} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}</Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-end">
+          <Button size="sm" onClick={() => { setEditing(null); setForm({ name: "", text: "", photo_url: "", date: "", rating: 5, active: true }); setShowForm(true); }}>
+            <Plus className="h-4 w-4 mr-1.5" />Novo Depoimento
+          </Button>
+        </div>
+      )}
+      {loading ? <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        : items.length === 0 ? <p className="text-center text-muted-foreground py-10">Nenhum depoimento ainda. <br/><span className="text-xs">Crie a tabela <code>testimonials</code> no Supabase primeiro.</span></p>
+        : (
+          <div className="space-y-2">
+            {items.map((t) => (
+              <div key={t.id} className="flex items-start gap-3 p-3 rounded-xl border border-border bg-card">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-sm text-foreground">{t.name}</p>
+                    <span className="text-xs text-yellow-500">{"★".repeat(t.rating)}</span>
+                    {!t.active && <span className="text-xs text-muted-foreground">(oculto)</span>}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{t.text}</p>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <button onClick={() => startEdit(t)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors"><Pencil className="h-4 w-4" /></button>
+                  <button onClick={() => remove(t.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="h-4 w-4" /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+    </div>
+  );
+}
+
+// ─── Parceiros ─────────────────────────────────────────────────────────────────
+
+interface Partner { id: string; name: string; logo_url: string; website_url: string | null; display_order: number; active: boolean; }
+
+function PartnersManager() {
+  const [items, setItems] = useState<Partner[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<Partner | null>(null);
+  const [form, setForm] = useState({ name: "", logo_url: "", website_url: "", active: true });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { load(); }, []);
+  const load = async () => {
+    const { data } = await (supabase as any).from("partner_organizations").select("*").order("display_order");
+    if (data) setItems(data);
+    setLoading(false);
+  };
+
+  const save = async () => {
+    if (!form.name.trim() || !form.logo_url.trim()) { toast.error("Nome e URL do logo obrigatórios"); return; }
+    setSaving(true);
+    const payload = { name: form.name, logo_url: form.logo_url, website_url: form.website_url || null, active: form.active, display_order: editing?.display_order ?? items.length };
+    const { error } = editing
+      ? await (supabase as any).from("partner_organizations").update(payload).eq("id", editing.id)
+      : await (supabase as any).from("partner_organizations").insert(payload);
+    if (error) toast.error(error.message);
+    else { toast.success(editing ? "Atualizado" : "Criado"); setShowForm(false); load(); }
+    setSaving(false);
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Remover parceiro?")) return;
+    await (supabase as any).from("partner_organizations").delete().eq("id", id);
+    load();
+  };
+
+  return (
+    <div className="space-y-4">
+      {showForm ? (
+        <div className="space-y-3 p-4 rounded-xl border border-border bg-card">
+          <h3 className="font-semibold text-sm">{editing ? "Editar Parceiro" : "Novo Parceiro"}</h3>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nome da organização" />
+            <Input value={form.website_url} onChange={(e) => setForm({ ...form, website_url: e.target.value })} placeholder="Website (opcional)" />
+            <Input className="sm:col-span-2" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} placeholder="URL do logo" />
+            {form.logo_url && <img src={form.logo_url} alt="preview" className="h-10 object-contain rounded border border-border p-1 bg-muted" />}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="rounded" />
+              <span className="text-sm">Ativo (visível no site)</span>
+            </label>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancelar</Button>
+            <Button size="sm" onClick={save} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}</Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-end">
+          <Button size="sm" onClick={() => { setEditing(null); setForm({ name: "", logo_url: "", website_url: "", active: true }); setShowForm(true); }}>
+            <Plus className="h-4 w-4 mr-1.5" />Novo Parceiro
+          </Button>
+        </div>
+      )}
+      {loading ? <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        : items.length === 0 ? <p className="text-center text-muted-foreground py-10">Nenhum parceiro ainda. <br/><span className="text-xs">Crie a tabela <code>partner_organizations</code> no Supabase primeiro.</span></p>
+        : (
+          <div className="grid sm:grid-cols-2 gap-3">
+            {items.map((p) => (
+              <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
+                <img src={p.logo_url} alt={p.name} className="h-10 w-20 object-contain rounded shrink-0 bg-muted p-1" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm text-foreground truncate">{p.name}</p>
+                  {!p.active && <span className="text-xs text-muted-foreground">oculto</span>}
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <button onClick={() => { setEditing(p); setForm({ name: p.name, logo_url: p.logo_url, website_url: p.website_url || "", active: p.active }); setShowForm(true); }} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors"><Pencil className="h-4 w-4" /></button>
+                  <button onClick={() => remove(p.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="h-4 w-4" /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function AdminPaginasInstitucional() {
@@ -449,11 +637,19 @@ export default function AdminPaginasInstitucional() {
         <TabsTrigger value="equipe" className="flex items-center gap-1.5">
           <Users className="h-4 w-4" />Equipe
         </TabsTrigger>
+        <TabsTrigger value="depoimentos" className="flex items-center gap-1.5">
+          <Star className="h-4 w-4" />Depoimentos
+        </TabsTrigger>
+        <TabsTrigger value="parceiros" className="flex items-center gap-1.5">
+          <Building2 className="h-4 w-4" />Parceiros
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="blog"><BlogManager /></TabsContent>
       <TabsContent value="faq"><FAQManager /></TabsContent>
       <TabsContent value="politicas"><PoliticasManager /></TabsContent>
       <TabsContent value="equipe"><EquipeManager /></TabsContent>
+      <TabsContent value="depoimentos"><TestimonialsManager /></TabsContent>
+      <TabsContent value="parceiros"><PartnersManager /></TabsContent>
     </Tabs>
   );
 }

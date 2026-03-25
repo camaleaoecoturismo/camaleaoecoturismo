@@ -1,0 +1,600 @@
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { TopMenu } from "@/components/TopMenu";
+import Footer from "@/components/Footer";
+import { TourCard } from "@/components/TourCard";
+import { FloatingContactButton } from "@/components/FloatingContactButton";
+import { useTours } from "@/hooks/useTours";
+import { useTourCoverImages } from "@/hooks/useTourCoverImages";
+import {
+  Shield, Users, Leaf, Camera, Star, ChevronLeft, ChevronRight,
+  ArrowRight, MapPin, Mountain, Waves, TreePine, Zap, Heart,
+  Loader2, CalendarDays,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface Testimonial {
+  id: string;
+  name: string;
+  photo_url: string | null;
+  text: string;
+  rating: number;
+  date: string | null;
+}
+
+interface Partner {
+  id: string;
+  name: string;
+  logo_url: string;
+  website_url: string | null;
+}
+
+interface TeamMember {
+  id: string;
+  nome: string;
+  cargo: string;
+  bio: string | null;
+  foto_url: string | null;
+}
+
+interface BlogPost {
+  id: string;
+  titulo: string;
+  slug: string;
+  excerpt: string | null;
+  cover_image: string | null;
+  published_at: string | null;
+  tags: string[] | null;
+}
+
+// ─── Diferenciais ─────────────────────────────────────────────────────────────
+
+const DIFERENCIAIS = [
+  { icon: Shield, title: "Segurança em 1º lugar", desc: "Equipamentos certificados, guias experientes e protocolos de segurança rigorosos em todas as aventuras." },
+  { icon: Users, title: "Grupos reduzidos", desc: "Turmas pequenas garantem mais atenção, qualidade e uma experiência verdadeiramente personalizada." },
+  { icon: Mountain, title: "Guias especializados", desc: "Nossa equipe é formada por apaixonados pela natureza com profundo conhecimento dos destinos." },
+  { icon: Leaf, title: "Ecoturismo responsável", desc: "Respeitamos e preservamos os ambientes naturais, contribuindo para a sustentabilidade local." },
+  { icon: Zap, title: "Suporte completo", desc: "Do primeiro contato até o retorno, estamos ao seu lado para garantir a melhor experiência." },
+  { icon: Heart, title: "Experiências únicas", desc: "Criamos memórias que ficam para sempre, combinando aventura, natureza e conexão humana." },
+];
+
+// ─── Componente principal ──────────────────────────────────────────────────────
+
+export default function Home() {
+  const navigate = useNavigate();
+  const { tours, loading: toursLoading } = useTours();
+
+  const [heroImage, setHeroImage] = useState<string>("");
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [testimonialIdx, setTestimonialIdx] = useState(0);
+  const testimonialTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Fetch dados ──────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    document.title = "Camaleão Ecoturismo — Trilhas, Cachoeiras e Aventuras em Alagoas";
+    document.querySelector('meta[name="description"]')?.setAttribute(
+      "content",
+      "Ecoturismo de verdade. Trilhas, cachoeiras e aventuras inesquecíveis em Alagoas, Chapada Diamantina e região. 6 anos, +5.000 viajantes."
+    );
+
+    // Hero: primeira imagem do carrossel
+    supabase
+      .from("banners")
+      .select("image_url")
+      .eq("is_active", true)
+      .order("display_order")
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.image_url) setHeroImage(data.image_url);
+      });
+
+    // Depoimentos
+    supabase
+      .from("testimonials" as any)
+      .select("id, name, photo_url, text, rating, date")
+      .eq("active", true)
+      .order("display_order")
+      .then(({ data }) => {
+        if (data) setTestimonials(data as Testimonial[]);
+      });
+
+    // Parceiros
+    supabase
+      .from("partner_organizations" as any)
+      .select("id, name, logo_url, website_url")
+      .eq("active", true)
+      .order("display_order")
+      .then(({ data }) => {
+        if (data) setPartners(data as Partner[]);
+      });
+
+    // Equipe
+    supabase
+      .from("team_members")
+      .select("id, nome, cargo, bio, foto_url")
+      .order("display_order")
+      .limit(4)
+      .then(({ data }) => {
+        if (data) setTeam(data);
+      });
+
+    // Blog
+    supabase
+      .from("blog_posts")
+      .select("id, titulo, slug, excerpt, cover_image, published_at, tags")
+      .eq("publicado", true)
+      .order("published_at", { ascending: false })
+      .limit(3)
+      .then(({ data }) => {
+        if (data) setBlogPosts(data);
+      });
+
+    return () => {
+      document.title = "Camaleão Ecoturismo";
+    };
+  }, []);
+
+  // ── Carrossel de depoimentos ──────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (testimonials.length < 2) return;
+    testimonialTimer.current = setInterval(() => {
+      setTestimonialIdx((i) => (i + 1) % testimonials.length);
+    }, 5000);
+    return () => { if (testimonialTimer.current) clearInterval(testimonialTimer.current); };
+  }, [testimonials.length]);
+
+  const goTestimonial = (dir: number) => {
+    if (testimonialTimer.current) clearInterval(testimonialTimer.current);
+    setTestimonialIdx((i) => (i + dir + testimonials.length) % testimonials.length);
+  };
+
+  // ── Destinos derivados dos passeios ───────────────────────────────────────────
+
+  const destinations = useMemo(() => {
+    if (!tours.length) return [];
+    const map = new Map<string, { count: number; image: string | null; city: string; state: string }>();
+    const today = new Date().toISOString().slice(0, 10);
+    tours
+      .filter((t) => t.is_active && !t.is_exclusive && t.start_date >= today)
+      .forEach((t) => {
+        const key = t.city;
+        if (!map.has(key)) {
+          map.set(key, { count: 0, image: t.image_url, city: t.city, state: t.state });
+        }
+        map.get(key)!.count += 1;
+      });
+    return Array.from(map.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+  }, [tours]);
+
+  // ── Próximas aventuras ────────────────────────────────────────────────────────
+
+  const upcomingTours = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return tours
+      .filter((t) => t.is_active && !t.is_exclusive && t.start_date >= today)
+      .slice(0, 6);
+  }, [tours]);
+
+  const tourIds = useMemo(() => upcomingTours.map((t) => t.id), [upcomingTours]);
+  const { getCoverImage } = useTourCoverImages(tourIds);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="min-h-screen bg-background">
+      <TopMenu transparent />
+
+      {/* ── HERO ──────────────────────────────────────────────────────────────── */}
+      <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
+        {heroImage ? (
+          <img
+            src={heroImage}
+            alt="Camaleão Ecoturismo"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1a0533] via-[#7c12d3] to-[#1a0533]" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/25 to-black/65" />
+
+        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
+          <p className="text-white/80 uppercase tracking-[0.3em] text-xs md:text-sm font-medium mb-4">
+            Ecoturismo · Trilhas · Cachoeiras
+          </p>
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+            Aventuras que<br />
+            <span className="text-[#f0c040]">transformam</span>
+          </h1>
+          <p className="text-white/85 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
+            Ecoturismo de verdade em destinos únicos do Brasil.<br className="hidden md:block" />
+            Segurança, natureza e memórias que ficam para sempre.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button
+              size="lg"
+              className="bg-[#7c12d3] hover:bg-[#6a0fb8] text-white px-8 py-6 text-base font-semibold rounded-full shadow-lg shadow-purple-900/40"
+              onClick={() => navigate("/agenda")}
+            >
+              Ver Passeios
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-white/50 text-white bg-white/10 hover:bg-white/20 px-8 py-6 text-base font-semibold rounded-full backdrop-blur-sm"
+              asChild
+            >
+              <a href="https://wa.me/5582993649454" target="_blank" rel="noopener noreferrer">
+                Fale com a gente
+              </a>
+            </Button>
+          </div>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-white/50 animate-bounce">
+          <div className="w-px h-8 bg-white/30" />
+          <ChevronRight className="h-4 w-4 rotate-90" />
+        </div>
+      </section>
+
+      {/* ── STATS ─────────────────────────────────────────────────────────────── */}
+      <section className="bg-[#7c12d3] text-white py-10">
+        <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          {[
+            { value: "6", label: "anos de operação" },
+            { value: "+5.000", label: "viajantes atendidos" },
+            { value: "+25", label: "roteiros únicos" },
+            { value: "+60.000", label: "fotos registradas" },
+          ].map(({ value, label }) => (
+            <div key={label}>
+              <p className="text-3xl md:text-4xl font-bold text-[#f0c040]">{value}</p>
+              <p className="text-white/75 text-sm mt-1">{label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── DESTINOS ──────────────────────────────────────────────────────────── */}
+      {destinations.length > 0 && (
+        <section className="py-20 px-4 max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Explore</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">Nossos Destinos</h2>
+            <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
+              De Alagoas à Chapada Diamantina — escolha sua próxima aventura.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {destinations.map((d) => (
+              <Link
+                key={d.city}
+                to={`/agenda`}
+                className="group relative rounded-2xl overflow-hidden aspect-[4/3] shadow-md hover:shadow-xl transition-shadow"
+              >
+                {d.image ? (
+                  <img src={d.image} alt={d.city} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#7c12d3] to-[#1a0533]" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 p-4 text-white">
+                  <div className="flex items-center gap-1 mb-1">
+                    <MapPin className="h-3.5 w-3.5 opacity-80" />
+                    <span className="text-xs opacity-80">{d.state}</span>
+                  </div>
+                  <p className="font-bold text-lg leading-tight">{d.city}</p>
+                  <p className="text-xs text-white/70 mt-0.5">{d.count} {d.count === 1 ? "passeio" : "passeios"}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── PRÓXIMAS AVENTURAS ────────────────────────────────────────────────── */}
+      <section className="py-20 px-4 bg-muted/30">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-end justify-between mb-12">
+            <div>
+              <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Agenda</p>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground">Próximas Aventuras</h2>
+            </div>
+            <Link
+              to="/agenda"
+              className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all"
+            >
+              Ver todas <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          {toursLoading ? (
+            <div className="flex justify-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : upcomingTours.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <CalendarDays className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p>Novas aventuras em breve!</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {upcomingTours.map((tour) => (
+                  <TourCard
+                    key={tour.id}
+                    tour={tour}
+                    preloadedCover={getCoverImage(tour.id)}
+                  />
+                ))}
+              </div>
+              <div className="text-center mt-8 sm:hidden">
+                <Button asChild variant="outline" className="rounded-full">
+                  <Link to="/agenda">Ver todas as aventuras <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* ── POR QUE NOS ESCOLHER ──────────────────────────────────────────────── */}
+      <section className="py-20 px-4 max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Diferenciais</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground">Por que nos escolher?</h2>
+          <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
+            6 anos levando famílias, grupos e aventureiros a destinos inesquecíveis.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {DIFERENCIAIS.map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="p-6 rounded-2xl border border-border bg-card hover:border-primary/30 hover:shadow-md transition-all group">
+              <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                <Icon className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">{title}</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── DEPOIMENTOS ───────────────────────────────────────────────────────── */}
+      {testimonials.length > 0 && (
+        <section className="py-20 px-4 bg-gradient-to-br from-[#1a0533] to-[#3d0a6e] text-white">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <p className="text-[#f0c040] text-sm font-semibold uppercase tracking-widest mb-2">Depoimentos</p>
+              <h2 className="text-3xl md:text-4xl font-bold">O que dizem nossos viajantes</h2>
+            </div>
+
+            <div className="relative">
+              <div className="overflow-hidden">
+                <div className="text-center px-8 md:px-16">
+                  {/* Stars */}
+                  <div className="flex justify-center gap-1 mb-6">
+                    {Array.from({ length: testimonials[testimonialIdx]?.rating || 5 }).map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-[#f0c040] text-[#f0c040]" />
+                    ))}
+                  </div>
+                  {/* Quote */}
+                  <blockquote className="text-white/90 text-lg md:text-xl leading-relaxed italic mb-8">
+                    "{testimonials[testimonialIdx]?.text}"
+                  </blockquote>
+                  {/* Author */}
+                  <div className="flex items-center justify-center gap-3">
+                    {testimonials[testimonialIdx]?.photo_url ? (
+                      <img
+                        src={testimonials[testimonialIdx].photo_url!}
+                        alt={testimonials[testimonialIdx].name}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-lg">
+                        {testimonials[testimonialIdx]?.name?.[0]}
+                      </div>
+                    )}
+                    <div className="text-left">
+                      <p className="font-semibold text-white">{testimonials[testimonialIdx]?.name}</p>
+                      {testimonials[testimonialIdx]?.date && (
+                        <p className="text-white/50 text-xs">{testimonials[testimonialIdx].date}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Navigation */}
+              {testimonials.length > 1 && (
+                <>
+                  <button
+                    onClick={() => goTestimonial(-1)}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => goTestimonial(1)}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+
+                  <div className="flex justify-center gap-2 mt-8">
+                    {testimonials.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => { goTestimonial(0); setTestimonialIdx(i); }}
+                        className={`w-2 h-2 rounded-full transition-all ${i === testimonialIdx ? 'bg-[#f0c040] w-5' : 'bg-white/30'}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── PARCEIROS ─────────────────────────────────────────────────────────── */}
+      {partners.length > 0 && (
+        <section className="py-16 px-4 border-y border-border">
+          <div className="max-w-5xl mx-auto">
+            <p className="text-center text-muted-foreground text-sm font-medium uppercase tracking-widest mb-10">
+              Empresas e organizações que já viajaram com a gente
+            </p>
+            <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
+              {partners.map((p) => (
+                <a
+                  key={p.id}
+                  href={p.website_url || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
+                  title={p.name}
+                >
+                  <img src={p.logo_url} alt={p.name} className="h-10 md:h-12 w-auto object-contain" />
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── EQUIPE ────────────────────────────────────────────────────────────── */}
+      {team.length > 0 && (
+        <section className="py-20 px-4 max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Quem somos</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">Conheça nossa equipe</h2>
+            <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
+              Apaixonados pela natureza e dedicados a criar experiências únicas para você.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {team.map((m) => (
+              <div key={m.id} className="text-center">
+                {m.foto_url ? (
+                  <img src={m.foto_url} alt={m.nome} className="w-24 h-24 md:w-28 md:h-28 rounded-full object-cover mx-auto mb-3 ring-4 ring-primary/10" />
+                ) : (
+                  <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3 text-primary font-bold text-2xl">
+                    {m.nome[0]}
+                  </div>
+                )}
+                <p className="font-semibold text-foreground text-sm">{m.nome}</p>
+                <p className="text-primary text-xs mt-0.5">{m.cargo}</p>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-10">
+            <Button asChild variant="outline" className="rounded-full">
+              <Link to="/sobre">Ver equipe completa <ArrowRight className="ml-2 h-4 w-4" /></Link>
+            </Button>
+          </div>
+        </section>
+      )}
+
+      {/* ── BLOG ──────────────────────────────────────────────────────────────── */}
+      {blogPosts.length > 0 && (
+        <section className="py-20 px-4 bg-muted/30">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-end justify-between mb-12">
+              <div>
+                <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Blog</p>
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground">Últimas aventuras</h2>
+              </div>
+              <Link
+                to="/blog"
+                className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all"
+              >
+                Ver todos <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {blogPosts.map((post) => (
+                <Link key={post.id} to={`/blog/${post.slug}`} className="group rounded-2xl overflow-hidden border border-border bg-card hover:shadow-lg transition-shadow">
+                  {post.cover_image && (
+                    <div className="aspect-video overflow-hidden">
+                      <img
+                        src={post.cover_image}
+                        alt={post.titulo}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                  )}
+                  <div className="p-5">
+                    {post.tags && post.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {post.tags.slice(0, 2).map((tag) => (
+                          <span key={tag} className="bg-primary/10 text-primary text-[10px] font-medium px-2 py-0.5 rounded-full">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <h3 className="font-bold text-foreground line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+                      {post.titulo}
+                    </h3>
+                    {post.excerpt && (
+                      <p className="text-muted-foreground text-sm line-clamp-2">{post.excerpt}</p>
+                    )}
+                    {post.published_at && (
+                      <p className="text-muted-foreground text-xs mt-3">
+                        {new Date(post.published_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <div className="text-center mt-8 sm:hidden">
+              <Button asChild variant="outline" className="rounded-full">
+                <Link to="/blog">Ver todos os posts <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── CTA FINAL ─────────────────────────────────────────────────────────── */}
+      <section className="relative py-24 px-4 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#7c12d3] to-[#1a0533]" />
+        <div className="absolute inset-0 opacity-10">
+          <TreePine className="absolute top-8 left-8 h-32 w-32 text-white" />
+          <Waves className="absolute bottom-8 right-8 h-32 w-32 text-white" />
+        </div>
+        <div className="relative z-10 text-center text-white max-w-2xl mx-auto">
+          <h2 className="text-3xl md:text-5xl font-bold mb-4">
+            Pronto para sua<br />próxima aventura?
+          </h2>
+          <p className="text-white/80 text-lg mb-10">
+            Reserve agora e garanta sua vaga nos próximos passeios da Camaleão Ecoturismo.
+          </p>
+          <Button
+            size="lg"
+            className="bg-[#f0c040] hover:bg-[#e0b030] text-[#1a0533] font-bold px-10 py-6 text-base rounded-full shadow-xl"
+            onClick={() => navigate("/agenda")}
+          >
+            Reservar agora
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+        </div>
+      </section>
+
+      <Footer />
+      <FloatingContactButton />
+    </div>
+  );
+}

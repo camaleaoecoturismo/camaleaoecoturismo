@@ -137,10 +137,15 @@ export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) =
 
   const hasChildren = (item: MenuItem) => item.children && item.children.length > 0;
 
+  const bgClass = transparent
+    ? scrolled ? 'bg-[#7c12d3] shadow-md' : 'bg-transparent'
+    : 'bg-[#7c12d3]';
+
   return (
     <>
+      <div className={transparent ? 'fixed top-0 left-0 right-0 z-40' : ''}>
       {/* Logo Bar - Mobile Only */}
-      <div className={`md:hidden px-4 py-3 flex items-center justify-between ${transparent ? 'bg-transparent' : 'bg-[#7c12d3]'}`}>
+      <div className={`md:hidden px-4 py-3 flex items-center justify-between transition-colors duration-300 ${bgClass}`}>
         <img src={logoImage} alt="Camaleão Ecoturismo" className="h-8 w-auto" width={109} height={32} />
         <div className="flex items-center gap-2">
           <Button
@@ -165,7 +170,7 @@ export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) =
       </div>
 
       {/* Main Menu Bar */}
-      <nav className={`hidden md:block w-full ${transparent ? 'bg-transparent' : 'bg-[#7c12d3]'}`} role="navigation" aria-label="Menu principal">
+      <nav className={`hidden md:block w-full transition-colors duration-300 ${bgClass}`} role="navigation" aria-label="Menu principal">
         {/* Desktop Menu */}
         <div className="flex items-center justify-between px-6 py-3 max-w-7xl mx-auto w-full">
           {/* Logo */}
@@ -259,6 +264,7 @@ export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) =
         </div>
 
       </nav>
+      </div>
 
       {/* Mobile Menu Panel — fora da nav hidden para aparecer no mobile */}
       {isMobileMenuOpen && (
