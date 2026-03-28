@@ -12,6 +12,11 @@ html, body {
   overflow-x: hidden;
 }
 
+.font-playfair { font-family: 'Playfair Display', Georgia, serif; }
+
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
 @font-face {
   font-family: 'EuropaGrotesk';
   src: url('/fonts/europa-grotesk-sh-bold.otf') format('opentype');
