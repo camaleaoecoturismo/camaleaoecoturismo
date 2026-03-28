@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { FloatingContactButton } from "@/components/FloatingContactButton";
 import { useTours } from "@/hooks/useTours";
 import { useTourCoverImages } from "@/hooks/useTourCoverImages";
+import { TourCard } from "@/components/TourCard";
 import { Star, ArrowRight, ChevronDown, Loader2, CalendarDays } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -44,15 +45,7 @@ interface BlogPost {
   tags: string[] | null;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const formatCurrency = (val: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
-
-const formatShortDate = (dateStr: string) => {
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("pt-BR", { day: "numeric", month: "short" });
-};
+// ─── Constantes ───────────────────────────────────────────────────────────────
 
 const STATS = [
   { value: "6", label: "anos de operação" },
@@ -242,47 +235,15 @@ export default function Home() {
               <p className="text-sm">Novas experiências em breve</p>
             </div>
           ) : (
-            <div className="flex overflow-x-auto gap-3 pb-4 px-5 scrollbar-hide snap-x snap-mandatory">
-              {upcomingTours.map((tour) => {
-                const cover = getCoverImage(tour.id);
-                const minPrice = tour.pricing_options?.length
-                  ? Math.min(...tour.pricing_options.map((o) => o.pix_price))
-                  : null;
-                return (
-                  <Link
-                    key={tour.id}
-                    to={`/passeio/${tour.id}`}
-                    className="shrink-0 w-56 md:w-64 snap-start group"
-                  >
-                    <div className="relative rounded-2xl overflow-hidden aspect-[3/4]">
-                      {(cover?.url || tour.image_url) ? (
-                        <img
-                          src={cover?.url || tour.image_url!}
-                          alt={tour.name}
-                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-[#820AD1] to-[#4a0080]" />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                      <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                        <p className="text-[10px] uppercase tracking-widest text-white/55 mb-1">
-                          {formatShortDate(tour.start_date)} · {tour.city}
-                        </p>
-                        <p className="font-playfair font-bold text-base leading-snug line-clamp-2">
-                          {tour.card_name_main || tour.name}
-                        </p>
-                        {minPrice !== null && (
-                          <p className="text-[11px] text-white/70 mt-2">
-                            a partir de <span className="text-white font-semibold">{formatCurrency(minPrice)}</span>
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+            <div className="flex overflow-x-auto gap-4 pb-4 px-5 scrollbar-hide snap-x snap-mandatory">
+              {upcomingTours.map((tour) => (
+                <div key={tour.id} className="shrink-0 w-72 snap-start">
+                  <TourCard
+                    tour={tour}
+                    preloadedCover={getCoverImage(tour.id)}
+                  />
+                </div>
+              ))}
             </div>
           )}
         </div>
