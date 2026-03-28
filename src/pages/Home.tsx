@@ -8,8 +8,8 @@ import { FloatingContactButton } from "@/components/FloatingContactButton";
 import { useTours } from "@/hooks/useTours";
 import { useTourCoverImages } from "@/hooks/useTourCoverImages";
 import {
-  Shield, Users, Leaf, Star, ChevronLeft, ChevronRight,
-  ArrowRight, MapPin, Mountain, Waves, TreePine, Zap, Heart,
+  Star, ChevronLeft, ChevronRight,
+  ArrowRight, Waves, TreePine,
   Loader2, CalendarDays,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -49,17 +49,6 @@ interface BlogPost {
   published_at: string | null;
   tags: string[] | null;
 }
-
-// ─── Diferenciais ─────────────────────────────────────────────────────────────
-
-const DIFERENCIAIS = [
-  { icon: Shield, title: "Segurança em 1º lugar", desc: "Equipamentos certificados, guias experientes e protocolos de segurança rigorosos em todas as aventuras." },
-  { icon: Users, title: "Grupos reduzidos", desc: "Turmas pequenas garantem mais atenção, qualidade e uma experiência verdadeiramente personalizada." },
-  { icon: Mountain, title: "Guias especializados", desc: "Nossa equipe é formada por apaixonados pela natureza com profundo conhecimento dos destinos." },
-  { icon: Leaf, title: "Ecoturismo responsável", desc: "Respeitamos e preservamos os ambientes naturais, contribuindo para a sustentabilidade local." },
-  { icon: Zap, title: "Suporte completo", desc: "Do primeiro contato até o retorno, estamos ao seu lado para garantir a melhor experiência." },
-  { icon: Heart, title: "Experiências únicas", desc: "Criamos memórias que ficam para sempre, combinando aventura, natureza e conexão humana." },
-];
 
 // ─── Componente principal ──────────────────────────────────────────────────────
 
@@ -113,24 +102,38 @@ export default function Home() {
     setTestimonialIdx((i) => (i + dir + testimonials.length) % testimonials.length);
   };
 
-  const destinations = useMemo(() => {
-    if (!tours.length) return [];
-    const map = new Map<string, { count: number; image: string | null; city: string; state: string }>();
-    const today = new Date().toISOString().slice(0, 10);
-    tours.filter((t) => t.is_active && !t.is_exclusive && t.start_date >= today).forEach((t) => {
-      if (!map.has(t.city)) map.set(t.city, { count: 0, image: t.image_url, city: t.city, state: t.state });
-      map.get(t.city)!.count += 1;
-    });
-    return Array.from(map.values()).sort((a, b) => b.count - a.count).slice(0, 6);
-  }, [tours]);
+  const today = new Date().toISOString().slice(0, 10);
 
-  const upcomingTours = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return tours.filter((t) => t.is_active && !t.is_exclusive && t.start_date >= today).slice(0, 6);
-  }, [tours]);
+  const upcomingTours = useMemo(() =>
+    tours.filter((t) => t.is_active && !t.is_exclusive && t.start_date >= today).slice(0, 8),
+    [tours]
+  );
 
-  const tourIds = useMemo(() => upcomingTours.map((t) => t.id), [upcomingTours]);
-  const { getCoverImage } = useTourCoverImages(tourIds);
+  const matchKeywords = (t: (typeof tours)[0], keywords: string[]) => {
+    const haystack = [t.name, t.etiqueta, t.about, t.destination_name].join(" ").toLowerCase();
+    return keywords.some((k) => haystack.includes(k));
+  };
+
+  const cachoeiraTours = useMemo(() =>
+    tours.filter((t) => t.is_active && !t.is_exclusive && t.start_date >= today && matchKeywords(t, ["cachoeira"])).slice(0, 10),
+    [tours]
+  );
+
+  const trilhaTours = useMemo(() =>
+    tours.filter((t) => t.is_active && !t.is_exclusive && t.start_date >= today && matchKeywords(t, ["trilha"])).slice(0, 10),
+    [tours]
+  );
+
+  const aventuraTours = useMemo(() =>
+    tours.filter((t) => t.is_active && !t.is_exclusive && t.start_date >= today && matchKeywords(t, ["rapel", "tirolesa", "rope"])).slice(0, 10),
+    [tours]
+  );
+
+  const allIds = useMemo(() =>
+    [...new Set([...upcomingTours, ...cachoeiraTours, ...trilhaTours, ...aventuraTours].map((t) => t.id))],
+    [upcomingTours, cachoeiraTours, trilhaTours, aventuraTours]
+  );
+  const { getCoverImage } = useTourCoverImages(allIds);
 
   return (
     <div className="min-h-screen bg-background">
@@ -138,11 +141,7 @@ export default function Home() {
 
       {/* ── HERO ──────────────────────────────────────────────────────────────── */}
       <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
-        {heroImage ? (
-          <img src={heroImage} alt="Camaleão Ecoturismo" className="absolute inset-0 w-full h-full object-cover" />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#1a0533] via-[#820AD1] to-[#1a0533]" />
-        )}
+        <img src="/hero.jpg" alt="Camaleão Ecoturismo" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/25 to-black/65" />
 
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
@@ -200,37 +199,74 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── DESTINOS ──────────────────────────────────────────────────────────── */}
-      {destinations.length > 0 && (
-        <section className="py-20 px-4 max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Explore</p>
-            <h2 className="font-playfair text-3xl md:text-4xl font-bold text-foreground">Nossos Destinos</h2>
-            <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
-              De Alagoas à Chapada Diamantina — escolha sua próxima aventura.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {destinations.map((d) => (
-              <Link key={d.city} to="/agenda"
-                className="group relative rounded-2xl overflow-hidden aspect-[4/3] shadow-md hover:shadow-xl transition-shadow"
-              >
-                {d.image ? (
-                  <img src={d.image} alt={d.city} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#820AD1] to-[#1a0533]" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 p-4 text-white">
-                  <div className="flex items-center gap-1 mb-1">
-                    <MapPin className="h-3.5 w-3.5 opacity-80" />
-                    <span className="text-xs opacity-80">{d.state}</span>
-                  </div>
-                  <p className="font-playfair font-bold text-lg leading-tight">{d.city}</p>
-                  <p className="text-xs text-white/70 mt-0.5">{d.count} {d.count === 1 ? "passeio" : "passeios"}</p>
-                </div>
+      {/* ── CACHOEIRAS ────────────────────────────────────────────────────────── */}
+      {cachoeiraTours.length > 0 && (
+        <section className="py-16">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-end justify-between mb-8 px-4">
+              <div>
+                <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-1">Preferência</p>
+                <h2 className="font-playfair text-3xl md:text-4xl font-bold text-foreground">Cachoeiras</h2>
+              </div>
+              <Link to="/agenda" className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
+                Ver todas <ArrowRight className="h-4 w-4" />
               </Link>
-            ))}
+            </div>
+            <div className="flex overflow-x-auto gap-4 pb-4 -mx-0 px-4 scrollbar-hide snap-x snap-mandatory">
+              {cachoeiraTours.map((tour) => (
+                <div key={tour.id} className="shrink-0 w-72 snap-start">
+                  <TourCard tour={tour} preloadedCover={getCoverImage(tour.id)} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── TRILHAS ───────────────────────────────────────────────────────────── */}
+      {trilhaTours.length > 0 && (
+        <section className="py-16 bg-muted/20">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-end justify-between mb-8 px-4">
+              <div>
+                <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-1">Preferência</p>
+                <h2 className="font-playfair text-3xl md:text-4xl font-bold text-foreground">Trilhas</h2>
+              </div>
+              <Link to="/agenda" className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
+                Ver todas <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <div className="flex overflow-x-auto gap-4 pb-4 px-4 scrollbar-hide snap-x snap-mandatory">
+              {trilhaTours.map((tour) => (
+                <div key={tour.id} className="shrink-0 w-72 snap-start">
+                  <TourCard tour={tour} preloadedCover={getCoverImage(tour.id)} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── AVENTURA ──────────────────────────────────────────────────────────── */}
+      {aventuraTours.length > 0 && (
+        <section className="py-16">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-end justify-between mb-8 px-4">
+              <div>
+                <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-1">Preferência</p>
+                <h2 className="font-playfair text-3xl md:text-4xl font-bold text-foreground">Aventura</h2>
+              </div>
+              <Link to="/agenda" className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
+                Ver todas <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <div className="flex overflow-x-auto gap-4 pb-4 px-4 scrollbar-hide snap-x snap-mandatory">
+              {aventuraTours.map((tour) => (
+                <div key={tour.id} className="shrink-0 w-72 snap-start">
+                  <TourCard tour={tour} preloadedCover={getCoverImage(tour.id)} />
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}
@@ -276,27 +312,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── POR QUE NOS ESCOLHER ──────────────────────────────────────────────── */}
-      <section className="py-20 px-4 max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Diferenciais</p>
-          <h2 className="font-playfair text-3xl md:text-4xl font-bold text-foreground">Por que nos escolher?</h2>
-          <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
-            6 anos levando famílias, grupos e aventureiros a destinos inesquecíveis.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {DIFERENCIAIS.map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="p-6 rounded-2xl border border-border bg-card hover:border-primary/30 hover:shadow-md transition-all group">
-              <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                <Icon className="h-5 w-5 text-primary" />
-              </div>
-              <h3 className="font-semibold text-foreground mb-2">{title}</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">{desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* ── DEPOIMENTOS ───────────────────────────────────────────────────────── */}
       {testimonials.length > 0 && (
