@@ -8,9 +8,7 @@ import { FloatingContactButton } from "@/components/FloatingContactButton";
 import { useTours } from "@/hooks/useTours";
 import { useTourCoverImages } from "@/hooks/useTourCoverImages";
 import {
-  Star, ChevronLeft, ChevronRight,
-  ArrowRight, Waves, TreePine,
-  Loader2, CalendarDays,
+  Star, ChevronLeft, ChevronRight, ArrowRight, Waves, TreePine, Loader2, CalendarDays,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -140,11 +138,11 @@ export default function Home() {
       <TopMenu transparent />
 
       {/* ── HERO ──────────────────────────────────────────────────────────────── */}
-      <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
+      <section className="relative h-screen min-h-[600px] flex items-end justify-center overflow-hidden">
         <img src="/hero.jpg" alt="Camaleão Ecoturismo" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/25 to-black/65" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
 
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
+        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto pb-20 md:pb-28">
           <p className="text-white/80 uppercase tracking-[0.3em] text-xs md:text-sm font-medium mb-4">
             Ecoturismo · Trilhas · Cachoeiras
           </p>
@@ -176,10 +174,6 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-white/50 animate-bounce">
-          <div className="w-px h-8 bg-white/30" />
-          <ChevronRight className="h-4 w-4 rotate-90" />
-        </div>
       </section>
 
       {/* ── STATS ─────────────────────────────────────────────────────────────── */}
