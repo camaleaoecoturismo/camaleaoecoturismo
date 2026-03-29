@@ -13,6 +13,7 @@ html, body {
 }
 
 .font-playfair { font-family: 'Playfair Display', Georgia, serif; }
+.font-figtree  { font-family: 'Figtree', sans-serif; }
 
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }

@@ -65,7 +65,7 @@ function StatsSection() {
       <div className="max-w-4xl mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4">
         {STATS.map((s, i) => (
           <div key={s.label} className={`flex flex-col items-center text-center py-6 px-4 border-border/50 ${i % 2 === 0 && i < 3 ? "border-r" : ""} ${i % 2 !== 0 && i < 3 ? "md:border-r" : ""}`}>
-            <span className="font-playfair text-4xl md:text-5xl font-bold text-[#820AD1] leading-none tabular-nums">
+            <span className="font-figtree text-4xl md:text-5xl font-bold text-[#820AD1] leading-none tabular-nums">
               {format(i, counts[i])}
             </span>
             <span className="text-xs text-muted-foreground mt-2 uppercase tracking-widest leading-tight">{s.label}</span>
@@ -214,7 +214,7 @@ export default function Home() {
             <div className="flex items-end justify-between mb-8 px-4">
               <div>
                 <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-1">Preferência</p>
-                <h2 className="font-playfair text-3xl md:text-4xl font-bold text-foreground">Cachoeiras</h2>
+                <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Cachoeiras</h2>
               </div>
               <Link to="/agenda" className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
                 Ver todas <ArrowRight className="h-4 w-4" />
@@ -238,7 +238,7 @@ export default function Home() {
             <div className="flex items-end justify-between mb-8 px-4">
               <div>
                 <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-1">Preferência</p>
-                <h2 className="font-playfair text-3xl md:text-4xl font-bold text-foreground">Trilhas</h2>
+                <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Trilhas</h2>
               </div>
               <Link to="/agenda" className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
                 Ver todas <ArrowRight className="h-4 w-4" />
@@ -262,7 +262,7 @@ export default function Home() {
             <div className="flex items-end justify-between mb-8 px-4">
               <div>
                 <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-1">Preferência</p>
-                <h2 className="font-playfair text-3xl md:text-4xl font-bold text-foreground">Aventura</h2>
+                <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Aventura</h2>
               </div>
               <Link to="/agenda" className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
                 Ver todas <ArrowRight className="h-4 w-4" />
@@ -285,7 +285,7 @@ export default function Home() {
           <div className="flex items-end justify-between mb-12">
             <div>
               <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Agenda</p>
-              <h2 className="font-playfair text-3xl md:text-4xl font-bold text-foreground">Próximas Aventuras</h2>
+              <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Próximas Aventuras</h2>
             </div>
             <Link to="/agenda" className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
               Ver todas <ArrowRight className="h-4 w-4" />
@@ -327,7 +327,7 @@ export default function Home() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <p className="text-white/60 text-sm font-semibold uppercase tracking-widest mb-2">Depoimentos</p>
-              <h2 className="font-playfair text-3xl md:text-4xl font-bold">O que dizem nossos viajantes</h2>
+              <h2 className="font-figtree text-3xl md:text-4xl font-bold uppercase tracking-tight">O que dizem nossos viajantes</h2>
             </div>
             <div className="relative">
               <div className="overflow-hidden">
@@ -404,7 +404,7 @@ export default function Home() {
         <section className="py-20 px-4 max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Quem somos</p>
-            <h2 className="font-playfair text-3xl md:text-4xl font-bold text-foreground">Conheça nossa equipe</h2>
+            <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Conheça nossa equipe</h2>
             <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
               Apaixonados pela natureza e dedicados a criar experiências únicas para você.
             </p>
@@ -439,7 +439,7 @@ export default function Home() {
             <div className="flex items-end justify-between mb-12">
               <div>
                 <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Blog</p>
-                <h2 className="font-playfair text-3xl md:text-4xl font-bold text-foreground">Últimas aventuras</h2>
+                <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Últimas aventuras</h2>
               </div>
               <Link to="/blog" className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
                 Ver todos <ArrowRight className="h-4 w-4" />
@@ -461,7 +461,7 @@ export default function Home() {
                         ))}
                       </div>
                     )}
-                    <h3 className="font-playfair font-bold text-foreground line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+                    <h3 className="font-figtree font-bold text-foreground line-clamp-2 mb-2 uppercase tracking-tight group-hover:text-primary transition-colors">
                       {post.titulo}
                     </h3>
                     {post.excerpt && <p className="text-muted-foreground text-sm line-clamp-2">{post.excerpt}</p>}
@@ -491,7 +491,7 @@ export default function Home() {
           <Waves className="absolute bottom-8 right-8 h-32 w-32 text-white" />
         </div>
         <div className="relative z-10 text-center text-white max-w-2xl mx-auto">
-          <h2 className="font-playfair text-3xl md:text-5xl font-bold mb-4">
+          <h2 className="font-figtree text-3xl md:text-5xl font-bold mb-4 uppercase tracking-tight">
             Pronto para sua<br />próxima aventura?
           </h2>
           <p className="text-white/80 text-lg mb-10">
