@@ -319,62 +319,16 @@ export default function Home() {
 
 
       {/* ── DEPOIMENTOS ───────────────────────────────────────────────────────── */}
-      {testimonials.length > 0 && (
-        <section className="py-20 px-4 bg-gradient-to-br from-[#1a0533] to-[#3d0a6e] text-white">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <p className="text-white/60 text-sm font-semibold uppercase tracking-widest mb-2">Depoimentos</p>
-              <h2 className="font-figtree text-3xl md:text-4xl font-bold uppercase tracking-tight">O que dizem nossos viajantes</h2>
-            </div>
-            <div className="relative">
-              <div className="overflow-hidden">
-                <div className="text-center px-8 md:px-16">
-                  <div className="flex justify-center gap-1 mb-6">
-                    {Array.from({ length: testimonials[testimonialIdx]?.rating || 5 }).map((_, i) => (
-                      <Star key={i} className="h-5 w-5 fill-[#820AD1] text-[#820AD1]" />
-                    ))}
-                  </div>
-                  <blockquote className="text-white/90 text-lg md:text-xl leading-relaxed italic mb-8">
-                    "{testimonials[testimonialIdx]?.text}"
-                  </blockquote>
-                  <div className="flex items-center justify-center gap-3">
-                    {testimonials[testimonialIdx]?.photo_url ? (
-                      <img src={testimonials[testimonialIdx].photo_url!} alt={testimonials[testimonialIdx].name} className="w-12 h-12 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-lg">
-                        {testimonials[testimonialIdx]?.name?.[0]}
-                      </div>
-                    )}
-                    <div className="text-left">
-                      <p className="font-semibold text-white">{testimonials[testimonialIdx]?.name}</p>
-                      {testimonials[testimonialIdx]?.date && (
-                        <p className="text-white/50 text-xs">{testimonials[testimonialIdx].date}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {testimonials.length > 1 && (
-                <>
-                  <button onClick={() => goTestimonial(-1)} className="absolute left-0 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
-                    <ChevronLeft className="h-5 w-5" />
-                  </button>
-                  <button onClick={() => goTestimonial(1)} className="absolute right-0 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                  <div className="flex justify-center gap-2 mt-8">
-                    {testimonials.map((_, i) => (
-                      <button key={i} onClick={() => { goTestimonial(0); setTestimonialIdx(i); }}
-                        className={`w-2 h-2 rounded-full transition-all ${i === testimonialIdx ? "bg-white w-5" : "bg-white/30"}`}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+      {/* ── DEPOIMENTOS (Google Reviews via Elfsight) ─────────────────────────── */}
+      <section className="py-16 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Avaliações</p>
+            <h2 className="font-figtree text-3xl md:text-4xl font-bold uppercase tracking-tight text-foreground">O que dizem nossos viajantes</h2>
           </div>
-        </section>
-      )}
+          <div className="elfsight-app-fc1cf9ea-c516-40e2-86de-0bc549b59b05" data-elfsight-app-lazy />
+        </div>
+      </section>
 
       {/* ── PARCEIROS ─────────────────────────────────────────────────────────── */}
       {partners.length > 0 && (
@@ -429,9 +383,6 @@ export default function Home() {
         </section>
       )}
 
-      {/* ── STATS ─────────────────────────────────────────────────────────────── */}
-      <StatsSection />
-
       {/* ── BLOG ──────────────────────────────────────────────────────────────── */}
       {blogPosts.length > 0 && (
         <section className="py-20 px-4 bg-muted/30">
@@ -475,6 +426,9 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      {/* ── STATS ─────────────────────────────────────────────────────────────── */}
+      <StatsSection />
 
       {/* ── CTA FINAL ─────────────────────────────────────────────────────────── */}
       <section className="relative py-24 px-4 overflow-hidden">
