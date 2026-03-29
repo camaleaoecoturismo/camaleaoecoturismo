@@ -204,9 +204,6 @@ export default function Home() {
       {/* ── HERO ──────────────────────────────────────────────────────────────── */}
       <HeroBanner />
 
-      {/* ── STATS ─────────────────────────────────────────────────────────────── */}
-      <StatsSection />
-
       {/* ── CACHOEIRAS ────────────────────────────────────────────────────────── */}
       {cachoeiraTours.length > 0 && (
         <section className="py-16">
@@ -432,6 +429,9 @@ export default function Home() {
         </section>
       )}
 
+      {/* ── STATS ─────────────────────────────────────────────────────────────── */}
+      <StatsSection />
+
       {/* ── BLOG ──────────────────────────────────────────────────────────────── */}
       {blogPosts.length > 0 && (
         <section className="py-20 px-4 bg-muted/30">
@@ -454,13 +454,6 @@ export default function Home() {
                     </div>
                   )}
                   <div className="p-5">
-                    {post.tags && post.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {post.tags.slice(0, 2).map((tag) => (
-                          <span key={tag} className="bg-primary/10 text-primary text-[10px] font-medium px-2 py-0.5 rounded-full">{tag}</span>
-                        ))}
-                      </div>
-                    )}
                     <h3 className="font-figtree font-bold text-foreground line-clamp-2 mb-2 uppercase tracking-tight group-hover:text-primary transition-colors">
                       {post.titulo}
                     </h3>
