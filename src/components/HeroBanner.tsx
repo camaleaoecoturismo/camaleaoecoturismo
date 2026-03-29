@@ -84,7 +84,7 @@ export function HeroBanner() {
 
   if (hasFallback) {
     return (
-      <section className="relative h-[88svh] min-h-[520px] flex items-end justify-center overflow-hidden">
+      <section className="relative h-[100svh] min-h-[600px] flex items-end justify-center overflow-hidden">
         <img src="/hero.jpg" alt="Camaleão Ecoturismo" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto pb-20 md:pb-28">
@@ -104,7 +104,7 @@ export function HeroBanner() {
   }
 
   return (
-    <section className="relative h-[88svh] min-h-[520px] overflow-hidden">
+    <section className="relative h-[100svh] min-h-[600px] overflow-hidden">
       {/* Slides */}
       {slides.map((slide, idx) => (
         <div
