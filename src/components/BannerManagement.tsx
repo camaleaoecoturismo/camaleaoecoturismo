@@ -12,7 +12,12 @@ import { toast } from "sonner";
 
 interface Banner {
   id: string;
-  image_url: string;
+  image_url: string | null;
+  video_url?: string | null;
+  title?: string | null;
+  subtitle?: string | null;
+  button_text?: string | null;
+  button_url?: string | null;
   link_url?: string;
   etiqueta?: string;
   order_index: number;
@@ -23,7 +28,11 @@ interface Banner {
 
 interface BannerFormData {
   image_url: string;
-  link_url: string;
+  video_url: string;
+  title: string;
+  subtitle: string;
+  button_text: string;
+  button_url: string;
   etiqueta: string;
 }
 
@@ -35,9 +44,14 @@ export function BannerManagement() {
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState<BannerFormData>({
     image_url: "",
-    link_url: "",
+    video_url: "",
+    title: "",
+    subtitle: "",
+    button_text: "",
+    button_url: "",
     etiqueta: "",
   });
+  const [uploadingVideo, setUploadingVideo] = useState(false);
 
   useEffect(() => {
     fetchBanners();
@@ -60,44 +74,40 @@ export function BannerManagement() {
     }
   };
 
-  const uploadImage = async (file: File): Promise<string> => {
+  const uploadFile = async (file: File, folder: string): Promise<string> => {
     const fileExt = file.name.split('.').pop();
-    const fileName = `banner-${Date.now()}.${fileExt}`;
+    const fileName = `${folder}-${Date.now()}.${fileExt}`;
     const filePath = `banners/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('tour-images')
-      .upload(filePath, file);
-
+    const { error: uploadError } = await supabase.storage.from('tour-images').upload(filePath, file);
     if (uploadError) throw uploadError;
-
-    const { data } = supabase.storage
-      .from('tour-images')
-      .getPublicUrl(filePath);
-
+    const { data } = supabase.storage.from('tour-images').getPublicUrl(filePath);
     return data.publicUrl;
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast.error("Por favor, selecione apenas arquivos de imagem");
-      return;
-    }
-
+    if (!file.type.startsWith('image/')) { toast.error("Selecione um arquivo de imagem"); return; }
     setUploading(true);
     try {
-      const imageUrl = await uploadImage(file);
-      setFormData(prev => ({ ...prev, image_url: imageUrl }));
-      toast.success("Imagem enviada com sucesso!");
-    } catch (error) {
-      console.error("Erro no upload:", error);
-      toast.error("Erro ao enviar imagem");
-    } finally {
-      setUploading(false);
-    }
+      const url = await uploadFile(file, 'img');
+      setFormData(prev => ({ ...prev, image_url: url }));
+      toast.success("Foto enviada!");
+    } catch { toast.error("Erro ao enviar foto"); }
+    finally { setUploading(false); }
+  };
+
+  const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('video/')) { toast.error("Selecione um arquivo de vídeo"); return; }
+    setUploadingVideo(true);
+    try {
+      const url = await uploadFile(file, 'vid');
+      setFormData(prev => ({ ...prev, video_url: url }));
+      toast.success("Vídeo enviado!");
+    } catch { toast.error("Erro ao enviar vídeo"); }
+    finally { setUploadingVideo(false); }
   };
 
   const getNextOrderIndex = () => {
@@ -107,15 +117,19 @@ export function BannerManagement() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.image_url.trim()) {
-      toast.error("Imagem é obrigatória");
+    if (!formData.image_url.trim() && !formData.video_url.trim()) {
+      toast.error("Adicione uma foto ou vídeo");
       return;
     }
 
     try {
       const bannerData = {
-        image_url: formData.image_url,
-        link_url: formData.link_url || null,
+        image_url: formData.image_url || null,
+        video_url: formData.video_url || null,
+        title: formData.title || null,
+        subtitle: formData.subtitle || null,
+        button_text: formData.button_text || null,
+        button_url: formData.button_url || null,
         etiqueta: formData.etiqueta || null,
         order_index: editingBanner ? editingBanner.order_index : getNextOrderIndex(),
       };
@@ -137,7 +151,7 @@ export function BannerManagement() {
         toast.success("Banner criado com sucesso!");
       }
 
-      setFormData({ image_url: "", link_url: "", etiqueta: "" });
+      setFormData({ image_url: "", video_url: "", title: "", subtitle: "", button_text: "", button_url: "", etiqueta: "" });
       setEditingBanner(null);
       setShowForm(false);
       fetchBanners();
@@ -150,8 +164,12 @@ export function BannerManagement() {
   const handleEdit = (banner: Banner) => {
     setEditingBanner(banner);
     setFormData({
-      image_url: banner.image_url,
-      link_url: banner.link_url || "",
+      image_url: banner.image_url || "",
+      video_url: banner.video_url || "",
+      title: banner.title || "",
+      subtitle: banner.subtitle || "",
+      button_text: banner.button_text || "",
+      button_url: banner.button_url || "",
       etiqueta: banner.etiqueta || "",
     });
     setShowForm(true);
@@ -220,7 +238,7 @@ export function BannerManagement() {
   };
 
   const resetForm = () => {
-    setFormData({ image_url: "", link_url: "", etiqueta: "" });
+    setFormData({ image_url: "", video_url: "", title: "", subtitle: "", button_text: "", button_url: "", etiqueta: "" });
     setEditingBanner(null);
     setShowForm(false);
   };
@@ -247,68 +265,53 @@ export function BannerManagement() {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Foto */}
               <div>
-                <Label htmlFor="image">Imagem *</Label>
-                <div className="mt-2">
-                  <Input
-                    id="image"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={uploading}
-                  />
-                  {uploading && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Enviando imagem...
-                    </p>
-                  )}
-                  {formData.image_url && (
-                    <img
-                      src={formData.image_url}
-                      alt="Preview"
-                      className="mt-2 w-full h-32 object-cover rounded"
-                    />
-                  )}
+                <Label htmlFor="image">Foto de fundo</Label>
+                <Input id="image" type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="mt-1.5" />
+                {uploading && <p className="text-xs text-muted-foreground mt-1">Enviando foto...</p>}
+                {formData.image_url && <img src={formData.image_url} alt="Preview" className="mt-2 w-full h-28 object-cover rounded-lg" />}
+              </div>
+
+              {/* Vídeo */}
+              <div>
+                <Label htmlFor="video">Vídeo de fundo <span className="text-muted-foreground font-normal">(substitui a foto se enviado)</span></Label>
+                <Input id="video" type="file" accept="video/*" onChange={handleVideoUpload} disabled={uploadingVideo} className="mt-1.5" />
+                {uploadingVideo && <p className="text-xs text-muted-foreground mt-1">Enviando vídeo... (pode demorar)</p>}
+                {formData.video_url && (
+                  <video src={formData.video_url} muted className="mt-2 w-full h-28 object-cover rounded-lg" />
+                )}
+              </div>
+
+              {/* Título */}
+              <div>
+                <Label htmlFor="title">Título</Label>
+                <Input id="title" value={formData.title} onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} placeholder="Reconecte-se com a natureza" className="mt-1.5" />
+              </div>
+
+              {/* Subtítulo */}
+              <div>
+                <Label htmlFor="subtitle">Subtítulo</Label>
+                <Input id="subtitle" value={formData.subtitle} onChange={(e) => setFormData(prev => ({ ...prev, subtitle: e.target.value }))} placeholder="Experimente a liberdade" className="mt-1.5" />
+              </div>
+
+              {/* Botão */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="btn_text">Texto do botão</Label>
+                  <Input id="btn_text" value={formData.button_text} onChange={(e) => setFormData(prev => ({ ...prev, button_text: e.target.value }))} placeholder="Ver Passeios" className="mt-1.5" />
+                </div>
+                <div>
+                  <Label htmlFor="btn_url">Link do botão</Label>
+                  <Input id="btn_url" value={formData.button_url} onChange={(e) => setFormData(prev => ({ ...prev, button_url: e.target.value }))} placeholder="/agenda" className="mt-1.5" />
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="etiqueta">Etiqueta (opcional)</Label>
-                <Input
-                  id="etiqueta"
-                  value={formData.etiqueta}
-                  onChange={(e) => setFormData(prev => ({ ...prev, etiqueta: e.target.value }))}
-                  placeholder="Ex: NOVIDADE, PROMOÇÃO"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="link">Link de destino (opcional)</Label>
-                <Input
-                  id="link"
-                  type="url"
-                  value={formData.link_url}
-                  onChange={(e) => setFormData(prev => ({ ...prev, link_url: e.target.value }))}
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  type="submit"
-                  disabled={uploading || !formData.image_url}
-                  className="flex-1"
-                >
+              <div className="flex gap-2 pt-1">
+                <Button type="submit" disabled={uploading || uploadingVideo || (!formData.image_url && !formData.video_url)} className="flex-1">
                   {editingBanner ? "Atualizar" : "Criar"}
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={resetForm}
-                  className="flex-1"
-                >
-                  Cancelar
-                </Button>
+                <Button type="button" variant="outline" onClick={resetForm} className="flex-1">Cancelar</Button>
               </div>
             </form>
           </DialogContent>

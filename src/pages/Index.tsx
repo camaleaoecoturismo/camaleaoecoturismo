@@ -60,11 +60,17 @@ const Index = () => {
   const tourIds = useMemo(() => tours.map((t) => t.id), [tours]);
   const { getCoverImage } = useTourCoverImages(tourIds);
 
-  // Build months list
+  // Build months list — only months that have at least one future tour
   const months = useMemo(() => {
     if (!tours.length) return [];
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
     const activeTours = tours.filter(
-      (tour) => tour.is_active && tour.start_date && !tour.is_exclusive
+      (tour) =>
+        tour.is_active &&
+        tour.start_date &&
+        !tour.is_exclusive &&
+        new Date(tour.start_date + "T12:00:00") >= now
     );
     const monthYearMap = new Map<string, { month: string; year: number; firstDate: Date }>();
     activeTours.forEach((tour) => {

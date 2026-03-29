@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { TopMenu } from "@/components/TopMenu";
+import { HeroBanner } from "@/components/HeroBanner";
 import Footer from "@/components/Footer";
 import { TourCard } from "@/components/TourCard";
 import { FloatingContactButton } from "@/components/FloatingContactButton";
@@ -138,43 +139,7 @@ export default function Home() {
       <TopMenu transparent />
 
       {/* ── HERO ──────────────────────────────────────────────────────────────── */}
-      <section className="relative h-screen min-h-[600px] flex items-end justify-center overflow-hidden">
-        <img src="/hero.jpg" alt="Camaleão Ecoturismo" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto pb-20 md:pb-28">
-          <p className="text-white/80 uppercase tracking-[0.3em] text-xs md:text-sm font-medium mb-4">
-            Ecoturismo · Trilhas · Cachoeiras
-          </p>
-          <h1 className="font-playfair text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-            Reconecte-se com<br />
-            <span className="italic">a natureza</span>
-          </h1>
-          <p className="text-white/85 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
-            Experimente a liberdade em destinos únicos do Brasil.<br className="hidden md:block" />
-            Segurança, natureza e memórias que ficam para sempre.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button
-              size="lg"
-              className="bg-[#820AD1] hover:bg-[#6e09b0] text-white px-8 py-6 text-base font-semibold rounded-full shadow-lg shadow-purple-900/40"
-              onClick={() => navigate("/agenda")}
-            >
-              Ver Passeios
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <Button size="lg" variant="outline"
-              className="border-white/50 text-white bg-white/10 hover:bg-white/20 px-8 py-6 text-base font-semibold rounded-full backdrop-blur-sm"
-              asChild
-            >
-              <a href="https://wa.me/5582993649454" target="_blank" rel="noopener noreferrer">
-                Fale com a gente
-              </a>
-            </Button>
-          </div>
-        </div>
-
-      </section>
+      <HeroBanner />
 
       {/* ── STATS ─────────────────────────────────────────────────────────────── */}
       <section className="bg-[#820AD1] text-white py-10">
