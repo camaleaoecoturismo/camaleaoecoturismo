@@ -181,7 +181,7 @@ export default function Home() {
   const today = new Date().toISOString().slice(0, 10);
 
   const upcomingTours = useMemo(() =>
-    tours.filter((t) => t.is_active && !t.is_exclusive && t.start_date >= today).slice(0, 8),
+    tours.filter((t) => t.is_active && !t.is_exclusive && !t.vagas_fechadas && t.start_date >= today).slice(0, 8),
     [tours]
   );
 
@@ -274,20 +274,13 @@ export default function Home() {
               <p>Novas aventuras em breve!</p>
             </div>
           ) : (
-            <>
-              <div className="flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible md:pb-0 md:mx-0 md:px-0">
-                {upcomingTours.map((tour) => (
-                  <div key={tour.id} className="shrink-0 w-72 snap-start md:w-auto md:shrink">
-                    <TourCard tour={tour} preloadedCover={getCoverImage(tour.id)} />
-                  </div>
-                ))}
-              </div>
-              <div className="text-center mt-8 sm:hidden">
-                <Button asChild variant="outline" className="rounded-full">
-                  <Link to="/agenda">Ver todas as aventuras <ArrowRight className="ml-2 h-4 w-4" /></Link>
-                </Button>
-              </div>
-            </>
+            <div className="flex overflow-x-auto gap-4 pb-4 px-4 scrollbar-hide snap-x snap-mandatory">
+              {upcomingTours.map((tour) => (
+                <div key={tour.id} className="shrink-0 w-72 snap-start">
+                  <TourCard tour={tour} preloadedCover={getCoverImage(tour.id)} />
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </section>
