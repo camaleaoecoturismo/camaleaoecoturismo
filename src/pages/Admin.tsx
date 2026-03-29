@@ -382,7 +382,7 @@ const Admin = () => {
       <main
         className={cn(
           "flex-1 pb-20 md:pb-0 min-w-0 overflow-x-hidden transition-[margin] duration-300",
-          sidebarCollapsed ? 'md:ml-16' : 'md:ml-60'
+          sidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-60'
         )}
       >
         {/* Header */}

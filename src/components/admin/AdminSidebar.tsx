@@ -25,6 +25,7 @@ import {
   Ticket,
   QrCode,
   ChevronDown,
+  ChevronLeft,
   ClipboardList,
   UserPlus,
   FileSpreadsheet,
@@ -47,8 +48,9 @@ import {
   X,
   ChevronRight,
   Megaphone,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import AdminSettingsModal from './AdminSettingsModal';
 import { toast } from 'sonner';
@@ -202,7 +204,7 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-// Flyout submenu panel
+// Flyout submenu panel (used only in collapsed mode)
 function FlyoutMenu({
   item,
   onSelect,
@@ -217,7 +219,7 @@ function FlyoutMenu({
   if (!item.subItems) return null;
 
   const maxBottom = window.innerHeight - 16;
-  const estimatedHeight = item.subItems.length * 44 + 56; // rough estimate
+  const estimatedHeight = item.subItems.length * 44 + 56;
   const top = Math.min(anchorTop, maxBottom - estimatedHeight);
 
   return (
@@ -263,9 +265,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   totalReservas,
   onCollapsedChange,
 }) => {
+  const [collapsed, setCollapsed] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [flyoutAnchorTop, setFlyoutAnchorTop] = useState(0);
+  const [openAccordions, setOpenAccordions] = useState<string[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [customLogo, setCustomLogo] = useState<string | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -288,6 +292,27 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     };
     loadLogo();
   }, []);
+
+  // When expanding, auto-open accordion for active item's parent
+  const toggleCollapsed = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    onCollapsedChange?.(next);
+    if (!next) {
+      const activeParent = navGroups
+        .flatMap((g) => g.items)
+        .find((item) => item.subItems?.some((s) => s.id === activeTab));
+      if (activeParent) {
+        setOpenAccordions([activeParent.id]);
+      }
+    }
+  };
+
+  const toggleAccordion = (id: string) => {
+    setOpenAccordions((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -318,6 +343,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     return activeTab === item.id;
   };
 
+  // Flyout handlers (collapsed mode only)
   const handleItemEnter = (item: NavItem, id: string) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     const el = itemRefs.current.get(id);
@@ -340,15 +366,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     hoverTimeoutRef.current = setTimeout(() => setHoveredItem(null), 150);
   };
 
-  const handleItemClick = (item: NavItem) => {
-    if (!item.subItems) {
-      onTabChange(item.id);
-      setMobileOpen(false);
-      setHoveredItem(null);
-    }
-    // items with subItems: flyout handles navigation
-  };
-
   const handleSubItemClick = (id: string) => {
     onTabChange(id);
     setHoveredItem(null);
@@ -357,12 +374,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   useEffect(() => () => { if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current); }, []);
 
-  // Find the hovered nav item
   const hoveredNavItem = hoveredItem
-    ? navGroups.flatMap(g => g.items).find(i => i.id === hoveredItem) ?? null
+    ? navGroups.flatMap((g) => g.items).find((i) => i.id === hoveredItem) ?? null
     : null;
 
-  const SidebarContent = ({ mobile = false }: { mobile?: boolean }) => (
+  // ─── Collapsed sidebar content ───────────────────────────────────────────
+  const CollapsedContent = () => (
     <div className="grid h-full" style={{ gridTemplateRows: '64px 1fr auto' }}>
       {/* Logo */}
       <div className="flex items-center justify-center border-b border-border">
@@ -389,12 +406,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       </div>
 
       {/* Nav */}
-      <nav className="overflow-y-auto py-3 px-1.5 relative" style={{ scrollbarWidth: 'thin', scrollbarColor: 'hsl(var(--border)) transparent' }}>
+      <nav className="overflow-y-auto py-3 px-1.5" style={{ scrollbarWidth: 'thin', scrollbarColor: 'hsl(var(--border)) transparent' }}>
         {navGroups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-1' : ''}>
-            {group.label && (
-              <div className="mx-1 my-2 border-t border-border/40" />
-            )}
+            {group.label && <div className="mx-1 my-2 border-t border-border/40" />}
             <ul className="space-y-0.5">
               {group.items.map((item) => {
                 const active = isItemActive(item);
@@ -403,14 +418,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 return (
                   <li
                     key={item.id}
-                    ref={el => { if (el) itemRefs.current.set(item.id, el); }}
-                    onMouseEnter={() => !mobile && handleItemEnter(item, item.id)}
-                    onMouseLeave={() => !mobile && handleItemLeave()}
+                    ref={(el) => { if (el) itemRefs.current.set(item.id, el); }}
+                    onMouseEnter={() => handleItemEnter(item, item.id)}
+                    onMouseLeave={handleItemLeave}
                   >
                     <button
-                      onClick={() => handleItemClick(item)}
+                      onClick={() => { if (!hasChildren) { onTabChange(item.id); } }}
+                      title={item.label}
                       className={cn(
-                        'w-full flex flex-col items-center justify-center gap-0.5 py-2 px-1 rounded-xl transition-all duration-150 group relative',
+                        'w-full flex items-center justify-center py-2.5 px-1 rounded-xl transition-all duration-150 relative',
                         active
                           ? 'bg-primary/10 text-primary'
                           : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
@@ -421,9 +437,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                         active ? 'bg-primary text-primary-foreground' : ''
                       )}>
                         {item.icon}
-                      </span>
-                      <span className="text-[10px] font-medium leading-tight text-center truncate w-full px-0.5">
-                        {item.label}
                       </span>
                       {hasChildren && (
                         <ChevronRight className="absolute right-1 top-1/2 -translate-y-1/2 h-2.5 w-2.5 opacity-40" />
@@ -442,20 +455,153 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         ))}
       </nav>
 
-      {/* Scroll fade indicator */}
-      <div className="pointer-events-none absolute bottom-[72px] left-0 right-0 h-8 bg-gradient-to-t from-card to-transparent z-10" />
+      {/* Footer */}
+      <div className="border-t border-border p-2 space-y-1">
+        {/* Expand button */}
+        <button
+          onClick={toggleCollapsed}
+          title="Expandir menu"
+          className="w-full flex items-center justify-center py-2 px-1 rounded-xl text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+        >
+          <PanelLeftOpen className="h-5 w-5" />
+        </button>
+        {/* Sign out */}
+        <button
+          onClick={onSignOut}
+          className="w-full flex items-center justify-center py-2 px-1 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+          title="Sair"
+        >
+          <LogOut className="h-5 w-5" />
+        </button>
+      </div>
+    </div>
+  );
 
-      {/* Footer — sign out */}
+  // ─── Expanded sidebar content ─────────────────────────────────────────────
+  const ExpandedContent = () => (
+    <div className="grid h-full" style={{ gridTemplateRows: '64px 1fr auto' }}>
+      {/* Logo + collapse button */}
+      <div className="flex items-center justify-between px-3 border-b border-border">
+        <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+        <button
+          onClick={() => logoInputRef.current?.click()}
+          className="w-9 h-9 rounded-xl overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all relative shrink-0"
+          title="Clique para alterar a logo"
+          disabled={isUploadingLogo}
+        >
+          {customLogo ? (
+            <img src={customLogo} alt="Logo" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-muted flex items-center justify-center">
+              <Camera className="h-4 w-4 text-muted-foreground" />
+            </div>
+          )}
+          {isUploadingLogo && (
+            <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+              <div className="h-3 w-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+        </button>
+        <button
+          onClick={toggleCollapsed}
+          title="Recolher menu"
+          className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+        >
+          <PanelLeftClose className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Nav */}
+      <nav className="overflow-y-auto py-3 px-2" style={{ scrollbarWidth: 'thin', scrollbarColor: 'hsl(var(--border)) transparent' }}>
+        {navGroups.map((group, gi) => (
+          <div key={gi} className={gi > 0 ? 'mt-1' : ''}>
+            {group.label && (
+              <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest px-2 pt-3 pb-1">
+                {group.label}
+              </p>
+            )}
+            <ul className="space-y-0.5">
+              {group.items.map((item) => {
+                const active = isItemActive(item);
+                const hasChildren = !!item.subItems?.length;
+                const isOpen = openAccordions.includes(item.id);
+
+                return (
+                  <li key={item.id}>
+                    <button
+                      onClick={() => {
+                        if (hasChildren) {
+                          toggleAccordion(item.id);
+                        } else {
+                          onTabChange(item.id);
+                        }
+                      }}
+                      className={cn(
+                        'w-full flex items-center gap-3 py-2 px-2 rounded-xl transition-all duration-150 text-sm',
+                        active
+                          ? 'bg-primary/10 text-primary font-medium'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                      )}
+                    >
+                      <span className={cn(
+                        'flex items-center justify-center w-7 h-7 rounded-lg shrink-0 transition-colors',
+                        active ? 'bg-primary text-primary-foreground' : 'bg-muted/60'
+                      )}>
+                        {item.icon}
+                      </span>
+                      <span className="flex-1 text-left truncate">{item.label}</span>
+                      {item.id === 'clientes' && totalReservas !== undefined && totalReservas > 0 && (
+                        <span className="bg-primary text-primary-foreground text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                          {totalReservas}
+                        </span>
+                      )}
+                      {hasChildren && (
+                        <ChevronDown className={cn(
+                          'h-3.5 w-3.5 opacity-50 transition-transform duration-200 shrink-0',
+                          isOpen && 'rotate-180'
+                        )} />
+                      )}
+                    </button>
+
+                    {/* Accordion subitems */}
+                    {hasChildren && isOpen && (
+                      <ul className="ml-4 pl-3 border-l border-border mt-0.5 mb-1 space-y-0.5">
+                        {item.subItems!.map((sub) => (
+                          <li key={sub.id}>
+                            <button
+                              onClick={() => onTabChange(sub.id)}
+                              className={cn(
+                                'w-full flex items-center gap-2 py-1.5 px-2 rounded-lg text-sm transition-colors',
+                                activeTab === sub.id
+                                  ? 'text-primary font-medium bg-primary/5'
+                                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                              )}
+                            >
+                              <span className="opacity-70 shrink-0">{sub.icon}</span>
+                              <span className="truncate">{sub.label}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
+
+      {/* Footer */}
       <div className="border-t border-border p-2">
         <button
           onClick={onSignOut}
-          className="w-full flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-          title="Sair"
+          className="w-full flex items-center gap-3 py-2 px-2 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors text-sm"
         >
-          <span className="flex items-center justify-center w-8 h-8 rounded-lg">
+          <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-muted/60 shrink-0">
             <LogOut className="h-4 w-4" />
           </span>
-          <span className="text-[10px] font-medium">Sair</span>
+          <span>Sair</span>
         </button>
       </div>
     </div>
@@ -463,13 +609,18 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   return (
     <>
-      {/* Desktop sidebar — fixed narrow */}
-      <aside className="hidden md:flex flex-col bg-card border-r border-border h-screen fixed left-0 top-0 z-40 w-[72px]">
-        {SidebarContent({})}
+      {/* Desktop sidebar */}
+      <aside
+        className={cn(
+          'hidden md:flex flex-col bg-card border-r border-border h-screen fixed left-0 top-0 z-40 transition-[width] duration-200',
+          collapsed ? 'w-[72px]' : 'w-60'
+        )}
+      >
+        {collapsed ? CollapsedContent() : ExpandedContent()}
       </aside>
 
-      {/* Flyout submenu — rendered outside sidebar to avoid clipping */}
-      {hoveredNavItem && hoveredNavItem.subItems && (
+      {/* Flyout submenu — collapsed mode only */}
+      {collapsed && hoveredNavItem && hoveredNavItem.subItems && (
         <div
           onMouseEnter={handleFlyoutEnter}
           onMouseLeave={handleFlyoutLeave}
@@ -507,7 +658,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             >
               <X className="h-4 w-4" />
             </button>
-            {/* Mobile: expanded list */}
             <div className="flex flex-col h-full pt-14 overflow-y-auto">
               {navGroups.map((group, gi) => (
                 <div key={gi} className="px-3">
