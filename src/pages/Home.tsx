@@ -16,10 +16,10 @@ import { Button } from "@/components/ui/button";
 // ─── Stats ────────────────────────────────────────────────────────────────────
 
 const STATS = [
-  { target: 6,     suffix: "",   prefix: "",  label: "anos de operação" },
-  { target: 5000,  suffix: "",   prefix: "+", label: "viajantes atendidos", format: (n: number) => n >= 1000 ? `+${(n/1000).toFixed(n % 1000 === 0 ? 0 : 1).replace(".", ",")}mil` : `+${n}` },
-  { target: 25,    suffix: "",   prefix: "+", label: "roteiros únicos" },
-  { target: 60000, suffix: "",   prefix: "+", label: "fotos registradas", format: (n: number) => n >= 1000 ? `+${Math.round(n/1000)}mil` : `+${n}` },
+  { target: 6,     suffix: "",   prefix: "+", label: "anos" },
+  { target: 5000,  suffix: "",   prefix: "+", label: "viajantes", format: (n: number) => n >= 1000 ? `+${Math.round(n/1000)}mil` : `+${n}` },
+  { target: 25,    suffix: "",   prefix: "+", label: "roteiros" },
+  { target: 60000, suffix: "",   prefix: "+", label: "fotos", format: (n: number) => n >= 1000 ? `+${Math.round(n/1000)}mil` : `+${n}` },
 ];
 
 function StatsSection() {
@@ -62,13 +62,13 @@ function StatsSection() {
 
   return (
     <section ref={ref} className="border-y border-border/60 bg-background">
-      <div className="max-w-4xl mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4">
+      <div className="max-w-4xl mx-auto px-4 py-10 grid grid-cols-4">
         {STATS.map((s, i) => (
-          <div key={s.label} className={`flex flex-col items-center text-center py-6 px-4 border-border/50 ${i % 2 === 0 && i < 3 ? "border-r" : ""} ${i % 2 !== 0 && i < 3 ? "md:border-r" : ""}`}>
-            <span className="font-figtree text-4xl md:text-5xl font-bold text-[#820AD1] leading-none tabular-nums">
+          <div key={s.label} className={`flex flex-col items-center text-center py-4 px-1 border-border/50 ${i < 3 ? "border-r" : ""}`}>
+            <span className="font-figtree text-xl sm:text-3xl md:text-4xl font-bold text-[#820AD1] leading-none tabular-nums">
               {format(i, counts[i])}
             </span>
-            <span className="text-xs text-muted-foreground mt-2 uppercase tracking-widest leading-tight">{s.label}</span>
+            <span className="text-[9px] sm:text-xs text-muted-foreground mt-1 uppercase tracking-widest leading-tight">{s.label}</span>
           </div>
         ))}
       </div>
