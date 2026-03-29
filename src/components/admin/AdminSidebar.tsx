@@ -161,6 +161,7 @@ const navGroups: NavGroup[] = [
         ],
       },
       { id: 'paginas', label: 'Páginas', icon: <Globe className="h-5 w-5" /> },
+      { id: 'home-sections', label: 'Seções do Início', icon: <LayoutDashboard className="h-5 w-5" /> },
       { id: 'depoimentos', label: 'Depoimentos', icon: <Star className="h-5 w-5" /> },
       { id: 'formularios', label: 'Formulários', icon: <FileQuestion className="h-5 w-5" /> },
     ],

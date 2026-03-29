@@ -112,6 +112,16 @@ interface BlogPost {
   tags: string[] | null;
 }
 
+interface HomeSection {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  filter_type: string;
+  filter_value: string;
+  order_index: number;
+  active: boolean;
+}
+
 // ─── Componente principal ──────────────────────────────────────────────────────
 
 export default function Home() {
@@ -123,6 +133,7 @@ export default function Home() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [homeSections, setHomeSections] = useState<HomeSection[]>([]);
   const [testimonialIdx, setTestimonialIdx] = useState(0);
   const testimonialTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -148,6 +159,9 @@ export default function Home() {
     supabase.from("blog_posts").select("id, titulo, slug, excerpt, cover_image, published_at, tags").eq("publicado", true).order("published_at", { ascending: false }).limit(3)
       .then(({ data }) => { if (data) setBlogPosts(data); });
 
+    supabase.from("home_sections" as any).select("*").eq("active", true).order("order_index")
+      .then(({ data }) => { if (data) setHomeSections(data as HomeSection[]); });
+
     return () => { document.title = "Camaleão Ecoturismo"; };
   }, []);
 
@@ -171,30 +185,32 @@ export default function Home() {
     [tours]
   );
 
-  const matchKeywords = (t: (typeof tours)[0], keywords: string[]) => {
-    const haystack = [t.name, t.etiqueta, t.about, t.destination_name].join(" ").toLowerCase();
-    return keywords.some((k) => haystack.includes(k));
+  const getSectionTours = (section: HomeSection) => {
+    const val = section.filter_value.toLowerCase();
+    return tours.filter((t) => {
+      if (!t.is_active || t.is_exclusive || t.vagas_fechadas || t.start_date < today) return false;
+      switch (section.filter_type) {
+        case "keyword": {
+          const haystack = [t.name, t.etiqueta, t.about, t.destination_name].join(" ").toLowerCase();
+          return haystack.includes(val);
+        }
+        case "city":
+          return (t.city || "").toLowerCase().includes(val);
+        case "state":
+          return (t.state || "").toLowerCase().includes(val);
+        case "destination":
+          return (t.destination_name || "").toLowerCase().includes(val);
+        default:
+          return false;
+      }
+    }).slice(0, 10);
   };
 
-  const cachoeiraTours = useMemo(() =>
-    tours.filter((t) => t.is_active && !t.is_exclusive && !t.vagas_fechadas && t.start_date >= today && matchKeywords(t, ["cachoeira"])).slice(0, 10),
-    [tours]
-  );
+  const allIds = useMemo(() => {
+    const sectionIds = homeSections.flatMap((s) => getSectionTours(s).map((t) => t.id));
+    return [...new Set([...upcomingTours.map((t) => t.id), ...sectionIds])];
+  }, [upcomingTours, homeSections, tours]);
 
-  const trilhaTours = useMemo(() =>
-    tours.filter((t) => t.is_active && !t.is_exclusive && !t.vagas_fechadas && t.start_date >= today && matchKeywords(t, ["trilha"])).slice(0, 10),
-    [tours]
-  );
-
-  const aventuraTours = useMemo(() =>
-    tours.filter((t) => t.is_active && !t.is_exclusive && !t.vagas_fechadas && t.start_date >= today && matchKeywords(t, ["rapel", "tirolesa", "rope"])).slice(0, 10),
-    [tours]
-  );
-
-  const allIds = useMemo(() =>
-    [...new Set([...upcomingTours, ...cachoeiraTours, ...trilhaTours, ...aventuraTours].map((t) => t.id))],
-    [upcomingTours, cachoeiraTours, trilhaTours, aventuraTours]
-  );
   const { getCoverImage } = useTourCoverImages(allIds);
 
   return (
@@ -204,77 +220,36 @@ export default function Home() {
       {/* ── HERO ──────────────────────────────────────────────────────────────── */}
       <HeroBanner />
 
-      {/* ── CACHOEIRAS ────────────────────────────────────────────────────────── */}
-      {cachoeiraTours.length > 0 && (
-        <section className="py-16">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-end justify-between mb-8 px-4">
-              <div>
-                <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-1">Preferência</p>
-                <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Cachoeiras</h2>
-              </div>
-              <Link to="/agenda" className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
-                Ver todas <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-            <div className="flex overflow-x-auto gap-4 pb-4 -mx-0 px-4 scrollbar-hide snap-x snap-mandatory">
-              {cachoeiraTours.map((tour) => (
-                <div key={tour.id} className="shrink-0 w-72 snap-start">
-                  <TourCard tour={tour} preloadedCover={getCoverImage(tour.id)} />
+      {/* ── SEÇÕES DINÂMICAS ──────────────────────────────────────────────────── */}
+      {homeSections.map((section, idx) => {
+        const sectionTours = getSectionTours(section);
+        if (sectionTours.length === 0) return null;
+        const altBg = idx % 2 === 1;
+        return (
+          <section key={section.id} className={`py-16 ${altBg ? "bg-muted/20" : ""}`}>
+            <div className="max-w-7xl mx-auto">
+              <div className="flex items-end justify-between mb-8 px-4">
+                <div>
+                  {section.subtitle && (
+                    <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-1">{section.subtitle}</p>
+                  )}
+                  <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">{section.title}</h2>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── TRILHAS ───────────────────────────────────────────────────────────── */}
-      {trilhaTours.length > 0 && (
-        <section className="py-16 bg-muted/20">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-end justify-between mb-8 px-4">
-              <div>
-                <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-1">Preferência</p>
-                <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Trilhas</h2>
+                <Link to="/agenda" className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
+                  Ver todas <ArrowRight className="h-4 w-4" />
+                </Link>
               </div>
-              <Link to="/agenda" className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
-                Ver todas <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-            <div className="flex overflow-x-auto gap-4 pb-4 px-4 scrollbar-hide snap-x snap-mandatory">
-              {trilhaTours.map((tour) => (
-                <div key={tour.id} className="shrink-0 w-72 snap-start">
-                  <TourCard tour={tour} preloadedCover={getCoverImage(tour.id)} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── AVENTURA ──────────────────────────────────────────────────────────── */}
-      {aventuraTours.length > 0 && (
-        <section className="py-16">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-end justify-between mb-8 px-4">
-              <div>
-                <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-1">Preferência</p>
-                <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Aventura</h2>
+              <div className="flex overflow-x-auto gap-4 pb-4 px-4 scrollbar-hide snap-x snap-mandatory">
+                {sectionTours.map((tour) => (
+                  <div key={tour.id} className="shrink-0 w-72 snap-start">
+                    <TourCard tour={tour} preloadedCover={getCoverImage(tour.id)} />
+                  </div>
+                ))}
               </div>
-              <Link to="/agenda" className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
-                Ver todas <ArrowRight className="h-4 w-4" />
-              </Link>
             </div>
-            <div className="flex overflow-x-auto gap-4 pb-4 px-4 scrollbar-hide snap-x snap-mandatory">
-              {aventuraTours.map((tour) => (
-                <div key={tour.id} className="shrink-0 w-72 snap-start">
-                  <TourCard tour={tour} preloadedCover={getCoverImage(tour.id)} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+          </section>
+        );
+      })}
 
       {/* ── PRÓXIMAS AVENTURAS ────────────────────────────────────────────────── */}
       <section className="py-20 px-4 bg-muted/30">

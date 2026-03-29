@@ -95,9 +95,9 @@ export function HeroBanner() {
           <p className="font-figtree text-white/70 text-lg md:text-2xl mb-8 font-bold lowercase tracking-tight">{FALLBACK_SUBTITLE}</p>
           <button
             onClick={() => navigate("/agenda")}
-            className="inline-flex items-center gap-2 bg-[#820AD1] hover:bg-[#6e09b0] text-white font-semibold text-base px-8 py-4 rounded-xl transition-colors shadow-lg"
+            className="inline-flex items-center gap-2 bg-[#820AD1] hover:bg-[#6e09b0] text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors shadow-lg"
           >
-            {FALLBACK_BTN} <ArrowRight className="h-5 w-5" />
+            {FALLBACK_BTN} <ArrowRight className="h-4 w-4" />
           </button>
         </div>
       </section>
@@ -154,10 +154,10 @@ export function HeroBanner() {
             {(slide.button_text || slide.button_url) && (
               <button
                 onClick={() => handleBtn(slide)}
-                className="inline-flex items-center gap-2 bg-[#820AD1] hover:bg-[#6e09b0] text-white font-semibold text-base px-8 py-4 rounded-xl transition-colors shadow-lg"
+                className="inline-flex items-center gap-2 bg-[#820AD1] hover:bg-[#6e09b0] text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors shadow-lg"
               >
                 {slide.button_text || "Ver Passeios"}
-                <ArrowRight className="h-5 w-5" />
+                <ArrowRight className="h-4 w-4" />
               </button>
             )}
           </div>

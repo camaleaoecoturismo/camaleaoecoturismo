@@ -22,6 +22,7 @@ import ExperienceProcessMap from "@/components/experience-map/ExperienceProcessM
 import AdminGuias from "@/components/admin/AdminGuias";
 import AdminPaginasInstitucional from "@/components/admin/AdminPaginasInstitucional";
 import AdminDepoimentos from "@/components/admin/AdminDepoimentos";
+import AdminHomeSections from "@/components/admin/AdminHomeSections";
 import { useToast } from "@/hooks/use-toast";
 import { Tour } from "@/hooks/useTours";
 
@@ -278,6 +279,8 @@ const Admin = () => {
         return <AdminPaginasInstitucional />;
       case 'depoimentos':
         return <AdminDepoimentos />;
+      case 'home-sections':
+        return <AdminHomeSections />;
       case 'loja':
         return <ShopModule />;
       case 'jornada':
@@ -348,6 +351,7 @@ const Admin = () => {
       'paginas': 'Páginas',
       'paginas-institucionais': 'Páginas Institucionais',
       'depoimentos': 'Depoimentos',
+      'home-sections': 'Seções da Página Inicial',
       'loja': 'Loja',
       'jornada': 'Jornada do Cliente',
       'mapa-processos': 'Mapa de Processos',
