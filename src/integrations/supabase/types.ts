@@ -386,33 +386,48 @@ export type Database = {
           created_at: string
           etiqueta: string | null
           id: string
-          image_url: string
+          image_url: string | null
           is_active: boolean
           link_url: string | null
+          location: string | null
           order_index: number
           title: string | null
+          subtitle: string | null
+          button_text: string | null
+          button_url: string | null
+          video_url: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           etiqueta?: string | null
           id?: string
-          image_url: string
+          image_url?: string | null
           is_active?: boolean
           link_url?: string | null
+          location?: string | null
           order_index?: number
           title?: string | null
+          subtitle?: string | null
+          button_text?: string | null
+          button_url?: string | null
+          video_url?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           etiqueta?: string | null
           id?: string
-          image_url?: string
+          image_url?: string | null
           is_active?: boolean
           link_url?: string | null
+          location?: string | null
           order_index?: number
           title?: string | null
+          subtitle?: string | null
+          button_text?: string | null
+          button_url?: string | null
+          video_url?: string | null
           updated_at?: string
         }
         Relationships: []

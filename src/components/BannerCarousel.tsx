@@ -56,6 +56,7 @@ export function BannerCarousel() {
       .from("banners")
       .select("*")
       .eq("is_active", true)
+      .eq("location", "agenda")
       .order("order_index");
 
     if (data) {

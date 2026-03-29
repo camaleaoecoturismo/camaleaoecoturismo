@@ -34,6 +34,7 @@ interface BannerFormData {
   button_text: string;
   button_url: string;
   etiqueta: string;
+  location: string;
 }
 
 export function BannerManagement() {
@@ -50,6 +51,7 @@ export function BannerManagement() {
     button_text: "",
     button_url: "",
     etiqueta: "",
+    location: "hero",
   });
   const [uploadingVideo, setUploadingVideo] = useState(false);
 
@@ -131,6 +133,7 @@ export function BannerManagement() {
         button_text: formData.button_text || null,
         button_url: formData.button_url || null,
         etiqueta: formData.etiqueta || null,
+        location: formData.location || "hero",
         order_index: editingBanner ? editingBanner.order_index : getNextOrderIndex(),
       };
 
@@ -151,7 +154,7 @@ export function BannerManagement() {
         toast.success("Banner criado com sucesso!");
       }
 
-      setFormData({ image_url: "", video_url: "", title: "", subtitle: "", button_text: "", button_url: "", etiqueta: "" });
+      setFormData({ image_url: "", video_url: "", title: "", subtitle: "", button_text: "", button_url: "", etiqueta: "", location: "hero" });
       setEditingBanner(null);
       setShowForm(false);
       fetchBanners();
@@ -171,6 +174,7 @@ export function BannerManagement() {
       button_text: banner.button_text || "",
       button_url: banner.button_url || "",
       etiqueta: banner.etiqueta || "",
+      location: (banner as any).location || "hero",
     });
     setShowForm(true);
   };
@@ -238,7 +242,7 @@ export function BannerManagement() {
   };
 
   const resetForm = () => {
-    setFormData({ image_url: "", video_url: "", title: "", subtitle: "", button_text: "", button_url: "", etiqueta: "" });
+    setFormData({ image_url: "", video_url: "", title: "", subtitle: "", button_text: "", button_url: "", etiqueta: "", location: "hero" });
     setEditingBanner(null);
     setShowForm(false);
   };
@@ -307,6 +311,21 @@ export function BannerManagement() {
                 </div>
               </div>
 
+              {/* Local */}
+              <div>
+                <Label>Onde exibir</Label>
+                <div className="flex gap-3 mt-1.5">
+                  <label className={`flex-1 flex items-center justify-center gap-2 border rounded-lg py-2.5 cursor-pointer text-sm transition-colors ${formData.location === 'hero' ? 'border-primary bg-primary/5 text-primary font-medium' : 'border-border text-muted-foreground hover:bg-muted/40'}`}>
+                    <input type="radio" name="location" value="hero" checked={formData.location === 'hero'} onChange={() => setFormData(prev => ({ ...prev, location: 'hero' }))} className="sr-only" />
+                    🏠 Página inicial
+                  </label>
+                  <label className={`flex-1 flex items-center justify-center gap-2 border rounded-lg py-2.5 cursor-pointer text-sm transition-colors ${formData.location === 'agenda' ? 'border-primary bg-primary/5 text-primary font-medium' : 'border-border text-muted-foreground hover:bg-muted/40'}`}>
+                    <input type="radio" name="location" value="agenda" checked={formData.location === 'agenda'} onChange={() => setFormData(prev => ({ ...prev, location: 'agenda' }))} className="sr-only" />
+                    📅 Página de passeios
+                  </label>
+                </div>
+              </div>
+
               <div className="flex gap-2 pt-1">
                 <Button type="submit" disabled={uploading || uploadingVideo || (!formData.image_url && !formData.video_url)} className="flex-1">
                   {editingBanner ? "Atualizar" : "Criar"}
@@ -337,15 +356,16 @@ export function BannerManagement() {
                   />
                   
                   <div className="flex-1 space-y-1">
+                    <span className={`inline-flex px-2 py-1 text-xs rounded-full font-medium ${(banner as any).location === 'agenda' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                      {(banner as any).location === 'agenda' ? '📅 Passeios' : '🏠 Página inicial'}
+                    </span>
                     {banner.etiqueta && (
-                      <span className="inline-flex px-2 py-1 text-xs bg-primary/10 text-primary rounded-full">
+                      <span className="inline-flex px-2 py-1 text-xs bg-primary/10 text-primary rounded-full ml-1">
                         {banner.etiqueta}
                       </span>
                     )}
-                    {banner.link_url && (
-                      <p className="text-sm text-muted-foreground truncate">
-                        Link: {banner.link_url}
-                      </p>
+                    {banner.title && (
+                      <p className="text-sm font-medium truncate">{banner.title}</p>
                     )}
                     <p className="text-xs text-muted-foreground">
                       Ordem: {banner.order_index + 1}
