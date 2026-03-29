@@ -465,7 +465,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     <>
       {/* Desktop sidebar — fixed narrow */}
       <aside className="hidden md:flex flex-col bg-card border-r border-border h-screen fixed left-0 top-0 z-40 w-[72px]">
-        <SidebarContent />
+        {SidebarContent({})}
       </aside>
 
       {/* Flyout submenu — rendered outside sidebar to avoid clipping */}
