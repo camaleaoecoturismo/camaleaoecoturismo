@@ -1,17 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
-  Home, User, MapPin, Bell, LogOut, Loader2,
+  Home, User, MapPin, LogOut, Loader2,
   Calendar, DollarSign, Mountain, ChevronRight,
-  Ticket, Clock, CheckCircle2, XCircle,
+  Ticket, Clock, AlertCircle,
 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import ClientProfile from '@/components/client-portal/ClientProfile';
 import ClientExperiences from '@/components/client-portal/ClientExperiences';
-import ClientCommunications from '@/components/client-portal/ClientCommunications';
+import ClientTickets from '@/components/client-portal/ClientTickets';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,7 +41,7 @@ interface Stats {
   viagensConfirmadas: number;
 }
 
-type Tab = 'inicio' | 'viagens' | 'perfil' | 'comunicacoes';
+type Tab = 'inicio' | 'viagens' | 'tickets' | 'perfil';
 
 // ─── Dashboard Section ────────────────────────────────────────────────────────
 
@@ -67,7 +66,7 @@ function DashboardSection({
       const { data } = await supabase
         .from('reservas')
         .select(`
-          id, status, payment_status, valor_pago, reserva_numero,
+          id, status, payment_status, valor_pago,
           tours!reservas_tour_id_fkey (name, start_date, image_url)
         `)
         .eq('cliente_id', clientData.cliente_id)
@@ -76,12 +75,9 @@ function DashboardSection({
 
       if (data) {
         const today = new Date(); today.setHours(0, 0, 0, 0);
-        const futuras = data.filter(
-          (r: any) => new Date(r.tours?.start_date + 'T12:00:00') >= today
-        ).sort(
-          (a: any, b: any) =>
-            new Date(a.tours?.start_date).getTime() - new Date(b.tours?.start_date).getTime()
-        );
+        const futuras = data
+          .filter((r: any) => r.tours?.start_date && new Date(r.tours.start_date + 'T12:00:00') >= today)
+          .sort((a: any, b: any) => new Date(a.tours.start_date).getTime() - new Date(b.tours.start_date).getTime());
 
         setStats({
           totalViagens: data.length,
@@ -89,9 +85,8 @@ function DashboardSection({
           proximaViagem: futuras[0]
             ? { name: futuras[0].tours?.name, date: futuras[0].tours?.start_date }
             : null,
-          viagensConfirmadas: data.filter((r: any) => r.payment_status === 'approved').length,
+          viagensConfirmadas: data.filter((r: any) => r.payment_status === 'pago').length,
         });
-
         setRecentReservas(data.slice(0, 3));
       }
       setLoading(false);
@@ -100,19 +95,20 @@ function DashboardSection({
   }, [clientData.cliente_id]);
 
   const paymentBadge = (status: string) => {
-    const map: Record<string, { label: string; class: string }> = {
-      approved: { label: 'Pago', class: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-      pending: { label: 'Pendente', class: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
-      cancelled: { label: 'Cancelado', class: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+    const map: Record<string, { label: string; cls: string }> = {
+      pago:     { label: 'Pago',     cls: 'bg-green-100 text-green-700' },
+      approved: { label: 'Pago',     cls: 'bg-green-100 text-green-700' },
+      pending:  { label: 'Pendente', cls: 'bg-yellow-100 text-yellow-700' },
+      parcial:  { label: 'Parcial',  cls: 'bg-blue-100 text-blue-700' },
     };
-    const item = map[status] || { label: status, class: 'bg-muted text-muted-foreground' };
-    return <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.class}`}>{item.label}</span>;
+    const item = map[status] || { label: status, cls: 'bg-muted text-muted-foreground' };
+    return <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.cls}`}>{item.label}</span>;
   };
 
   const formatDate = (d: string) => {
-    const [y, m, day] = d.split('-');
+    const [, m, day] = d.split('-');
     const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-    return `${parseInt(day)} ${months[parseInt(m)-1]}`;
+    return `${parseInt(day)} ${months[parseInt(m) - 1]}`;
   };
 
   const firstName = clientData.cliente.nome_completo.split(' ')[0];
@@ -184,7 +180,7 @@ function DashboardSection({
         </div>
       )}
 
-      {/* Recent reservas */}
+      {/* Reservas recentes */}
       {recentReservas.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-3">
@@ -200,11 +196,7 @@ function DashboardSection({
             {recentReservas.map((r: any) => (
               <div key={r.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
                 {r.tours?.image_url ? (
-                  <img
-                    src={r.tours.image_url}
-                    alt={r.tours?.name}
-                    className="w-12 h-12 rounded-lg object-cover shrink-0"
-                  />
+                  <img src={r.tours.image_url} alt={r.tours?.name} className="w-12 h-12 rounded-lg object-cover shrink-0" />
                 ) : (
                   <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <MapPin className="h-5 w-5 text-primary/50" />
@@ -228,12 +220,12 @@ function DashboardSection({
       {/* Quick links */}
       <section className="grid grid-cols-2 gap-3">
         <button
-          onClick={() => onNavigate('viagens')}
+          onClick={() => onNavigate('tickets')}
           className="flex flex-col items-start gap-2 p-4 rounded-xl border border-border bg-card hover:border-primary/40 transition-colors"
         >
           <Ticket className="h-5 w-5 text-primary" />
-          <span className="text-sm font-medium">Meus Tickets</span>
-          <span className="text-xs text-muted-foreground">Acesse seus ingressos</span>
+          <span className="text-sm font-medium">Meus Ingressos</span>
+          <span className="text-xs text-muted-foreground">Acesse seus tickets</span>
         </button>
         <button
           onClick={() => onNavigate('perfil')}
@@ -254,19 +246,28 @@ const ClientPortal = () => {
   const [loading, setLoading] = useState(true);
   const [clientData, setClientData] = useState<ClientData | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('inicio');
+  const [loadError, setLoadError] = useState(false);
   const navigate = useNavigate();
+  const navigatingRef = useRef(false);
 
   useEffect(() => {
     checkAuthAndLoad();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') navigate('/cliente');
+      if (event === 'SIGNED_OUT' && !navigatingRef.current) {
+        navigatingRef.current = true;
+        navigate('/cliente');
+      }
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
 
   const checkAuthAndLoad = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { navigate('/cliente'); return; }
+    if (!session) {
+      navigatingRef.current = true;
+      navigate('/cliente');
+      return;
+    }
 
     // Block admin accounts
     const { data: adminRole } = await supabase
@@ -275,7 +276,11 @@ const ClientPortal = () => {
       .eq('user_id', session.user.id)
       .eq('role', 'admin')
       .maybeSingle();
-    if (adminRole) { navigate('/cliente'); return; }
+    if (adminRole) {
+      navigatingRef.current = true;
+      navigate('/cliente');
+      return;
+    }
 
     // Load client account
     const { data: clientAccount, error } = await supabase
@@ -289,7 +294,17 @@ const ClientPortal = () => {
       .eq('user_id', session.user.id)
       .maybeSingle();
 
-    if (error || !clientAccount) { navigate('/cliente'); return; }
+    // ⚠️ Separate error (DB/network failure) from "no account" (wrong user)
+    if (error) {
+      setLoadError(true);
+      setLoading(false);
+      return;
+    }
+    if (!clientAccount) {
+      navigatingRef.current = true;
+      navigate('/cliente');
+      return;
+    }
 
     // Level info
     const { data: levelData } = await supabase
@@ -302,11 +317,18 @@ const ClientPortal = () => {
       benefits: levelData[0].level_benefits,
     } : null;
 
-    setClientData({ ...clientAccount, cliente: clientAccount.clientes as any, level });
+    setClientData({
+      id: clientAccount.id,
+      cliente_id: clientAccount.cliente_id,
+      total_points: clientAccount.total_points,
+      cliente: clientAccount.clientes as any,
+      level,
+    });
     setLoading(false);
   };
 
   const handleLogout = async () => {
+    navigatingRef.current = true;
     await supabase.auth.signOut();
     navigate('/cliente');
   };
@@ -319,13 +341,29 @@ const ClientPortal = () => {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-4 text-center">
+        <AlertCircle className="h-10 w-10 text-muted-foreground" />
+        <div>
+          <p className="font-semibold text-foreground">Erro ao carregar sua conta</p>
+          <p className="text-sm text-muted-foreground mt-1">Verifique sua conexão e tente novamente.</p>
+        </div>
+        <Button onClick={() => { setLoadError(false); setLoading(true); checkAuthAndLoad(); }} variant="outline" size="sm">
+          Tentar novamente
+        </Button>
+        <button onClick={handleLogout} className="text-xs text-muted-foreground hover:underline">Sair</button>
+      </div>
+    );
+  }
+
   if (!clientData) return null;
 
   const tabs: { id: Tab; label: string; icon: typeof Home }[] = [
-    { id: 'inicio', label: 'Início', icon: Home },
-    { id: 'viagens', label: 'Viagens', icon: MapPin },
-    { id: 'perfil', label: 'Perfil', icon: User },
-    { id: 'comunicacoes', label: 'Mensagens', icon: Bell },
+    { id: 'inicio',   label: 'Início',    icon: Home },
+    { id: 'viagens',  label: 'Viagens',   icon: MapPin },
+    { id: 'tickets',  label: 'Ingressos', icon: Ticket },
+    { id: 'perfil',   label: 'Perfil',    icon: User },
   ];
 
   return (
@@ -382,16 +420,16 @@ const ClientPortal = () => {
             <ClientExperiences clienteId={clientData.cliente_id} />
           </div>
         )}
+        {activeTab === 'tickets' && (
+          <div>
+            <h2 className="text-xl font-bold text-foreground mb-4">Meus Ingressos</h2>
+            <ClientTickets cpf={clientData.cliente.cpf} />
+          </div>
+        )}
         {activeTab === 'perfil' && (
           <div>
             <h2 className="text-xl font-bold text-foreground mb-4">Meu Perfil</h2>
             <ClientProfile clientData={clientData} />
-          </div>
-        )}
-        {activeTab === 'comunicacoes' && (
-          <div>
-            <h2 className="text-xl font-bold text-foreground mb-4">Comunicações</h2>
-            <ClientCommunications clientAccountId={clientData.id} />
           </div>
         )}
       </main>
@@ -403,15 +441,15 @@ const ClientPortal = () => {
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-3 transition-colors ${
+              className={`flex-1 flex flex-col items-center gap-0.5 py-3 transition-colors relative ${
                 activeTab === t.id ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
+              {activeTab === t.id && (
+                <span className="absolute top-0 inset-x-0 h-0.5 bg-primary rounded-full" />
+              )}
               <t.icon className="h-5 w-5" />
               <span className="text-[10px] font-medium">{t.label}</span>
-              {activeTab === t.id && (
-                <span className="absolute top-0 w-8 h-0.5 bg-primary rounded-full" />
-              )}
             </button>
           ))}
         </div>
