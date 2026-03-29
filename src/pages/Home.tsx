@@ -13,6 +13,69 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// ─── Stats ────────────────────────────────────────────────────────────────────
+
+const STATS = [
+  { target: 6,     suffix: "",   prefix: "",  label: "anos de operação" },
+  { target: 5000,  suffix: "",   prefix: "+", label: "viajantes atendidos", format: (n: number) => n >= 1000 ? `+${(n/1000).toFixed(n % 1000 === 0 ? 0 : 1).replace(".", ",")}mil` : `+${n}` },
+  { target: 25,    suffix: "",   prefix: "+", label: "roteiros únicos" },
+  { target: 60000, suffix: "",   prefix: "+", label: "fotos registradas", format: (n: number) => n >= 1000 ? `+${Math.round(n/1000)}mil` : `+${n}` },
+];
+
+function StatsSection() {
+  const ref = useRef<HTMLElement>(null);
+  const [counts, setCounts] = useState([0, 0, 0, 0]);
+  const [triggered, setTriggered] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting && !triggered) { setTriggered(true); } },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [triggered]);
+
+  useEffect(() => {
+    if (!triggered) return;
+    const duration = 1400;
+    const steps = 60;
+    const interval = duration / steps;
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+      const progress = step / steps;
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setCounts(STATS.map(s => Math.round(s.target * ease)));
+      if (step >= steps) clearInterval(timer);
+    }, interval);
+    return () => clearInterval(timer);
+  }, [triggered]);
+
+  const format = (i: number, n: number) => {
+    const s = STATS[i];
+    if (s.format) return s.format(n);
+    return `${s.prefix}${n.toLocaleString("pt-BR")}${s.suffix}`;
+  };
+
+  return (
+    <section ref={ref} className="border-y border-border/60 bg-background">
+      <div className="max-w-4xl mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4">
+        {STATS.map((s, i) => (
+          <div key={s.label} className={`flex flex-col items-center text-center py-6 px-4 border-border/50 ${i % 2 === 0 && i < 3 ? "border-r" : ""} ${i % 2 !== 0 && i < 3 ? "md:border-r" : ""}`}>
+            <span className="font-playfair text-4xl md:text-5xl font-bold text-[#820AD1] leading-none tabular-nums">
+              {format(i, counts[i])}
+            </span>
+            <span className="text-xs text-muted-foreground mt-2 uppercase tracking-widest leading-tight">{s.label}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Testimonial {
@@ -142,21 +205,7 @@ export default function Home() {
       <HeroBanner />
 
       {/* ── STATS ─────────────────────────────────────────────────────────────── */}
-      <section className="bg-[#820AD1] text-white py-10">
-        <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {[
-            { value: "6", label: "anos de operação" },
-            { value: "+5.000", label: "viajantes atendidos" },
-            { value: "+25", label: "roteiros únicos" },
-            { value: "+60.000", label: "fotos registradas" },
-          ].map(({ value, label }) => (
-            <div key={label}>
-              <p className="font-playfair text-3xl md:text-4xl font-bold text-white">{value}</p>
-              <p className="text-white/75 text-sm mt-1">{label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <StatsSection />
 
       {/* ── CACHOEIRAS ────────────────────────────────────────────────────────── */}
       {cachoeiraTours.length > 0 && (
