@@ -28,6 +28,7 @@ export function HeroBanner() {
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
 
   useEffect(() => {
+    const timeout = setTimeout(() => setLoaded(true), 4000);
     supabase
       .from("banners")
       .select("id, image_url, video_url, title, subtitle, button_text, button_url, order_index")
@@ -35,9 +36,12 @@ export function HeroBanner() {
       .eq("location", "hero")
       .order("order_index")
       .then(({ data }) => {
+        clearTimeout(timeout);
         if (data && data.length > 0) setSlides(data as HeroBannerSlide[]);
         setLoaded(true);
-      });
+      })
+      .catch(() => { clearTimeout(timeout); setLoaded(true); });
+    return () => clearTimeout(timeout);
   }, []);
 
   const go = useCallback((idx: number) => {
@@ -80,7 +84,7 @@ export function HeroBanner() {
 
   // Fallback: no slides yet
   const hasFallback = loaded && slides.length === 0;
-  if (!loaded) return <div className="h-screen bg-black" />;
+  if (!loaded) return <div className="h-[100svh] min-h-[600px] bg-black animate-pulse" />;
 
   if (hasFallback) {
     return (
