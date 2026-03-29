@@ -166,7 +166,6 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
                 alt={tour.name}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 loading="eager"
-                fetchPriority="high"
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
