@@ -88,10 +88,10 @@ export function HeroBanner() {
         <img src="/hero.jpg" alt="Camaleão Ecoturismo" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto pb-20 md:pb-28">
-          <h1 className="font-figtree text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 leading-tight uppercase tracking-tight">
+          <h1 className="font-figtree text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-1 leading-tight uppercase tracking-tight">
             {FALLBACK_TITLE}
           </h1>
-          <p className="font-figtree text-white/80 text-xl md:text-2xl mb-8 font-light tracking-wide">{FALLBACK_SUBTITLE}</p>
+          <p className="font-figtree text-white/70 text-lg md:text-2xl mb-8 font-bold uppercase tracking-tight">{FALLBACK_SUBTITLE}</p>
           <button
             onClick={() => navigate("/agenda")}
             className="inline-flex items-center gap-2 bg-[#820AD1] hover:bg-[#6e09b0] text-white font-semibold text-base px-8 py-4 rounded-full transition-colors shadow-lg"
@@ -139,12 +139,12 @@ export function HeroBanner() {
           {/* Conteúdo — ancorado no rodapé */}
           <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center text-center px-4 pb-20 md:pb-28 max-w-4xl mx-auto left-0 right-0">
             {slide.title && (
-              <h1 className="font-figtree text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 leading-tight uppercase tracking-tight">
+              <h1 className="font-figtree text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-1 leading-tight uppercase tracking-tight">
                 {slide.title}
               </h1>
             )}
             {slide.subtitle && (
-              <p className="font-figtree text-white/80 text-xl md:text-2xl mb-8 font-light tracking-wide">
+              <p className="font-figtree text-white/70 text-lg md:text-2xl mb-8 font-bold uppercase tracking-tight">
                 {slide.subtitle}
               </p>
             )}

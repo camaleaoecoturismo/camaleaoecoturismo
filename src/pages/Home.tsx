@@ -177,17 +177,17 @@ export default function Home() {
   };
 
   const cachoeiraTours = useMemo(() =>
-    tours.filter((t) => t.is_active && !t.is_exclusive && t.start_date >= today && matchKeywords(t, ["cachoeira"])).slice(0, 10),
+    tours.filter((t) => t.is_active && !t.is_exclusive && !t.vagas_fechadas && t.start_date >= today && matchKeywords(t, ["cachoeira"])).slice(0, 10),
     [tours]
   );
 
   const trilhaTours = useMemo(() =>
-    tours.filter((t) => t.is_active && !t.is_exclusive && t.start_date >= today && matchKeywords(t, ["trilha"])).slice(0, 10),
+    tours.filter((t) => t.is_active && !t.is_exclusive && !t.vagas_fechadas && t.start_date >= today && matchKeywords(t, ["trilha"])).slice(0, 10),
     [tours]
   );
 
   const aventuraTours = useMemo(() =>
-    tours.filter((t) => t.is_active && !t.is_exclusive && t.start_date >= today && matchKeywords(t, ["rapel", "tirolesa", "rope"])).slice(0, 10),
+    tours.filter((t) => t.is_active && !t.is_exclusive && !t.vagas_fechadas && t.start_date >= today && matchKeywords(t, ["rapel", "tirolesa", "rope"])).slice(0, 10),
     [tours]
   );
 
