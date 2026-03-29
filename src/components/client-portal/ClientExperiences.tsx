@@ -60,7 +60,7 @@ const ClientExperiences = ({ clienteId }: ClientExperiencesProps) => {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        setReservas(data.map(r => ({
+        setReservas(data.filter(r => r.tours).map(r => ({
           ...r,
           tour: r.tours as any,
           ponto_embarque: r.tour_boarding_points as any
@@ -116,10 +116,12 @@ const ClientExperiences = ({ clienteId }: ClientExperiencesProps) => {
                 <Calendar className="w-3 h-3" />
                 {format(new Date(reserva.tour.start_date + 'T12:00:00'), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
               </div>
-              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Clock className="w-3 h-3" />
-                Embarque: {reserva.ponto_embarque.nome}
-              </div>
+              {reserva.ponto_embarque?.nome && (
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <Clock className="w-3 h-3" />
+                  Embarque: {reserva.ponto_embarque.nome}
+                </div>
+              )}
             </div>
             <div className="flex flex-col items-end gap-2">
               {getStatusBadge(reserva)}

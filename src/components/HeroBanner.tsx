@@ -87,11 +87,12 @@ export function HeroBanner() {
       <section className="relative h-[100svh] min-h-[600px] flex items-end justify-center overflow-hidden">
         <img src="/hero.jpg" alt="Camaleão Ecoturismo" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/50 to-transparent" />
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto pb-20 md:pb-28">
           <h1 className="font-figtree text-2xl md:text-6xl lg:text-7xl font-bold text-white mb-1 leading-tight uppercase tracking-tight">
             {FALLBACK_TITLE}
           </h1>
-          <p className="font-figtree text-white/70 text-lg md:text-2xl mb-8 font-bold uppercase tracking-tight">{FALLBACK_SUBTITLE}</p>
+          <p className="font-figtree text-white/70 text-lg md:text-2xl mb-8 font-bold lowercase tracking-tight">{FALLBACK_SUBTITLE}</p>
           <button
             onClick={() => navigate("/agenda")}
             className="inline-flex items-center gap-2 bg-[#820AD1] hover:bg-[#6e09b0] text-white font-semibold text-base px-8 py-4 rounded-xl transition-colors shadow-lg"
@@ -135,6 +136,8 @@ export function HeroBanner() {
 
           {/* Gradiente de baixo para cima */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+          {/* Gradiente de cima para baixo (menu) */}
+          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/50 to-transparent" />
 
           {/* Conteúdo — ancorado no rodapé */}
           <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center text-center px-4 pb-20 md:pb-28 max-w-4xl mx-auto left-0 right-0">
@@ -144,7 +147,7 @@ export function HeroBanner() {
               </h1>
             )}
             {slide.subtitle && (
-              <p className="font-figtree text-white/70 text-lg md:text-2xl mb-8 font-bold uppercase tracking-tight">
+              <p className="font-figtree text-white/70 text-lg md:text-2xl mb-8 font-bold lowercase tracking-tight">
                 {slide.subtitle}
               </p>
             )}
