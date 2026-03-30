@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { TopMenu } from "@/components/TopMenu";
 import Footer from "@/components/Footer";
 import bannerSobre from "@/assets/banner-sobre.png";
-import { ChevronLeft, ChevronRight, Mic } from "lucide-react";
+import palestra1 from "@/assets/palestra-1.avif";
+import palestra2 from "@/assets/palestra-2.avif";
+import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 
 // ── Vídeos ──────────────────────────────────────────────────────────────────
 const VIDEOS = [
@@ -87,49 +89,150 @@ const MATERIAS = [
 // ── Palestras ────────────────────────────────────────────────────────────────
 const PALESTRAS = [
   {
+    img: palestra1,
     title: "Reconectando com a Natureza: A Essência da Camaleão Ecoturismo",
     text: "No evento de empreendedorismo no IFAL de São Miguel dos Campos, apresentei a essência da Camaleão Ecoturismo, cuja missão é reconectar pessoas com a natureza. Destacamos como nossas experiências unem sustentabilidade, bem-estar e valorização ambiental, promovendo transformação e desenvolvimento local.",
   },
   {
+    img: palestra2,
     title: "Uma Trajetória Inspiradora Apresentada no IFAL de Marechal Deodoro",
     text: "Nessa palestra, apresentamos a trajetória da Camaleão Ecoturismo, compartilhando experiências, desafios e aprendizados do empreendedorismo no ecoturismo. Inspiramos os alunos do curso de Guia de Turismo do IFAL de Marechal Deodoro a explorar a conexão entre turismo sustentável e desenvolvimento local.",
   },
 ];
 
-// ── Carrossel genérico ────────────────────────────────────────────────────────
-function Carousel({ total, children }: { total: number; children: (idx: number, setIdx: (i: number) => void) => React.ReactNode }) {
-  const [idx, setIdx] = useState(0);
+// ── Netflix Videos ────────────────────────────────────────────────────────────
+function NetflixVideos() {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (dir: -1 | 1) => {
+    const el = rowRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * 320, behavior: "smooth" });
+  };
+
   return (
-    <div className="relative">
+    <section className="bg-[#0f0f12] py-10">
+      <div className="px-4 md:px-8 mb-4 flex items-center justify-between max-w-none">
+        <h2 className="text-white text-xl md:text-2xl font-bold tracking-tight">
+          Documentários e entrevistas
+        </h2>
+      </div>
+
+      <div className="relative group">
+        {/* Scroll row */}
+        <div
+          ref={rowRef}
+          className="flex gap-3 overflow-x-auto px-4 md:px-8 pb-4 scroll-smooth"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {VIDEOS.map((v) => (
+            <div
+              key={v.id}
+              className="shrink-0 w-72 md:w-80 cursor-pointer group/card"
+              onClick={() => setActiveId(activeId === v.id ? null : v.id)}
+            >
+              {/* Thumbnail card */}
+              <div className="relative aspect-video rounded-lg overflow-hidden bg-black shadow-lg ring-2 ring-transparent group-hover/card:ring-white/40 transition-all duration-200 group-hover/card:scale-[1.03] origin-left">
+                <img
+                  src={`https://img.youtube.com/vi/${v.id}/hqdefault.jpg`}
+                  alt={v.title}
+                  className="w-full h-full object-cover opacity-80 group-hover/card:opacity-100 transition-opacity"
+                />
+                {/* Play overlay */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-black/60 flex items-center justify-center group-hover/card:bg-white/90 transition-colors">
+                    <Play className="h-5 w-5 text-white group-hover/card:text-black fill-current transition-colors" />
+                  </div>
+                </div>
+                {/* Bottom gradient + title */}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent px-3 py-3">
+                  <p className="text-white text-xs font-semibold leading-tight line-clamp-2">{v.title}</p>
+                </div>
+              </div>
+              <p className="text-gray-400 text-xs mt-2 line-clamp-2 leading-relaxed px-0.5">{v.description}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Arrows */}
+        <button
+          onClick={() => scroll(-1)}
+          className="absolute left-0 top-[40%] -translate-y-1/2 h-[calc(100%-1rem)] w-10 bg-gradient-to-r from-black/70 to-transparent text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-start pl-1"
+        >
+          <ChevronLeft className="h-7 w-7" />
+        </button>
+        <button
+          onClick={() => scroll(1)}
+          className="absolute right-0 top-[40%] -translate-y-1/2 h-[calc(100%-1rem)] w-10 bg-gradient-to-l from-black/70 to-transparent text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end pr-1"
+        >
+          <ChevronRight className="h-7 w-7" />
+        </button>
+      </div>
+
+      {/* Expanded player */}
+      {activeId && (
+        <div className="px-4 md:px-8 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="max-w-3xl aspect-video rounded-xl overflow-hidden shadow-2xl">
+            <iframe
+              src={`https://www.youtube.com/embed/${activeId}?autoplay=1`}
+              title="Video"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full"
+            />
+          </div>
+          <button
+            onClick={() => setActiveId(null)}
+            className="mt-3 text-gray-400 text-xs hover:text-white transition-colors"
+          >
+            ✕ Fechar
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ── Carrossel genérico ────────────────────────────────────────────────────────
+function Carousel({ total, children, dark = false }: { total: number; dark?: boolean; children: (idx: number, setIdx: (i: number) => void) => React.ReactNode }) {
+  const [idx, setIdx] = useState(0);
+  const arrowBase = "absolute top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all duration-200";
+  const arrowStyle = dark
+    ? "bg-white text-[#820AD1] hover:bg-white/90"
+    : "bg-[#820AD1] text-white hover:bg-[#6a08ab]";
+
+  return (
+    <div className="relative px-12 md:px-16">
       {children(idx, setIdx)}
+      {/* Arrows */}
+      <button
+        onClick={() => setIdx(Math.max(0, idx - 1))}
+        disabled={idx === 0}
+        className={`${arrowBase} left-0 ${arrowStyle} disabled:opacity-20 disabled:cursor-not-allowed`}
+        aria-label="Anterior"
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+      <button
+        onClick={() => setIdx(Math.min(total - 1, idx + 1))}
+        disabled={idx === total - 1}
+        className={`${arrowBase} right-0 ${arrowStyle} disabled:opacity-20 disabled:cursor-not-allowed`}
+        aria-label="Próximo"
+      >
+        <ChevronRight className="h-5 w-5" />
+      </button>
       {/* Dots */}
       <div className="flex justify-center gap-2 mt-6">
         {Array.from({ length: total }).map((_, i) => (
           <button
             key={i}
             onClick={() => setIdx(i)}
-            className={`w-3 h-3 rounded-full transition-colors ${i === idx ? "bg-[#820AD1]" : "bg-white/50"}`}
+            className={`w-3 h-3 rounded-full transition-colors ${i === idx ? (dark ? "bg-white" : "bg-[#820AD1]") : (dark ? "bg-white/40" : "bg-[#820AD1]/30")}`}
             aria-label={`Ir para item ${i + 1}`}
           />
         ))}
       </div>
-      {/* Arrows */}
-      {idx > 0 && (
-        <button
-          onClick={() => setIdx(idx - 1)}
-          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-8 w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-colors"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-      )}
-      {idx < total - 1 && (
-        <button
-          onClick={() => setIdx(idx + 1)}
-          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-8 w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-colors"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
-      )}
     </div>
   );
 }
@@ -147,31 +250,8 @@ export default function Midia() {
         </div>
       </div>
 
-      {/* ── Seção 1: Documentários e entrevistas ── */}
-      <section className="py-12 px-4 bg-white">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-center text-2xl md:text-3xl font-bold text-[#820AD1] mb-8">
-            Documentários e entrevistas
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {VIDEOS.map((v) => (
-              <div key={v.id}>
-                <div className="aspect-video w-full rounded-xl overflow-hidden shadow-md">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${v.id}`}
-                    title={v.title}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full"
-                  />
-                </div>
-                <h3 className="text-[#820AD1] font-semibold mt-3 text-base leading-snug">{v.title}</h3>
-                <p className="text-gray-600 text-sm mt-1 leading-relaxed">{v.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── Seção 1: Documentários e entrevistas — estilo Netflix ── */}
+      <NetflixVideos />
 
       {/* ── Seção 2: Matérias e reportagens ── */}
       <section className="py-12 px-4 bg-[#820AD1]">
@@ -179,7 +259,7 @@ export default function Midia() {
           <h2 className="text-center text-2xl md:text-3xl font-bold text-white mb-10">
             Matérias e reportagens
           </h2>
-          <Carousel total={MATERIAS.length}>
+          <Carousel total={MATERIAS.length} dark>
             {(idx) => {
               const m = MATERIAS[idx];
               return (
@@ -223,9 +303,8 @@ export default function Midia() {
               const p = PALESTRAS[idx];
               return (
                 <div className="max-w-2xl mx-auto">
-                  {/* Placeholder de imagem */}
-                  <div className="w-full aspect-video rounded-2xl overflow-hidden bg-gradient-to-br from-[#820AD1] to-[#5a0891] flex items-center justify-center mb-6 shadow-md">
-                    <Mic className="w-16 h-16 text-white/40" />
+                  <div className="w-full rounded-2xl overflow-hidden mb-6 shadow-md">
+                    <img src={p.img} alt={p.title} className="w-full object-cover" />
                   </div>
                   <h3 className="text-[#820AD1] font-bold text-lg text-center leading-snug mb-3">{p.title}</h3>
                   <p className="text-gray-700 text-sm leading-relaxed text-justify">{p.text}</p>
