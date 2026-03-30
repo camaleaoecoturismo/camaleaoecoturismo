@@ -358,12 +358,24 @@ function EquipeManager() {
   const [editing, setEditing] = useState<TeamMember | null>(null);
   const [form, setForm] = useState({ nome: "", cargo: "", bio: "", foto_url: "" });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { load(); }, []);
   const load = async () => {
     const { data } = await supabase.from("team_members").select("*").order("display_order");
     if (data) setMembers(data);
     setLoading(false);
+  };
+
+  const handleFotoUpload = async (file: File) => {
+    setUploading(true);
+    const ext = file.name.split(".").pop();
+    const path = `team/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("banners").upload(path, file, { upsert: true });
+    if (error) { toast.error("Erro ao enviar foto"); setUploading(false); return; }
+    const { data } = supabase.storage.from("banners").getPublicUrl(path);
+    setForm((f) => ({ ...f, foto_url: data.publicUrl }));
+    setUploading(false);
   };
 
   const save = async () => {
@@ -392,12 +404,18 @@ function EquipeManager() {
           <div className="grid sm:grid-cols-2 gap-3">
             <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Nome completo" />
             <Input value={form.cargo} onChange={(e) => setForm({ ...form, cargo: e.target.value })} placeholder="Cargo / Função" />
-            <Input className="sm:col-span-2" value={form.foto_url} onChange={(e) => setForm({ ...form, foto_url: e.target.value })} placeholder="URL da foto" />
+            <div className="sm:col-span-2 flex items-center gap-3">
+              <label className="flex-1 flex items-center justify-center gap-2 h-10 px-4 rounded-lg border border-dashed border-border bg-muted cursor-pointer hover:bg-muted/70 transition-colors text-sm text-muted-foreground">
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4" />{form.foto_url ? "Trocar foto" : "Enviar foto"}</>}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFotoUpload(f); }} />
+              </label>
+              {form.foto_url && <img src={form.foto_url} alt="preview" className="w-12 h-12 rounded-full object-cover border border-border shrink-0" />}
+            </div>
             <Textarea className="sm:col-span-2" value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder="Biografia curta" rows={2} />
           </div>
           <div className="flex gap-2 justify-end">
             <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button size="sm" onClick={save} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}</Button>
+            <Button size="sm" onClick={save} disabled={saving || uploading}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}</Button>
           </div>
         </div>
       ) : (
