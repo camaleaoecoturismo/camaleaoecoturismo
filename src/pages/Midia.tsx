@@ -249,14 +249,14 @@ export default function Midia() {
       <TopMenu />
 
       {/* Hero */}
-      <div className="relative w-full h-[40vh] min-h-[260px] overflow-hidden">
+      <div className="relative w-full">
         <img
           src={bannerMidia}
           alt="Camaleão na Mídia"
-          className="w-full h-full object-cover object-center"
+          className="w-full h-auto block"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/10 to-black/60" />
-        <div className="absolute inset-0 flex flex-col items-center justify-end text-center px-6 pb-8">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50" />
+        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center justify-end text-center px-6 pb-8">
           <h1 className="text-white font-bold text-3xl md:text-4xl leading-none tracking-tight drop-shadow-lg">
             Camaleão na Mídia
           </h1>
