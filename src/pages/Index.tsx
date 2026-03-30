@@ -11,6 +11,7 @@ import { useMonthMessages } from "@/hooks/useMonthMessages";
 import { useTourCoverImages } from "@/hooks/useTourCoverImages";
 import { Loader2, ChevronLeft, ChevronRight, MapPin, CalendarDays, SlidersHorizontal, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import Footer from "@/components/Footer";
 
 
 const monthNames: Record<string, string> = {
@@ -528,6 +529,8 @@ const Index = () => {
         tourId={waitlistTour?.id || ""}
         tourName={waitlistTour?.name || ""}
       />
+
+      <Footer />
 
       {/* Floating Contact Button */}
       <FloatingContactButton />
