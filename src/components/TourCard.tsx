@@ -199,20 +199,20 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             )}
 
             {/* Top-left gradient */}
-            <div className="absolute inset-0 z-[1]" style={{ background: "radial-gradient(ellipse at top left, rgba(0,0,0,0.80) 0%, transparent 65%)" }} />
+            <div className="absolute inset-0 z-[1]" style={{ background: "linear-gradient(to bottom right, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.55) 40%, transparent 72%), linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 45%)" }} />
 
             {/* Name + city + sold out — TOP LEFT */}
             <div className="absolute top-0 left-0 right-0 p-4 pr-20 z-[2]">
               {namePrefix && (
-                <p className={`text-white ${prefixFontClass} ${prefixSizeClass} font-medium tracking-widest drop-shadow leading-none mb-0.5 uppercase`}>
+                <p className={`text-white ${prefixFontClass} ${prefixSizeClass} font-medium tracking-widest leading-none mb-0.5 uppercase`} style={{ textShadow: "0 1px 4px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.7)" }}>
                   {namePrefix}
                 </p>
               )}
-              <p className={`text-white ${mainFontClass} font-bold ${mainSizeClass} leading-none drop-shadow-md tracking-tight`}>
+              <p className={`text-white ${mainFontClass} font-bold ${mainSizeClass} leading-none tracking-tight`} style={{ textShadow: "0 1px 6px rgba(0,0,0,0.9), 0 3px 12px rgba(0,0,0,0.7)" }}>
                 {nameMain}
               </p>
               {cityStateLabel && (
-                <p className="text-white text-[11px] font-medium mt-0.5 drop-shadow">
+                <p className="text-white text-[11px] font-medium mt-0.5" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.9)" }}>
                   {cityStateLabel}
                 </p>
               )}
