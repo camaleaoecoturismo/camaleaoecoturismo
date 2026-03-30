@@ -200,76 +200,6 @@ function NetflixVideos() {
   );
 }
 
-// ── Netflix Matérias ──────────────────────────────────────────────────────────
-function NetflixMaterias() {
-  const rowRef = useRef<HTMLDivElement>(null);
-
-  const scroll = (dir: -1 | 1) => {
-    rowRef.current?.scrollBy({ left: dir * 320, behavior: "smooth" });
-  };
-
-  return (
-    <section className="bg-[#0f0f12] py-10">
-      <div className="px-4 md:px-8 mb-4">
-        <h2 className="text-white text-xl md:text-2xl font-bold tracking-tight">
-          Matérias e reportagens
-        </h2>
-      </div>
-
-      <div className="relative group">
-        <div
-          ref={rowRef}
-          className="flex gap-3 overflow-x-auto px-4 md:px-8 pb-4 scroll-smooth"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {MATERIAS.map((m, i) => (
-            <a
-              key={i}
-              href={m.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0 w-64 md:w-72 group/card"
-            >
-              {/* Thumbnail */}
-              <div className="relative aspect-video rounded-lg overflow-hidden shadow-lg ring-2 ring-transparent group-hover/card:ring-white/40 transition-all duration-200 group-hover/card:scale-[1.03] origin-left">
-                <img
-                  src={m.thumb}
-                  alt={m.title}
-                  className="w-full h-full object-cover opacity-80 group-hover/card:opacity-100 transition-opacity"
-                />
-                {/* Logo badge */}
-                <div className="absolute top-2 right-2 bg-white rounded-md shadow px-1.5 py-1 flex items-center">
-                  <img src={m.logo} alt="veículo" className="h-5 w-auto object-contain" />
-                </div>
-                {/* Bottom gradient */}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent px-3 py-3">
-                  <p className="text-white text-[11px] font-semibold leading-tight line-clamp-2">{m.title}</p>
-                </div>
-              </div>
-              {/* Excerpt */}
-              <p className="text-gray-400 text-xs mt-2 line-clamp-2 leading-relaxed px-0.5">{m.text}</p>
-            </a>
-          ))}
-        </div>
-
-        {/* Arrows */}
-        <button
-          onClick={() => scroll(-1)}
-          className="absolute left-0 top-[40%] -translate-y-1/2 h-[calc(100%-1rem)] w-10 bg-gradient-to-r from-black/70 to-transparent text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-start pl-1"
-        >
-          <ChevronLeft className="h-7 w-7" />
-        </button>
-        <button
-          onClick={() => scroll(1)}
-          className="absolute right-0 top-[40%] -translate-y-1/2 h-[calc(100%-1rem)] w-10 bg-gradient-to-l from-black/70 to-transparent text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end pr-1"
-        >
-          <ChevronRight className="h-7 w-7" />
-        </button>
-      </div>
-    </section>
-  );
-}
-
 // ── Carrossel genérico ────────────────────────────────────────────────────────
 function Carousel({ total, children, dark = false }: { total: number; dark?: boolean; children: (idx: number, setIdx: (i: number) => void) => React.ReactNode }) {
   const [idx, setIdx] = useState(0);
@@ -329,8 +259,38 @@ export default function Midia() {
       {/* ── Seção 1: Documentários e entrevistas — estilo Netflix ── */}
       <NetflixVideos />
 
-      {/* ── Seção 2: Matérias e reportagens — estilo horizontal ── */}
-      <NetflixMaterias />
+      {/* ── Seção 2: Matérias e reportagens ── */}
+      <section className="bg-[#820AD1] py-12 px-4">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-center text-2xl md:text-3xl font-bold text-white mb-10">
+            Matérias e reportagens
+          </h2>
+          <div className="flex flex-col gap-6">
+            {MATERIAS.map((m, i) => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-xl">
+                <div className="relative">
+                  <img src={m.thumb} alt={m.title} className="w-full object-cover aspect-video" />
+                  <div className="absolute top-3 right-3 bg-white rounded-lg shadow-md px-2 py-1.5 flex items-center justify-center">
+                    <img src={m.logo} alt="veículo" className="h-6 w-auto object-contain" />
+                  </div>
+                </div>
+                <div className="p-6">
+                  <h3 className="font-bold text-gray-900 text-base leading-snug mb-3">{m.title}</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed mb-5">{m.text}</p>
+                  <a
+                    href={m.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block border border-[#820AD1] text-[#820AD1] font-semibold text-sm px-6 py-2.5 rounded-full hover:bg-[#820AD1] hover:text-white transition-colors"
+                  >
+                    Ver matéria completa
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ── Seção 3: Palestras e apresentações ── */}
       <section className="py-12 px-4 bg-white">
