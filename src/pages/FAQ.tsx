@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TopMenu } from "@/components/TopMenu";
 import { Link } from "react-router-dom";
 import { ChevronDown, HelpCircle, Loader2 } from "lucide-react";
+import DOMPurify from "dompurify";
 
 interface FaqItem {
   id: string;
@@ -126,9 +127,10 @@ export default function FAQ() {
                           />
                         </button>
                         {openId === item.id && (
-                          <div className="px-5 pb-4 text-sm text-muted-foreground leading-relaxed border-t border-border/50 pt-3">
-                            {item.resposta}
-                          </div>
+                          <div
+                            className="px-5 pb-4 text-sm text-muted-foreground leading-relaxed border-t border-border/50 pt-3 prose prose-sm prose-gray dark:prose-invert max-w-none"
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.resposta) }}
+                          />
                         )}
                       </div>
                     ))}
