@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { TopMenu } from "@/components/TopMenu";
 import Footer from "@/components/Footer";
-import bannerSobre from "@/assets/banner-sobre.png";
+import bannerMidia from "@/assets/banner-midia.avif";
 import palestra1 from "@/assets/palestra-1.avif";
 import palestra2 from "@/assets/palestra-2.avif";
 import materia1 from "@/assets/materia-1.avif";
@@ -249,27 +249,17 @@ export default function Midia() {
       <TopMenu />
 
       {/* Hero */}
-      <div className="relative w-full h-[60vh] min-h-[380px] overflow-hidden">
+      <div className="relative w-full h-[40vh] min-h-[260px] overflow-hidden">
         <img
-          src={bannerSobre}
+          src={bannerMidia}
           alt="Camaleão na Mídia"
-          className="w-full h-full object-cover object-center scale-105"
+          className="w-full h-full object-cover object-center"
         />
-        {/* Gradiente suave de cima para baixo + de baixo para cima */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/70" />
-
-        {/* Conteúdo centralizado */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-          <p className="text-white/60 text-xs font-semibold uppercase tracking-[0.25em] mb-3">
-            Presença e reconhecimento
-          </p>
-          <h1 className="text-white font-bold text-5xl md:text-7xl leading-none tracking-tight drop-shadow-lg">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/10 to-black/60" />
+        <div className="absolute inset-0 flex flex-col items-center justify-end text-center px-6 pb-8">
+          <h1 className="text-white font-bold text-3xl md:text-4xl leading-none tracking-tight drop-shadow-lg">
             Camaleão na Mídia
           </h1>
-          <div className="mt-5 w-12 h-0.5 bg-[#820AD1] rounded-full mx-auto" />
-          <p className="text-white/70 text-base mt-4 max-w-md leading-relaxed">
-            Documentários, entrevistas, reportagens e palestras sobre o ecoturismo alagoano
-          </p>
         </div>
       </div>
 
