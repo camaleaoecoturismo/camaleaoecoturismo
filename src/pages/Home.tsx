@@ -6,6 +6,7 @@ import { HeroBanner } from "@/components/HeroBanner";
 import Footer from "@/components/Footer";
 import { TourCard } from "@/components/TourCard";
 import { FloatingContactButton } from "@/components/FloatingContactButton";
+import { StoryModal, type Story } from "@/components/StoryModal";
 import { useTours } from "@/hooks/useTours";
 import { useTourCoverImages } from "@/hooks/useTourCoverImages";
 import {
@@ -134,6 +135,8 @@ export default function Home() {
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [homeSections, setHomeSections] = useState<HomeSection[]>([]);
+  const [stories, setStories] = useState<Story[]>([]);
+  const [storyModalIdx, setStoryModalIdx] = useState<number | null>(null);
   const [testimonialIdx, setTestimonialIdx] = useState(0);
   const testimonialTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -161,6 +164,9 @@ export default function Home() {
 
     supabase.from("home_sections" as any).select("*").eq("active", true).order("order_index")
       .then(({ data }) => { if (data) setHomeSections(data as HomeSection[]); });
+
+    supabase.from("stories" as any).select("id, title, caption, media_url, media_type, author_name, author_photo_url").eq("active", true).order("display_order")
+      .then(({ data }) => { if (data) setStories(data as Story[]); });
 
     return () => { document.title = "Camaleão Ecoturismo"; };
   }, []);
@@ -222,6 +228,55 @@ export default function Home() {
 
       {/* ── HERO ──────────────────────────────────────────────────────────────── */}
       <HeroBanner />
+
+      {/* ── STORIES ───────────────────────────────────────────────────────────── */}
+      {stories.length > 0 && (
+        <section className="py-6 px-4 bg-background">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-primary text-xs font-semibold uppercase tracking-widest mb-4 px-0">Stories</p>
+            <div
+              className="flex gap-4 overflow-x-auto pb-2"
+              style={{ scrollbarWidth: "none" }}
+            >
+              {stories.map((story, idx) => (
+                <button
+                  key={story.id}
+                  onClick={() => setStoryModalIdx(idx)}
+                  className="flex flex-col items-center gap-2 shrink-0 group"
+                >
+                  {/* Ring + thumb */}
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full p-0.5 bg-gradient-to-tr from-[#820AD1] via-[#c740f0] to-[#f97316] shadow-md group-hover:scale-105 transition-transform duration-200">
+                    <div className="w-full h-full rounded-full overflow-hidden border-2 border-white">
+                      {story.author_photo_url ? (
+                        <img src={story.author_photo_url} alt={story.author_name || ""} className="w-full h-full object-cover" />
+                      ) : story.media_type === "image" ? (
+                        <img src={story.media_url} alt={story.title || ""} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-[#820AD1]/20 flex items-center justify-center">
+                          <span className="text-[#820AD1] text-xl">▶</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {/* Name */}
+                  <span className="text-[11px] text-foreground/80 font-medium max-w-[72px] md:max-w-[80px] truncate text-center leading-tight">
+                    {story.author_name || story.title || "Story"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Story Modal */}
+      {storyModalIdx !== null && (
+        <StoryModal
+          stories={stories}
+          initialIndex={storyModalIdx}
+          onClose={() => setStoryModalIdx(null)}
+        />
+      )}
 
       {/* ── PRÓXIMAS AVENTURAS ────────────────────────────────────────────────── */}
       <section className="py-10 md:py-20 px-4 bg-muted/30">
