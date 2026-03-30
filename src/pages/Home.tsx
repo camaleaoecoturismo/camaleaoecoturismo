@@ -220,37 +220,6 @@ export default function Home() {
       {/* ── HERO ──────────────────────────────────────────────────────────────── */}
       <HeroBanner />
 
-      {/* ── SEÇÕES DINÂMICAS ──────────────────────────────────────────────────── */}
-      {homeSections.map((section, idx) => {
-        const sectionTours = getSectionTours(section);
-        if (sectionTours.length === 0) return null;
-        const altBg = idx % 2 === 1;
-        return (
-          <section key={section.id} className={`py-16 ${altBg ? "bg-muted/20" : ""}`}>
-            <div className="max-w-7xl mx-auto">
-              <div className="flex items-end justify-between mb-8 px-4">
-                <div>
-                  {section.subtitle && (
-                    <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-1">{section.subtitle}</p>
-                  )}
-                  <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">{section.title}</h2>
-                </div>
-                <Link to="/agenda" className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
-                  Ver todas <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-              <div className="flex overflow-x-auto gap-4 pb-4 px-4 scrollbar-hide snap-x snap-mandatory">
-                {sectionTours.map((tour) => (
-                  <div key={tour.id} className="shrink-0 w-72 snap-start">
-                    <TourCard tour={tour} preloadedCover={getCoverImage(tour.id)} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        );
-      })}
-
       {/* ── PRÓXIMAS AVENTURAS ────────────────────────────────────────────────── */}
       <section className="py-20 px-4 bg-muted/30">
         <div className="max-w-7xl mx-auto">
@@ -291,6 +260,37 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* ── SEÇÕES DINÂMICAS ──────────────────────────────────────────────────── */}
+      {homeSections.map((section, idx) => {
+        const sectionTours = getSectionTours(section);
+        if (sectionTours.length === 0) return null;
+        const altBg = idx % 2 === 0;
+        return (
+          <section key={section.id} className={`py-16 ${altBg ? "bg-muted/20" : ""}`}>
+            <div className="max-w-7xl mx-auto">
+              <div className="flex items-end justify-between mb-8 px-4">
+                <div>
+                  {section.subtitle && (
+                    <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-1">{section.subtitle}</p>
+                  )}
+                  <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">{section.title}</h2>
+                </div>
+                <Link to="/agenda" className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
+                  Ver todas <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+              <div className="flex overflow-x-auto gap-4 pb-4 px-4 scrollbar-hide snap-x snap-mandatory">
+                {sectionTours.map((tour) => (
+                  <div key={tour.id} className="shrink-0 w-72 snap-start">
+                    <TourCard tour={tour} preloadedCover={getCoverImage(tour.id)} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        );
+      })}
 
 
       {/* ── DEPOIMENTOS ───────────────────────────────────────────────────────── */}
