@@ -274,13 +274,20 @@ export default function Home() {
               <p>Novas aventuras em breve!</p>
             </div>
           ) : (
-            <div className="flex overflow-x-auto gap-4 pb-4 px-4 scrollbar-hide snap-x snap-mandatory">
-              {upcomingTours.map((tour) => (
-                <div key={tour.id} className="shrink-0 w-72 snap-start">
-                  <TourCard tour={tour} preloadedCover={getCoverImage(tour.id)} />
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="flex overflow-x-auto gap-4 pb-4 px-4 scrollbar-hide snap-x snap-mandatory">
+                {upcomingTours.map((tour) => (
+                  <div key={tour.id} className="shrink-0 w-72 snap-start">
+                    <TourCard tour={tour} preloadedCover={getCoverImage(tour.id)} />
+                  </div>
+                ))}
+              </div>
+              <div className="sm:hidden flex justify-end px-4 mt-4">
+                <Link to="/agenda" className="flex items-center gap-1 text-primary font-semibold text-sm">
+                  Ver todos <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </>
           )}
         </div>
       </section>
