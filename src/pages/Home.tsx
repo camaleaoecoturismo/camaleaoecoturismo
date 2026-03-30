@@ -419,7 +419,7 @@ export default function Home() {
 
       {/* ── BLOG ──────────────────────────────────────────────────────────────── */}
       {blogPosts.length > 0 && (
-        <section className="py-20 bg-muted/30">
+        <section className="py-8 md:py-12 bg-muted/30">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-end justify-between px-4 mb-8">
               <div>
