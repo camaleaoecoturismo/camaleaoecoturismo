@@ -316,7 +316,9 @@ const Passeio = () => {
       </div>
 
       {/* ── BODY ── */}
-      <div className="max-w-2xl mx-auto px-4 pb-40">
+      <div className="max-w-6xl mx-auto px-4 pb-40 md:pb-16">
+        <div className="md:grid md:grid-cols-[1fr_380px] md:gap-10 md:items-start">
+        <div>{/* left column */}
 
         {/* Stories do destino */}
         {tourMoments.length > 0 && (
@@ -356,8 +358,8 @@ const Passeio = () => {
           />
         )}
 
-        {/* Action buttons */}
-        <div className="flex flex-col gap-3 mb-8 mt-5">
+        {/* Action buttons — mobile only (desktop uses sticky sidebar) */}
+        <div className="flex flex-col gap-3 mb-8 mt-5 md:hidden">
           <Button
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-base font-semibold py-6"
             onClick={isSoldOut && isFutureTour ? () => setWaitlistOpen(true) : !isSoldOut ? () => scrollTo("valores", "end") : undefined}
@@ -449,8 +451,8 @@ const Passeio = () => {
           <TourBoardingPointsDisplay tourId={tour.id} departures={tour.departures} />
         </section>
 
-        {/* Reservar / Valores */}
-        <section id="valores" className="mb-8 scroll-mt-4">
+        {/* Reservar / Valores — mobile only */}
+        <section id="valores" className="mb-8 scroll-mt-4 md:hidden">
           <div className="border border-border rounded-2xl p-5 bg-card shadow-sm space-y-4">
 
             {isSoldOut && (
@@ -664,9 +666,9 @@ const Passeio = () => {
           </div>
         </section>
 
-        {/* Próximas datas */}
+        {/* Próximas datas — mobile only */}
         {relatedTours.length > 0 && (
-          <section className="mb-8">
+          <section className="mb-8 md:hidden">
             <h2 className="font-semibold text-lg text-primary mb-3">Próximas datas</h2>
             <div className="flex overflow-x-auto gap-3 pb-2 snap-x -mx-4 px-4">
               {relatedTours.map((related) => {
