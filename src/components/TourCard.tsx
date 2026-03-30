@@ -72,10 +72,25 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
   const cityStateLabel = [tour.city, tour.state?.toUpperCase()].filter(Boolean).join(" - ");
 
   const PREFIX_SIZES: Record<string, string> = {
-    xs: "text-[11px]", sm: "text-xs", base: "text-sm",
+    "2xs": "text-[9px]",
+    xs:    "text-[11px]",
+    sm:    "text-xs",
+    base:  "text-sm",
+    lg:    "text-base",
+    xl:    "text-lg",
+    "2xl": "text-xl",
   };
   const MAIN_SIZES: Record<string, string> = {
-    xl: "text-xl", "2xl": "text-2xl md:text-3xl", "3xl": "text-3xl md:text-4xl", "4xl": "text-4xl md:text-5xl",
+    xs:    "text-xs md:text-sm",
+    sm:    "text-sm md:text-base",
+    base:  "text-base md:text-lg",
+    lg:    "text-lg md:text-xl",
+    xl:    "text-xl",
+    "2xl": "text-2xl md:text-3xl",
+    "3xl": "text-3xl md:text-4xl",
+    "4xl": "text-4xl md:text-5xl",
+    "5xl": "text-5xl md:text-6xl",
+    "6xl": "text-6xl md:text-7xl",
   };
   const prefixSizeClass = PREFIX_SIZES[tour.card_prefix_size ?? "xs"] ?? "text-[11px]";
   const mainSizeClass = MAIN_SIZES[tour.card_main_size ?? "2xl"] ?? "text-2xl md:text-3xl";

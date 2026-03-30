@@ -672,9 +672,13 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                               <FormLabel className="text-slate-600 text-sm">Tamanho</FormLabel>
                               <FormControl>
                                 <select {...field} className="w-28 h-9 rounded-md border border-input bg-white px-3 text-sm">
+                                  <option value="2xs">2XS</option>
                                   <option value="xs">XS</option>
                                   <option value="sm">SM</option>
                                   <option value="base">MD</option>
+                                  <option value="lg">LG</option>
+                                  <option value="xl">XL</option>
+                                  <option value="2xl">2XL</option>
                                 </select>
                               </FormControl>
                             </FormItem>
@@ -704,10 +708,16 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                               <FormLabel className="text-slate-600 text-sm">Tamanho</FormLabel>
                               <FormControl>
                                 <select {...field} className="w-28 h-9 rounded-md border border-input bg-white px-3 text-sm">
+                                  <option value="xs">XS</option>
+                                  <option value="sm">SM</option>
+                                  <option value="base">MD</option>
+                                  <option value="lg">LG</option>
                                   <option value="xl">XL</option>
                                   <option value="2xl">2XL</option>
                                   <option value="3xl">3XL</option>
                                   <option value="4xl">4XL</option>
+                                  <option value="5xl">5XL</option>
+                                  <option value="6xl">6XL</option>
                                 </select>
                               </FormControl>
                             </FormItem>
