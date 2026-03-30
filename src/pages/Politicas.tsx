@@ -10,6 +10,7 @@ export default function Politicas() {
   const [searchParams] = useSearchParams();
   const tipo = searchParams.get("tipo") || "cancelamento";
   const [content, setContent] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
 
@@ -17,19 +18,20 @@ export default function Politicas() {
     setLoading(true);
     supabase
       .from("policies")
-      .select("content_html, updated_at")
+      .select("content_html, updated_at, image_url")
       .eq("tipo", tipo)
       .single()
       .then(({ data }) => {
         if (data) {
           setContent(data.content_html);
           setUpdatedAt(data.updated_at);
+          setImageUrl((data as any).image_url || null);
         }
         setLoading(false);
       });
   }, [tipo]);
 
-  const title = tipo === "cancelamento" ? "Política de Cancelamento" : "Termos de Uso";
+  const title = tipo === "cancelamento" ? "Política de Cancelamento" : tipo === "termos" ? "Termos e Condições" : "Políticas";
 
   return (
     <div className="min-h-screen bg-background">
@@ -50,7 +52,7 @@ export default function Politicas() {
           <div className="flex gap-0">
             {[
               { value: "cancelamento", label: "Política de Cancelamento" },
-              { value: "termos", label: "Termos de Uso" },
+              { value: "termos", label: "Termos e Condições" },
             ].map((tab) => (
               <Link
                 key={tab.value}
@@ -74,25 +76,40 @@ export default function Politicas() {
           <div className="flex justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-        ) : content ? (
-          <>
-            <div
-              className="prose prose-gray dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
-            />
-            {updatedAt && (
-              <p className="text-xs text-muted-foreground mt-10 pt-6 border-t border-border">
-                Última atualização:{" "}
-                {new Date(updatedAt).toLocaleDateString("pt-BR", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </p>
-            )}
-          </>
         ) : (
-          <p className="text-muted-foreground">Conteúdo não disponível.</p>
+          <>
+            {/* Image (e.g. cancelamento policy scan) */}
+            {imageUrl && (
+              <div className="mb-8">
+                <img
+                  src={imageUrl}
+                  alt={title}
+                  className="w-full rounded-xl border border-border shadow-sm"
+                />
+              </div>
+            )}
+
+            {content ? (
+              <>
+                <div
+                  className="prose prose-gray dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
+                />
+                {updatedAt && (
+                  <p className="text-xs text-muted-foreground mt-10 pt-6 border-t border-border">
+                    Última atualização:{" "}
+                    {new Date(updatedAt).toLocaleDateString("pt-BR", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </p>
+                )}
+              </>
+            ) : !imageUrl ? (
+              <p className="text-muted-foreground">Conteúdo não disponível.</p>
+            ) : null}
+          </>
         )}
       </div>
 

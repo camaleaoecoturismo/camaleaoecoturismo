@@ -301,22 +301,40 @@ function FAQManager() {
 function PoliticasManager() {
   const [tipo, setTipo] = useState("cancelamento");
   const [content, setContent] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const imgInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadContent(); }, [tipo]);
 
   const loadContent = async () => {
     setLoading(true);
-    const { data } = await supabase.from("policies").select("content_html").eq("tipo", tipo).single();
+    const { data } = await (supabase as any).from("policies").select("content_html, image_url").eq("tipo", tipo).single();
     setContent(data?.content_html || "");
+    setImageUrl(data?.image_url || "");
     setLoading(false);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImg(true);
+    const ext = file.name.split(".").pop();
+    const path = `policies/politica-${tipo}.${ext}`;
+    const { error } = await supabase.storage.from("site-config").upload(path, file, { upsert: true });
+    if (error) { toast.error(error.message); setUploadingImg(false); return; }
+    const { data } = supabase.storage.from("site-config").getPublicUrl(path);
+    setImageUrl(data.publicUrl);
+    toast.success("Imagem enviada");
+    setUploadingImg(false);
   };
 
   const save = async () => {
     setSaving(true);
-    const { error } = await supabase.from("policies")
-      .upsert({ tipo, content_html: content, updated_at: new Date().toISOString() }, { onConflict: "tipo" });
+    const { error } = await (supabase as any).from("policies")
+      .upsert({ tipo, content_html: content, image_url: imageUrl || null, updated_at: new Date().toISOString() }, { onConflict: "tipo" });
     if (error) toast.error(error.message);
     else toast.success("Política salva");
     setSaving(false);
@@ -327,13 +345,32 @@ function PoliticasManager() {
       <div className="flex gap-2">
         {["cancelamento", "termos"].map((t) => (
           <button key={t} onClick={() => setTipo(t)} className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all ${tipo === t ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border"}`}>
-            {t === "cancelamento" ? "Cancelamento" : "Termos de Uso"}
+            {t === "cancelamento" ? "Cancelamento" : "Termos e Condições"}
           </button>
         ))}
       </div>
       {loading ? <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
         : (
           <>
+            {/* Image upload */}
+            <div className="border border-border rounded-xl p-4 bg-muted/30 space-y-3">
+              <p className="text-sm font-medium text-foreground">Imagem / foto da política</p>
+              <div className="flex items-center gap-3 flex-wrap">
+                <input ref={imgInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                <Button size="sm" variant="outline" onClick={() => imgInputRef.current?.click()} disabled={uploadingImg}>
+                  {uploadingImg ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Upload className="h-4 w-4 mr-1.5" />}
+                  {imageUrl ? "Trocar imagem" : "Enviar imagem"}
+                </Button>
+                {imageUrl && (
+                  <button onClick={() => setImageUrl("")} className="text-xs text-red-500 hover:underline">Remover</button>
+                )}
+              </div>
+              {imageUrl && (
+                <img src={imageUrl} alt="Preview" className="max-h-48 rounded-lg border border-border object-contain" />
+              )}
+              <p className="text-xs text-muted-foreground">A imagem aparece no topo da página pública, antes do texto.</p>
+            </div>
+
             <RichTextEditor value={content} onChange={setContent} />
             <div className="flex justify-end mt-2">
               <Button onClick={save} disabled={saving} size="sm">
