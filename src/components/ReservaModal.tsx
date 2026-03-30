@@ -2817,11 +2817,10 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
   if (!tour) return null;
   const currentQuestion = getCurrentQuestion();
   const hasFormData = () => {
-    // Check if user has entered any data
+    // Check if user has entered any data (bot messages don't count)
     if (formData.nome_completo || formData.cpf || formData.email || formData.whatsapp) return true;
     if (fullParticipantsData.some((p) => p.nome_completo || p.cpf || p.email)) return true;
     if (Object.values(packageQuantities).some((qty) => qty > 0)) return true;
-    if (chatMessages.length > 0) return true;
     return false;
   };
 
