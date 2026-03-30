@@ -279,9 +279,9 @@ export default function Home() {
       )}
 
       {/* ── PRÓXIMAS AVENTURAS ────────────────────────────────────────────────── */}
-      <section className="py-10 md:py-20 px-4 bg-muted/30">
+      <section className="py-6 md:py-16 px-4 bg-muted/30">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-end justify-between mb-6 md:mb-12">
+          <div className="flex items-end justify-between mb-4 md:mb-10">
             <div>
               <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Agenda</p>
               <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Próximas Aventuras</h2>
@@ -325,9 +325,9 @@ export default function Home() {
         if (sectionTours.length === 0) return null;
         const altBg = idx % 2 === 0;
         return (
-          <section key={section.id} className={`py-8 md:py-16 ${altBg ? "bg-muted/20" : ""}`}>
+          <section key={section.id} className={`py-5 md:py-14 ${altBg ? "bg-muted/20" : ""}`}>
             <div className="max-w-7xl mx-auto">
-              <div className="flex items-end justify-between mb-5 md:mb-8 px-4">
+              <div className="flex items-end justify-between mb-4 md:mb-7 px-4">
                 <div>
                   {section.subtitle && (
                     <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-1">{section.subtitle}</p>
