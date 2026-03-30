@@ -421,7 +421,7 @@ export default function Home() {
       {blogPosts.length > 0 && (
         <section className="py-8 md:py-12 bg-muted/30">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-end justify-between px-4 mb-8">
+            <div className="flex items-end justify-between px-4 mb-5">
               <div>
                 <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Blog</p>
                 <h2 className="font-figtree text-lg md:text-2xl font-bold text-foreground uppercase tracking-tight whitespace-nowrap">Fique por dentro das novidades</h2>
@@ -473,7 +473,7 @@ export default function Home() {
       <StatsSection />
 
       {/* ── CTA FINAL ─────────────────────────────────────────────────────────── */}
-      <section className="relative py-24 px-4 overflow-hidden">
+      <section className="relative py-14 md:py-20 px-4 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#820AD1] to-[#1a0533]" />
         <div className="absolute inset-0 opacity-10">
           <TreePine className="absolute top-8 left-8 h-32 w-32 text-white" />

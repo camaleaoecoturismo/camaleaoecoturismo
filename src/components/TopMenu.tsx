@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X, User, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import logoImage from '@/assets/logo.png';
 
 interface MenuItem {
@@ -146,14 +146,16 @@ export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) =
       <div className={transparent ? 'fixed top-0 left-0 right-0 z-40' : ''}>
       {/* Logo Bar - Mobile Only */}
       <div className={`md:hidden px-4 py-3 flex items-center justify-between transition-colors duration-300 ${bgClass}`}>
-        <img
-          src={logoImage}
-          alt="Camaleão Ecoturismo"
-          className="h-8 w-auto"
-          width={109}
-          height={32}
-          style={transparent && !scrolled ? { filter: "drop-shadow(0 1px 6px rgba(0,0,0,0.85))" } : undefined}
-        />
+        <Link to="/">
+          <img
+            src={logoImage}
+            alt="Camaleão Ecoturismo"
+            className="h-8 w-auto"
+            width={109}
+            height={32}
+            style={transparent && !scrolled ? { filter: "drop-shadow(0 1px 6px rgba(0,0,0,0.85))" } : undefined}
+          />
+        </Link>
         <div
           className="flex items-center gap-2"
           style={transparent && !scrolled ? { filter: "drop-shadow(0 1px 6px rgba(0,0,0,0.85))" } : undefined}
