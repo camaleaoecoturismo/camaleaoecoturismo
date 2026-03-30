@@ -309,15 +309,16 @@ export default function Home() {
       {partners.length > 0 && (
         <section className="py-16 px-4 border-y border-border">
           <div className="max-w-5xl mx-auto">
-            <p className="text-center text-muted-foreground text-sm font-medium uppercase tracking-widest mb-10">
-              Empresas e organizações que já viajaram com a gente
-            </p>
+            <div className="text-center mb-10">
+              <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Parceiros</p>
+              <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Empresas que já viajaram com a gente</h2>
+            </div>
             <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
               {partners.map((p) => (
                 <a key={p.id} href={p.website_url || "#"} target="_blank" rel="noopener noreferrer"
-                  className="grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-300" title={p.name}
+                  className="hover:opacity-80 transition-opacity duration-200" title={p.name || ""}
                 >
-                  <img src={p.logo_url} alt={p.name} className="h-10 md:h-12 w-auto object-contain" />
+                  <img src={p.logo_url} alt={p.name || ""} className="h-10 md:h-12 w-auto object-contain" />
                 </a>
               ))}
             </div>
