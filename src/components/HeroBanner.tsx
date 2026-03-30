@@ -50,7 +50,7 @@ const FALLBACK_SUBTITLE = "Experimente a liberdade";
 const FALLBACK_BTN = "Ver Passeios";
 const AUTO_ADVANCE = 7000;
 
-export function HeroBanner() {
+export function HeroBanner({ location = "hero" }: { location?: string }) {
   const navigate = useNavigate();
   const [slides, setSlides] = useState<HeroBannerSlide[]>([]);
   const [current, setCurrent] = useState(0);
@@ -64,7 +64,7 @@ export function HeroBanner() {
       .from("banners")
       .select("id, image_url, video_url, title, subtitle, button_text, button_url, order_index, title_font, title_font_size, subtitle_font, subtitle_font_size")
       .eq("is_active", true)
-      .eq("location", "hero")
+      .eq("location", location)
       .order("order_index")
       .then(({ data }) => {
         clearTimeout(timeout);
@@ -129,6 +129,9 @@ export function HeroBanner() {
   // Fallback: no slides yet
   const hasFallback = loaded && slides.length === 0;
   if (!loaded) return <div className="h-[100svh] min-h-[600px] bg-black animate-pulse" />;
+
+  // Para locations que não sejam hero, sem banner = sem renderizar nada
+  if (hasFallback && location !== "hero") return null;
 
   if (hasFallback) {
     return (

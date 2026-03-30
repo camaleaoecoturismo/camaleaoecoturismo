@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { TourCard } from "@/components/TourCard";
 import { FloatingContactButton } from "@/components/FloatingContactButton";
 import { ReservaModal } from "@/components/ReservaModal";
-import { BannerCarousel } from "@/components/BannerCarousel";
+import { HeroBanner } from "@/components/HeroBanner";
 import { TopMenu } from "@/components/TopMenu";
 import { WaitlistModal } from "@/components/WaitlistModal";
 import { useTours, Tour } from "@/hooks/useTours";
@@ -11,7 +11,7 @@ import { useMonthMessages } from "@/hooks/useMonthMessages";
 import { useTourCoverImages } from "@/hooks/useTourCoverImages";
 import { Loader2, ChevronLeft, ChevronRight, MapPin, CalendarDays, SlidersHorizontal, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import Footer from "@/components/Footer";
+
 
 const monthNames: Record<string, string> = {
   JAN: "Janeiro", FEV: "Fevereiro", MAR: "Março", ABR: "Abril",
@@ -270,10 +270,8 @@ const Index = () => {
       {/* Top Menu */}
       <TopMenu />
 
-      {/* Banner Carousel */}
-      <div className="bg-primary/5">
-        <BannerCarousel />
-      </div>
+      {/* Hero Banner */}
+      <HeroBanner location="agenda" />
 
       {/* Filter Bar */}
       <div className="bg-background border-b border-border sticky top-0 z-20 shadow-sm">
@@ -512,8 +510,6 @@ const Index = () => {
           </>
         )}
       </main>
-
-      <Footer />
 
       {/* Reserva Modal */}
       <ReservaModal
