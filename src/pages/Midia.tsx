@@ -248,11 +248,28 @@ export default function Midia() {
     <div className="min-h-screen bg-background">
       <TopMenu />
 
-      {/* Hero banner */}
-      <div className="relative w-full h-48 md:h-64 overflow-hidden">
-        <img src={bannerSobre} alt="Camaleão na Mídia" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-black/55 flex flex-col justify-end px-6 pb-6 md:px-10 md:pb-8">
-          <h1 className="font-bold text-4xl md:text-5xl text-white leading-none">Camaleão na Mídia</h1>
+      {/* Hero */}
+      <div className="relative w-full h-[60vh] min-h-[380px] overflow-hidden">
+        <img
+          src={bannerSobre}
+          alt="Camaleão na Mídia"
+          className="w-full h-full object-cover object-center scale-105"
+        />
+        {/* Gradiente suave de cima para baixo + de baixo para cima */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/70" />
+
+        {/* Conteúdo centralizado */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+          <p className="text-white/60 text-xs font-semibold uppercase tracking-[0.25em] mb-3">
+            Presença e reconhecimento
+          </p>
+          <h1 className="text-white font-bold text-5xl md:text-7xl leading-none tracking-tight drop-shadow-lg">
+            Camaleão na Mídia
+          </h1>
+          <div className="mt-5 w-12 h-0.5 bg-[#820AD1] rounded-full mx-auto" />
+          <p className="text-white/70 text-base mt-4 max-w-md leading-relaxed">
+            Documentários, entrevistas, reportagens e palestras sobre o ecoturismo alagoano
+          </p>
         </div>
       </div>
 
