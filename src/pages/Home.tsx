@@ -353,20 +353,26 @@ export default function Home() {
 
       {/* ── BLOG ──────────────────────────────────────────────────────────────── */}
       {blogPosts.length > 0 && (
-        <section className="py-20 px-4 bg-muted/30">
+        <section className="py-20 bg-muted/30">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-end justify-between mb-12">
+            <div className="flex items-end justify-between mb-8 px-4">
               <div>
                 <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Blog</p>
                 <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Últimas aventuras</h2>
               </div>
-              <Link to="/blog" className="hidden sm:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
+              <Link to="/blog" className="flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
                 Ver todos <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            {/* Mobile: scroll horizontal / Desktop: grid 3 colunas */}
+            <div className="flex md:grid md:grid-cols-3 gap-5 overflow-x-auto md:overflow-visible snap-x snap-mandatory scroll-smooth px-4 md:px-4 pb-3 md:pb-0" style={{ scrollbarWidth: "none" }}>
               {blogPosts.map((post) => (
-                <Link key={post.id} to={`/blog/${post.slug}`} className="group rounded-2xl overflow-hidden border border-border bg-card hover:shadow-lg transition-shadow">
+                <Link
+                  key={post.id}
+                  to={`/blog/${post.slug}`}
+                  className="group rounded-2xl overflow-hidden border border-border bg-card hover:shadow-lg transition-shadow shrink-0 w-[75vw] max-w-xs md:w-auto md:max-w-none snap-start"
+                >
                   {post.cover_image && (
                     <div className="aspect-video overflow-hidden">
                       <img src={post.cover_image} alt={post.titulo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -385,11 +391,6 @@ export default function Home() {
                   </div>
                 </Link>
               ))}
-            </div>
-            <div className="text-center mt-8 sm:hidden">
-              <Button asChild variant="outline" className="rounded-full">
-                <Link to="/blog">Ver todos os posts <ArrowRight className="ml-2 h-4 w-4" /></Link>
-              </Button>
             </div>
           </div>
         </section>
