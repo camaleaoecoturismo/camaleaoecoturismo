@@ -110,7 +110,7 @@ export function StoryModal({ stories, initialIndex, onClose }: StoryModalProps) 
       {/* Close button */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+        className="absolute top-4 right-4 z-30 w-9 h-9 flex items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
         aria-label="Fechar"
       >
         <X className="h-5 w-5" />
