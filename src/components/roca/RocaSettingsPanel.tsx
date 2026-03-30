@@ -10,6 +10,7 @@ import { Shield, Key, RefreshCw, Search, CheckCircle, XCircle, Loader2, Clock, P
 import { toast } from 'sonner';
 
 const SUPABASE_URL = "https://guwplwuwriixgvkjlutg.supabase.co";
+const SUPABASE_ANON_KEY = (supabase as unknown as { supabaseKey: string }).supabaseKey;
 
 async function callRocaApi(action: string, params: any = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -18,7 +19,7 @@ async function callRocaApi(action: string, params: any = {}) {
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${session?.access_token}`,
-      apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1d3Bsd3V3cmlpeGd2a2psdXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MzE3MDYsImV4cCI6MjA2OTMwNzcwNn0.XqFnllTUiv1SZrnL23hy7pWWeIeWDldfm9lpfO3vIQg',
+      apikey: SUPABASE_ANON_KEY,
     },
     body: JSON.stringify({ action, ...params }),
   });

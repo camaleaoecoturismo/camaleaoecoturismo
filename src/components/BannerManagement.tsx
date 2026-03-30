@@ -10,6 +10,30 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
+const FONTS = [
+  { value: "",                label: "Padrão (Figtree)" },
+  { value: "Inter",           label: "Inter" },
+  { value: "Montserrat",      label: "Montserrat" },
+  { value: "Poppins",         label: "Poppins" },
+  { value: "Raleway",         label: "Raleway" },
+  { value: "Oswald",          label: "Oswald" },
+  { value: "Bebas Neue",      label: "Bebas Neue" },
+  { value: "Playfair Display",label: "Playfair Display" },
+  { value: "Lora",            label: "Lora" },
+];
+
+const FONT_SIZES = [
+  { value: "",    label: "Padrão" },
+  { value: "2xs", label: "2XS — Minúsculo" },
+  { value: "xs",  label: "XS — Muito pequeno" },
+  { value: "sm",  label: "SM — Pequeno" },
+  { value: "md",  label: "MD — Médio" },
+  { value: "lg",  label: "LG — Grande" },
+  { value: "xl",  label: "XL — Extra grande" },
+  { value: "2xl", label: "2XL — Gigante" },
+  { value: "3xl", label: "3XL — Máximo" },
+];
+
 interface Banner {
   id: string;
   image_url: string | null;
@@ -20,6 +44,10 @@ interface Banner {
   button_url?: string | null;
   link_url?: string;
   etiqueta?: string;
+  title_font?: string | null;
+  title_font_size?: string | null;
+  subtitle_font?: string | null;
+  subtitle_font_size?: string | null;
   order_index: number;
   is_active: boolean;
   created_at: string;
@@ -35,6 +63,10 @@ interface BannerFormData {
   button_url: string;
   etiqueta: string;
   location: string;
+  title_font: string;
+  title_font_size: string;
+  subtitle_font: string;
+  subtitle_font_size: string;
 }
 
 export function BannerManagement() {
@@ -52,6 +84,10 @@ export function BannerManagement() {
     button_url: "",
     etiqueta: "",
     location: "hero",
+    title_font: "",
+    title_font_size: "",
+    subtitle_font: "",
+    subtitle_font_size: "",
   });
   const [uploadingVideo, setUploadingVideo] = useState(false);
 
@@ -134,6 +170,10 @@ export function BannerManagement() {
         button_url: formData.button_url || null,
         etiqueta: formData.etiqueta || null,
         location: formData.location || "hero",
+        title_font: formData.title_font || null,
+        title_font_size: formData.title_font_size || null,
+        subtitle_font: formData.subtitle_font || null,
+        subtitle_font_size: formData.subtitle_font_size || null,
         order_index: editingBanner ? editingBanner.order_index : getNextOrderIndex(),
       };
 
@@ -154,7 +194,7 @@ export function BannerManagement() {
         toast.success("Banner criado com sucesso!");
       }
 
-      setFormData({ image_url: "", video_url: "", title: "", subtitle: "", button_text: "", button_url: "", etiqueta: "", location: "hero" });
+      setFormData({ image_url: "", video_url: "", title: "", subtitle: "", button_text: "", button_url: "", etiqueta: "", location: "hero", title_font: "", title_font_size: "", subtitle_font: "", subtitle_font_size: "" });
       setEditingBanner(null);
       setShowForm(false);
       fetchBanners();
@@ -175,6 +215,10 @@ export function BannerManagement() {
       button_url: banner.button_url || "",
       etiqueta: banner.etiqueta || "",
       location: (banner as any).location || "hero",
+      title_font: banner.title_font || "",
+      title_font_size: banner.title_font_size || "",
+      subtitle_font: banner.subtitle_font || "",
+      subtitle_font_size: banner.subtitle_font_size || "",
     });
     setShowForm(true);
   };
@@ -242,7 +286,7 @@ export function BannerManagement() {
   };
 
   const resetForm = () => {
-    setFormData({ image_url: "", video_url: "", title: "", subtitle: "", button_text: "", button_url: "", etiqueta: "", location: "hero" });
+    setFormData({ image_url: "", video_url: "", title: "", subtitle: "", button_text: "", button_url: "", etiqueta: "", location: "hero", title_font: "", title_font_size: "", subtitle_font: "", subtitle_font_size: "" });
     setEditingBanner(null);
     setShowForm(false);
   };
@@ -288,15 +332,59 @@ export function BannerManagement() {
               </div>
 
               {/* Título */}
-              <div>
+              <div className="space-y-1.5">
                 <Label htmlFor="title">Título</Label>
-                <Input id="title" value={formData.title} onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} placeholder="Reconecte-se com a natureza" className="mt-1.5" />
+                <Input id="title" value={formData.title} onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} placeholder="Reconecte-se com a natureza" />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Tipo de letra</Label>
+                    <select
+                      value={formData.title_font}
+                      onChange={(e) => setFormData(prev => ({ ...prev, title_font: e.target.value }))}
+                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      {FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Tamanho</Label>
+                    <select
+                      value={formData.title_font_size}
+                      onChange={(e) => setFormData(prev => ({ ...prev, title_font_size: e.target.value }))}
+                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      {FONT_SIZES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                    </select>
+                  </div>
+                </div>
               </div>
 
               {/* Subtítulo */}
-              <div>
+              <div className="space-y-1.5">
                 <Label htmlFor="subtitle">Subtítulo</Label>
-                <Input id="subtitle" value={formData.subtitle} onChange={(e) => setFormData(prev => ({ ...prev, subtitle: e.target.value }))} placeholder="Experimente a liberdade" className="mt-1.5" />
+                <Input id="subtitle" value={formData.subtitle} onChange={(e) => setFormData(prev => ({ ...prev, subtitle: e.target.value }))} placeholder="Experimente a liberdade" />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Tipo de letra</Label>
+                    <select
+                      value={formData.subtitle_font}
+                      onChange={(e) => setFormData(prev => ({ ...prev, subtitle_font: e.target.value }))}
+                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      {FONTS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Tamanho</Label>
+                    <select
+                      value={formData.subtitle_font_size}
+                      onChange={(e) => setFormData(prev => ({ ...prev, subtitle_font_size: e.target.value }))}
+                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      {FONT_SIZES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                    </select>
+                  </div>
+                </div>
               </div>
 
               {/* Botão */}

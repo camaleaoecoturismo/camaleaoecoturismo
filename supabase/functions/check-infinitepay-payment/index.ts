@@ -128,13 +128,8 @@ serve(async (req) => {
       }
     }
 
-    // Fallback: If we have transaction_nsu from redirect, trust the redirect
-    // InfinitePay only redirects with transaction_nsu when payment is complete
-    if (!paymentVerified && transaction_nsu) {
-      console.log('Trusting redirect with transaction_nsu as payment confirmation');
-      paymentVerified = true;
-      verifiedPaidAmount = verifiedPaidAmount || reserva.valor_total_com_opcionais || 0;
-    }
+    // SECURITY: Fallback removido — não confiar em transaction_nsu fornecido pelo usuário.
+    // Pagamento só é confirmado via validação da API InfinitePay.
 
     if (!paymentVerified) {
       console.log('Payment could not be verified');

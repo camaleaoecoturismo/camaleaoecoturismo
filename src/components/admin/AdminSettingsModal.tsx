@@ -138,11 +138,13 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
         .single();
       
       if (error && error.code !== 'PGRST116') throw error;
-      
-      // Default password if not set: "4545"
-      const storedPassword = data?.setting_value || '4545';
-      
-      if (accessPassword === storedPassword) {
+
+      if (!data?.setting_value) {
+        toast.error('Nenhuma senha configurada. Defina admin_settings_password em site_settings no Supabase.');
+        return;
+      }
+
+      if (accessPassword === data.setting_value) {
         setIsAuthenticated(true);
         setAccessPassword('');
       } else {

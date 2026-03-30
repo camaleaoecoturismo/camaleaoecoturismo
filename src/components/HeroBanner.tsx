@@ -12,7 +12,38 @@ interface HeroBannerSlide {
   button_text: string | null;
   button_url: string | null;
   order_index: number;
+  title_font: string | null;
+  title_font_size: string | null;
+  subtitle_font: string | null;
+  subtitle_font_size: string | null;
 }
+
+const GOOGLE_FONTS = ["Inter","Montserrat","Poppins","Raleway","Oswald","Bebas Neue","Playfair Display","Lora"];
+
+// Tailwind classes para cada tamanho — título e subtítulo compartilham o mesmo map
+const TITLE_SIZE_CLASSES: Record<string, string> = {
+  "2xs": "text-sm md:text-2xl lg:text-3xl",
+  "xs":  "text-base md:text-3xl lg:text-4xl",
+  "sm":  "text-lg md:text-4xl lg:text-5xl",
+  "md":  "text-xl md:text-5xl lg:text-6xl",
+  "":    "text-2xl md:text-6xl lg:text-7xl",   // padrão
+  "lg":  "text-3xl md:text-7xl lg:text-8xl",
+  "xl":  "text-4xl md:text-8xl lg:text-9xl",
+  "2xl": "text-5xl md:text-9xl lg:text-[10rem]",
+  "3xl": "text-6xl md:text-[10rem] lg:text-[12rem]",
+};
+
+const SUBTITLE_SIZE_CLASSES: Record<string, string> = {
+  "2xs": "text-xs md:text-sm",
+  "xs":  "text-sm md:text-base",
+  "sm":  "text-base md:text-lg",
+  "md":  "text-base md:text-xl",
+  "":    "text-lg md:text-2xl",               // padrão
+  "lg":  "text-xl md:text-3xl",
+  "xl":  "text-2xl md:text-4xl",
+  "2xl": "text-3xl md:text-5xl",
+  "3xl": "text-4xl md:text-6xl",
+};
 
 const FALLBACK_TITLE = "Reconecte-se com a natureza";
 const FALLBACK_SUBTITLE = "Experimente a liberdade";
@@ -31,13 +62,26 @@ export function HeroBanner() {
     const timeout = setTimeout(() => setLoaded(true), 4000);
     supabase
       .from("banners")
-      .select("id, image_url, video_url, title, subtitle, button_text, button_url, order_index")
+      .select("id, image_url, video_url, title, subtitle, button_text, button_url, order_index, title_font, title_font_size, subtitle_font, subtitle_font_size")
       .eq("is_active", true)
       .eq("location", "hero")
       .order("order_index")
       .then(({ data }) => {
         clearTimeout(timeout);
-        if (data && data.length > 0) setSlides(data as HeroBannerSlide[]);
+        if (data && data.length > 0) {
+          setSlides(data as HeroBannerSlide[]);
+          // Carrega Google Fonts necessárias
+          const fonts = [...new Set(
+            data.flatMap(s => [s.title_font, s.subtitle_font]).filter(Boolean)
+          )] as string[];
+          const googleFonts = fonts.filter(f => GOOGLE_FONTS.includes(f));
+          if (googleFonts.length > 0) {
+            const link = document.createElement("link");
+            link.rel = "stylesheet";
+            link.href = `https://fonts.googleapis.com/css2?${googleFonts.map(f => `family=${encodeURIComponent(f)}:wght@400;700`).join("&")}&display=swap`;
+            document.head.appendChild(link);
+          }
+        }
         setLoaded(true);
       })
       .catch(() => { clearTimeout(timeout); setLoaded(true); });
@@ -146,12 +190,18 @@ export function HeroBanner() {
           {/* Conteúdo — ancorado no rodapé */}
           <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center text-center px-4 pb-20 md:pb-28 max-w-4xl mx-auto left-0 right-0">
             {slide.title && (
-              <h1 className="font-figtree text-2xl md:text-6xl lg:text-7xl font-bold text-white mb-1 leading-tight uppercase tracking-tight">
+              <h1
+                className={`font-bold text-white mb-1 leading-tight uppercase tracking-tight ${TITLE_SIZE_CLASSES[slide.title_font_size || ""] ?? TITLE_SIZE_CLASSES[""]}`}
+                style={slide.title_font ? { fontFamily: `'${slide.title_font}', sans-serif` } : { fontFamily: "Figtree, sans-serif" }}
+              >
                 {slide.title}
               </h1>
             )}
             {slide.subtitle && (
-              <p className="font-figtree text-white/70 text-lg md:text-2xl mb-8 font-bold lowercase tracking-tight">
+              <p
+                className={`text-white/70 mb-8 font-bold lowercase tracking-tight ${SUBTITLE_SIZE_CLASSES[slide.subtitle_font_size || ""] ?? SUBTITLE_SIZE_CLASSES[""]}`}
+                style={slide.subtitle_font ? { fontFamily: `'${slide.subtitle_font}', sans-serif` } : { fontFamily: "Figtree, sans-serif" }}
+              >
                 {slide.subtitle}
               </p>
             )}

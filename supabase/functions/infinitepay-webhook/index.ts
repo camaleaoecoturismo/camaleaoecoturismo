@@ -32,8 +32,22 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Validate webhook secret (query param ?secret=xxx registered in InfinitePay dashboard)
+  const webhookSecret = Deno.env.get('INFINITEPAY_WEBHOOK_SECRET');
+  if (webhookSecret) {
+    const url = new URL(req.url);
+    const providedSecret = url.searchParams.get('secret');
+    if (providedSecret !== webhookSecret) {
+      console.error('Invalid InfinitePay webhook secret');
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+  }
+
   const startTime = Date.now();
-  
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');

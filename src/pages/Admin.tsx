@@ -110,6 +110,34 @@ const Admin = () => {
         navigate('/auth');
         return;
       }
+
+      // If 2FA is enabled, verify that the admin completed 2FA in this session
+      const { data: twoFASetting } = await supabase
+        .from('site_settings')
+        .select('setting_value')
+        .eq('setting_key', 'admin_2fa_enabled')
+        .maybeSingle();
+
+      if (twoFASetting?.setting_value === 'true') {
+        const { data: twoFASession } = await supabase
+          .from('admin_2fa_sessions' as any)
+          .select('id')
+          .eq('user_id', session.user.id)
+          .gt('expires_at', new Date().toISOString())
+          .maybeSingle();
+
+        if (!twoFASession) {
+          await supabase.auth.signOut();
+          toast({
+            title: "Verificação necessária",
+            description: "Complete a verificação em dois fatores para acessar o painel.",
+            variant: "destructive"
+          });
+          setLoading(false);
+          navigate('/auth');
+          return;
+        }
+      }
     } catch (error) {
       console.error('Error checking user role:', error);
       toast({

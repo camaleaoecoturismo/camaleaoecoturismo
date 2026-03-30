@@ -103,13 +103,21 @@ export default function Embarques() {
   // Audio ref for check-in sound
   const checkinAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  const ACCESS_PASSWORD = 'camaleao2025';
-
-  // Check password session on mount
+  // Check token session on mount
   useEffect(() => {
-    const savedPassword = sessionStorage.getItem('embarques_access');
-    if (savedPassword === ACCESS_PASSWORD) {
-      setPasswordVerified(true);
+    const storedToken = sessionStorage.getItem('embarques_token');
+    if (storedToken) {
+      supabase.functions.invoke('verify-embarques-access', {
+        body: { token: storedToken },
+      }).then(({ data }) => {
+        if (data?.valid) {
+          setPasswordVerified(true);
+        } else {
+          sessionStorage.removeItem('embarques_token');
+        }
+      }).catch(() => {
+        sessionStorage.removeItem('embarques_token');
+      });
     }
   }, []);
 
@@ -123,12 +131,19 @@ export default function Embarques() {
     };
   }, [passwordVerified]);
 
-  const handlePasswordSubmit = () => {
-    if (passwordInput === ACCESS_PASSWORD) {
-      sessionStorage.setItem('embarques_access', ACCESS_PASSWORD);
+  const handlePasswordSubmit = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-embarques-access', {
+        body: { password: passwordInput },
+      });
+      if (error || !data?.valid) {
+        setPasswordError(true);
+        return;
+      }
+      sessionStorage.setItem('embarques_token', data.token);
       setPasswordVerified(true);
       setPasswordError(false);
-    } else {
+    } catch {
       setPasswordError(true);
     }
   };

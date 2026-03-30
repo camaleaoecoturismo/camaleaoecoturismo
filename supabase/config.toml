@@ -19,6 +19,9 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.process-refund]
+verify_jwt = true
+
+[functions.verify-embarques-access]
 verify_jwt = false
 
 [functions.sync-mp-payments]
@@ -34,7 +37,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.trigger-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-admin-2fa-code]
 verify_jwt = false

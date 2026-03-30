@@ -34,6 +34,70 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Validate Mercado Pago webhook HMAC-SHA256 signature
+  // Docs: https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks
+  const mpWebhookSecret = Deno.env.get('MERCADO_PAGO_WEBHOOK_SECRET');
+  if (mpWebhookSecret) {
+    const xSignature = req.headers.get('x-signature');
+    const xRequestId = req.headers.get('x-request-id');
+
+    if (!xSignature) {
+      console.error('Missing x-signature header from Mercado Pago');
+      return new Response(JSON.stringify({ error: 'Missing signature' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    // Parse x-signature: "ts=TIMESTAMP,v1=HASH"
+    const sigParts: Record<string, string> = {};
+    for (const part of xSignature.split(',')) {
+      const [k, v] = part.split('=');
+      if (k && v) sigParts[k.trim()] = v.trim();
+    }
+    const ts = sigParts['ts'];
+    const v1 = sigParts['v1'];
+
+    if (!ts || !v1) {
+      console.error('Invalid x-signature format');
+      return new Response(JSON.stringify({ error: 'Invalid signature format' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    const url = new URL(req.url);
+    const dataId = url.searchParams.get('data.id') || url.searchParams.get('id') || '';
+
+    // Build manifest: "id:<data.id>;request-id:<x-request-id>;ts:<ts>;"
+    const manifestParts: string[] = [];
+    if (dataId) manifestParts.push(`id:${dataId}`);
+    if (xRequestId) manifestParts.push(`request-id:${xRequestId}`);
+    manifestParts.push(`ts:${ts}`);
+    const manifest = manifestParts.join(';') + ';';
+
+    const encoder = new TextEncoder();
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(mpWebhookSecret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    );
+    const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(manifest));
+    const computedHash = Array.from(new Uint8Array(signatureBuffer))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    if (computedHash !== v1) {
+      console.error('Invalid Mercado Pago webhook signature. Expected:', computedHash, 'Got:', v1);
+      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+  }
+
   try {
     const accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');

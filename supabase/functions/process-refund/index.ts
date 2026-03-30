@@ -12,16 +12,41 @@ serve(async (req) => {
   }
 
   try {
-    const accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
-    
-    if (!accessToken) {
-      console.error('MERCADO_PAGO_ACCESS_TOKEN not configured');
-      throw new Error('Mercado Pago access token not configured');
+    // Verificar autenticação e role admin
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { data: { user }, error: authError } = await createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: authHeader } }
+    }).auth.getUser();
+
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    }
+
+    const { data: adminRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (!adminRole) {
+      return new Response(JSON.stringify({ error: 'Forbidden — admin only' }), { status: 403, headers: corsHeaders });
+    }
+
+    const accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
+
+    if (!accessToken) {
+      console.error('MERCADO_PAGO_ACCESS_TOKEN not configured');
+      throw new Error('Mercado Pago access token not configured');
+    }
 
     const { reserva_id, mp_payment_id, amount, reason } = await req.json();
     
