@@ -199,7 +199,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             )}
 
             {/* Top-left gradient */}
-            <div className="absolute inset-0 z-[1]" style={{ background: "linear-gradient(to bottom right, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.55) 40%, transparent 72%), linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 45%)" }} />
+            <div className="absolute inset-0 z-[1]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.45) 35%, transparent 60%)" }} />
 
             {/* Name + city + sold out — TOP LEFT */}
             <div className="absolute top-0 left-0 right-0 p-4 pr-20 z-[2]">
