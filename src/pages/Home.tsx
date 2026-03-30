@@ -329,28 +329,6 @@ export default function Home() {
         </section>
       )}
 
-      {/* ── EQUIPE ────────────────────────────────────────────────────────────── */}
-      <section className="py-20 px-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-8">
-            <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Quem somos</p>
-            <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Nossa Equipe</h2>
-          </div>
-          <Link to="/equipe" className="block group relative overflow-hidden rounded-2xl shadow-lg">
-            <img
-              src="/equipe.jpg"
-              alt="Equipe Camaleão Ecoturismo"
-              className="w-full object-cover max-h-[480px] group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
-              <span className="inline-flex items-center gap-2 bg-white/90 hover:bg-white text-foreground font-semibold text-sm px-5 py-2.5 rounded-full shadow transition-colors whitespace-nowrap">
-                Conheça a equipe <ArrowRight className="h-4 w-4 text-primary" />
-              </span>
-            </div>
-          </Link>
-        </div>
-      </section>
 
       {/* ── BLOG ──────────────────────────────────────────────────────────────── */}
       {blogPosts.length > 0 && (
