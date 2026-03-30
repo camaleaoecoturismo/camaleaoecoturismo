@@ -103,7 +103,7 @@ export default function Politicas() {
                   className="prose prose-gray dark:prose-invert max-w-none"
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
                 />
-                {updatedAt && (
+                {updatedAt && tipo === "cancelamento" && (
                   <p className="text-xs text-muted-foreground mt-10 pt-6 border-t border-border">
                     Última atualização:{" "}
                     {new Date(updatedAt).toLocaleDateString("pt-BR", {
