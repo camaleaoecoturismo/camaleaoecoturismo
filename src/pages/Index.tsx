@@ -135,17 +135,17 @@ const Index = () => {
   const isFuture = (startDate: string) =>
     new Date(startDate + "T12:00:00") >= today;
 
-  // All unique destination names — deduplicated by normalized name
+  // All unique destination names — deduplicated by normalized name, future only
   const destinations = useMemo(() => {
     const seen = new Map<string, string>(); // normalizedKey → original name
     tours
-      .filter((t) => t.is_active && !t.is_exclusive && t.name)
+      .filter((t) => t.is_active && !t.is_exclusive && t.name && t.start_date && isFuture(t.start_date))
       .forEach((t) => {
         const key = t.name.trim().toLowerCase();
         if (!seen.has(key)) seen.set(key, t.name.trim());
       });
     return Array.from(seen.values()).sort();
-  }, [tours]);
+  }, [tours, today]);
 
   // Destinations filtered by search
   const filteredDestinations = useMemo(() => {
