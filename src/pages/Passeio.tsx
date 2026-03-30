@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { TopMenu } from "@/components/TopMenu";
+import { StoryModal, type Story } from "@/components/StoryModal";
 import { ReservaModal } from "@/components/ReservaModal";
 import { WaitlistModal } from "@/components/WaitlistModal";
 import { RoteiroAccessModal } from "@/components/RoteiroAccessModal";
@@ -70,6 +71,8 @@ const Passeio = () => {
   >([]);
   const [packageQuantities, setPackageQuantities] = useState<Record<string, number>>({});
   const [showInstallments, setShowInstallments] = useState(false);
+  const [tourStories, setTourStories] = useState<Story[]>([]);
+  const [storyModalIdx, setStoryModalIdx] = useState<number | null>(null);
 
   const { availability } = useTourAvailability(tour?.id);
 
@@ -130,6 +133,15 @@ const Passeio = () => {
         const generalDeps = deps.filter((d: any) => !d.tour_id);
         setDepoimentos([...tourDeps, ...generalDeps].slice(0, 12));
       }
+
+      const { data: storiesData } = await db
+        .from("stories")
+        .select("id, title, caption, media_url, media_type, author_name, author_photo_url")
+        .eq("active", true)
+        .eq("tour_id", data.id)
+        .order("display_order");
+      if (storiesData && storiesData.length > 0) setTourStories(storiesData as Story[]);
+
       setLoading(false);
     };
     fetchTour();
@@ -599,6 +611,47 @@ const Passeio = () => {
             </div>
           </div>
         </section>
+
+        {/* Stories do destino */}
+        {tourStories.length > 0 && (
+          <section className="mb-8">
+            <h2 className="font-semibold text-lg text-primary mb-3">Stories</h2>
+            <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+              {tourStories.map((story, idx) => (
+                <button
+                  key={story.id}
+                  onClick={() => setStoryModalIdx(idx)}
+                  className="flex flex-col items-center gap-2 shrink-0 group"
+                >
+                  <div className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-[#820AD1] via-[#c740f0] to-[#f97316] shadow-md group-hover:scale-105 transition-transform duration-200">
+                    <div className="w-full h-full rounded-full overflow-hidden border-2 border-white">
+                      {story.author_photo_url ? (
+                        <img src={story.author_photo_url} alt={story.author_name || ""} className="w-full h-full object-cover" />
+                      ) : story.media_type === "image" ? (
+                        <img src={story.media_url} alt={story.title || ""} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-[#820AD1]/20 flex items-center justify-center">
+                          <span className="text-[#820AD1] text-lg">▶</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-[11px] text-foreground/80 font-medium max-w-[64px] truncate text-center leading-tight">
+                    {story.author_name || story.title || "Story"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {storyModalIdx !== null && (
+          <StoryModal
+            stories={tourStories}
+            initialIndex={storyModalIdx}
+            onClose={() => setStoryModalIdx(null)}
+          />
+        )}
 
         {/* Próximas datas */}
         {relatedTours.length > 0 && (
