@@ -10,6 +10,12 @@ import {
   ChevronUp, ChevronDown, Play, Image as ImageIcon,
 } from "lucide-react";
 
+interface TourOption {
+  id: string;
+  name: string;
+  destination_name: string | null;
+}
+
 interface Story {
   id: string;
   title: string | null;
@@ -20,6 +26,7 @@ interface Story {
   author_photo_url: string | null;
   active: boolean;
   display_order: number;
+  tour_id: string | null;
 }
 
 const EMPTY_FORM = {
@@ -30,10 +37,12 @@ const EMPTY_FORM = {
   author_name: "",
   author_photo_url: "",
   active: true,
+  tour_id: "" as string,
 };
 
 export default function AdminStories() {
   const [stories, setStories] = useState<Story[]>([]);
+  const [tours, setTours] = useState<TourOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -43,7 +52,7 @@ export default function AdminStories() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => { fetchStories(); }, []);
+  useEffect(() => { fetchStories(); fetchTours(); }, []);
 
   const fetchStories = async () => {
     setLoading(true);
@@ -53,6 +62,14 @@ export default function AdminStories() {
       .order("display_order");
     if (!error) setStories((data as Story[]) || []);
     setLoading(false);
+  };
+
+  const fetchTours = async () => {
+    const { data } = await supabase
+      .from("tours")
+      .select("id, name, destination_name")
+      .order("start_date", { ascending: true });
+    if (data) setTours(data as TourOption[]);
   };
 
   const openNew = () => {
@@ -71,6 +88,7 @@ export default function AdminStories() {
       author_name: s.author_name || "",
       author_photo_url: s.author_photo_url || "",
       active: s.active,
+      tour_id: s.tour_id || "",
     });
     setShowForm(true);
   };
@@ -89,6 +107,7 @@ export default function AdminStories() {
       author_name: form.author_name || null,
       author_photo_url: form.author_photo_url || null,
       active: form.active,
+      tour_id: form.tour_id || null,
     };
     const { error } = editingId
       ? await supabase.from("stories" as any).update(payload).eq("id", editingId)
@@ -258,6 +277,24 @@ export default function AdminStories() {
             />
           </div>
 
+          {/* Destino (tour) */}
+          <div className="space-y-2">
+            <Label>Destino / Passeio</Label>
+            <select
+              value={form.tour_id}
+              onChange={(e) => setForm((f) => ({ ...f, tour_id: e.target.value }))}
+              className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">— Página inicial (nenhum destino) —</option>
+              {tours.map((t) => (
+                <option key={t.id} value={t.id}>{t.destination_name || t.name}</option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Sem destino: aparece na home. Com destino: aparece na página do passeio.
+            </p>
+          </div>
+
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -308,11 +345,18 @@ export default function AdminStories() {
                 {s.caption && (
                   <p className="text-xs text-muted-foreground truncate">{s.caption}</p>
                 )}
-                <div className="flex items-center gap-1 mt-0.5">
+                <div className="flex items-center gap-2 mt-0.5">
                   {s.media_type === "video"
                     ? <Play className="h-3 w-3 text-muted-foreground" />
                     : <ImageIcon className="h-3 w-3 text-muted-foreground" />}
                   <span className="text-[10px] text-muted-foreground uppercase">{s.media_type}</span>
+                  {s.tour_id ? (
+                    <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
+                      {tours.find(t => t.id === s.tour_id)?.destination_name || tours.find(t => t.id === s.tour_id)?.name || "Destino"}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Home</span>
+                  )}
                 </div>
               </div>
 
