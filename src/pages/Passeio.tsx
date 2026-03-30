@@ -71,7 +71,7 @@ const Passeio = () => {
   >([]);
   const [packageQuantities, setPackageQuantities] = useState<Record<string, number>>({});
   const [showInstallments, setShowInstallments] = useState(false);
-  const [tourStories, setTourStories] = useState<Story[]>([]);
+  const [tourMoments, setTourMoments] = useState<Story[]>([]);
   const [storyModalIdx, setStoryModalIdx] = useState<number | null>(null);
 
   const { availability } = useTourAvailability(tour?.id);
@@ -134,13 +134,26 @@ const Passeio = () => {
         setDepoimentos([...tourDeps, ...generalDeps].slice(0, 12));
       }
 
-      const { data: storiesData } = await db
-        .from("stories")
-        .select("id, title, caption, media_url, media_type, author_name, author_photo_url")
-        .eq("active", true)
-        .eq("tour_id", data.id)
-        .order("display_order");
-      if (storiesData && storiesData.length > 0) setTourStories(storiesData as Story[]);
+      const destName = data.destination_name || data.name;
+      if (destName) {
+        const { data: momentsData } = await db
+          .from("tour_moments")
+          .select("id, caption, media_url, media_type")
+          .eq("active", true)
+          .eq("destination_name", destName)
+          .order("display_order");
+        if (momentsData && momentsData.length > 0) {
+          setTourMoments(momentsData.map((m: any) => ({
+            id: m.id,
+            title: null,
+            caption: m.caption,
+            media_url: m.media_url,
+            media_type: m.media_type,
+            author_name: null,
+            author_photo_url: null,
+          })));
+        }
+      }
 
       setLoading(false);
     };
@@ -612,12 +625,12 @@ const Passeio = () => {
           </div>
         </section>
 
-        {/* Stories do destino */}
-        {tourStories.length > 0 && (
+        {/* Momentos do destino */}
+        {tourMoments.length > 0 && (
           <section className="mb-8">
-            <h2 className="font-semibold text-lg text-primary mb-3">Stories</h2>
+            <h2 className="font-semibold text-lg text-primary mb-3">Momentos</h2>
             <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
-              {tourStories.map((story, idx) => (
+              {tourMoments.map((story, idx) => (
                 <button
                   key={story.id}
                   onClick={() => setStoryModalIdx(idx)}
@@ -647,7 +660,7 @@ const Passeio = () => {
 
         {storyModalIdx !== null && (
           <StoryModal
-            stories={tourStories}
+            stories={tourMoments}
             initialIndex={storyModalIdx}
             onClose={() => setStoryModalIdx(null)}
           />

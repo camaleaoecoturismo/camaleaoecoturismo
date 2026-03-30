@@ -10,12 +10,6 @@ import {
   ChevronUp, ChevronDown, Play, Image as ImageIcon,
 } from "lucide-react";
 
-interface TourOption {
-  id: string;
-  name: string;
-  destination_name: string | null;
-}
-
 interface Story {
   id: string;
   title: string | null;
@@ -26,7 +20,6 @@ interface Story {
   author_photo_url: string | null;
   active: boolean;
   display_order: number;
-  tour_id: string | null;
 }
 
 const EMPTY_FORM = {
@@ -37,12 +30,10 @@ const EMPTY_FORM = {
   author_name: "",
   author_photo_url: "",
   active: true,
-  tour_id: "" as string,
 };
 
 export default function AdminStories() {
   const [stories, setStories] = useState<Story[]>([]);
-  const [tours, setTours] = useState<TourOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -52,7 +43,7 @@ export default function AdminStories() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => { fetchStories(); fetchTours(); }, []);
+  useEffect(() => { fetchStories(); }, []);
 
   const fetchStories = async () => {
     setLoading(true);
@@ -60,16 +51,8 @@ export default function AdminStories() {
       .from("stories" as any)
       .select("*")
       .order("display_order");
-    if (!error) setStories((data as Story[]) || []);
+    if (!error) setStories((data as unknown as Story[]) || []);
     setLoading(false);
-  };
-
-  const fetchTours = async () => {
-    const { data } = await supabase
-      .from("tours")
-      .select("id, name, destination_name")
-      .order("start_date", { ascending: true });
-    if (data) setTours(data as TourOption[]);
   };
 
   const openNew = () => {
@@ -88,7 +71,6 @@ export default function AdminStories() {
       author_name: s.author_name || "",
       author_photo_url: s.author_photo_url || "",
       active: s.active,
-      tour_id: s.tour_id || "",
     });
     setShowForm(true);
   };
@@ -107,7 +89,6 @@ export default function AdminStories() {
       author_name: form.author_name || null,
       author_photo_url: form.author_photo_url || null,
       active: form.active,
-      tour_id: form.tour_id || null,
     };
     const { error } = editingId
       ? await supabase.from("stories" as any).update(payload).eq("id", editingId)
@@ -182,8 +163,8 @@ export default function AdminStories() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Stories</h2>
-          <p className="text-muted-foreground text-sm">Gerencie os stories da página inicial</p>
+          <h2 className="text-xl font-bold">Stories — Página Inicial</h2>
+          <p className="text-muted-foreground text-sm">Vídeos de depoimentos que aparecem na home</p>
         </div>
         <Button onClick={openNew}>
           <Plus className="h-4 w-4 mr-2" /> Novo Story
@@ -195,7 +176,6 @@ export default function AdminStories() {
         <div className="border border-border rounded-xl p-5 bg-card space-y-4">
           <h3 className="font-semibold">{editingId ? "Editar Story" : "Novo Story"}</h3>
 
-          {/* Mídia */}
           <div className="space-y-2">
             <Label>Foto ou Vídeo *</Label>
             <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-lg p-6 cursor-pointer hover:border-primary transition-colors">
@@ -225,7 +205,6 @@ export default function AdminStories() {
             )}
           </div>
 
-          {/* Author */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Nome do Autor</Label>
@@ -277,24 +256,6 @@ export default function AdminStories() {
             />
           </div>
 
-          {/* Destino (tour) */}
-          <div className="space-y-2">
-            <Label>Destino / Passeio</Label>
-            <select
-              value={form.tour_id}
-              onChange={(e) => setForm((f) => ({ ...f, tour_id: e.target.value }))}
-              className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">— Página inicial (nenhum destino) —</option>
-              {tours.map((t) => (
-                <option key={t.id} value={t.id}>{t.destination_name || t.name}</option>
-              ))}
-            </select>
-            <p className="text-xs text-muted-foreground">
-              Sem destino: aparece na home. Com destino: aparece na página do passeio.
-            </p>
-          </div>
-
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -330,7 +291,6 @@ export default function AdminStories() {
         <div className="space-y-3">
           {stories.map((s, idx) => (
             <div key={s.id} className="flex items-center gap-3 border border-border rounded-xl p-3 bg-card">
-              {/* Thumbnail */}
               <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-muted flex items-center justify-center">
                 {s.media_type === "video" ? (
                   <Play className="h-5 w-5 text-muted-foreground" />
@@ -338,67 +298,24 @@ export default function AdminStories() {
                   <img src={s.media_url} alt="" className="w-full h-full object-cover" />
                 )}
               </div>
-
-              {/* Info */}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm truncate">{s.author_name || s.title || "Sem título"}</p>
-                {s.caption && (
-                  <p className="text-xs text-muted-foreground truncate">{s.caption}</p>
-                )}
-                <div className="flex items-center gap-2 mt-0.5">
+                {s.caption && <p className="text-xs text-muted-foreground truncate">{s.caption}</p>}
+                <div className="flex items-center gap-1 mt-0.5">
                   {s.media_type === "video"
                     ? <Play className="h-3 w-3 text-muted-foreground" />
                     : <ImageIcon className="h-3 w-3 text-muted-foreground" />}
                   <span className="text-[10px] text-muted-foreground uppercase">{s.media_type}</span>
-                  {s.tour_id ? (
-                    <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
-                      {tours.find(t => t.id === s.tour_id)?.destination_name || tours.find(t => t.id === s.tour_id)?.name || "Destino"}
-                    </span>
-                  ) : (
-                    <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Home</span>
-                  )}
                 </div>
               </div>
-
-              {/* Actions */}
               <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => move(idx, -1)}
-                  disabled={idx === 0}
-                  className="p-1.5 rounded hover:bg-muted disabled:opacity-30"
-                  title="Mover para cima"
-                >
-                  <ChevronUp className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => move(idx, 1)}
-                  disabled={idx === stories.length - 1}
-                  className="p-1.5 rounded hover:bg-muted disabled:opacity-30"
-                  title="Mover para baixo"
-                >
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => toggleActive(s)}
-                  className={`p-1.5 rounded hover:bg-muted ${s.active ? "text-green-600" : "text-muted-foreground"}`}
-                  title={s.active ? "Desativar" : "Ativar"}
-                >
+                <button onClick={() => move(idx, -1)} disabled={idx === 0} className="p-1.5 rounded hover:bg-muted disabled:opacity-30"><ChevronUp className="h-4 w-4" /></button>
+                <button onClick={() => move(idx, 1)} disabled={idx === stories.length - 1} className="p-1.5 rounded hover:bg-muted disabled:opacity-30"><ChevronDown className="h-4 w-4" /></button>
+                <button onClick={() => toggleActive(s)} className={`p-1.5 rounded hover:bg-muted ${s.active ? "text-green-600" : "text-muted-foreground"}`}>
                   {s.active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                 </button>
-                <button
-                  onClick={() => openEdit(s)}
-                  className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-                  title="Editar"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => deleteStory(s.id)}
-                  className="p-1.5 rounded hover:bg-muted text-destructive"
-                  title="Excluir"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <button onClick={() => openEdit(s)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="h-4 w-4" /></button>
+                <button onClick={() => deleteStory(s.id)} className="p-1.5 rounded hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
               </div>
             </div>
           ))}

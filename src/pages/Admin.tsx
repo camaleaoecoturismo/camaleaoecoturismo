@@ -24,6 +24,7 @@ import AdminPaginasInstitucional from "@/components/admin/AdminPaginasInstitucio
 import AdminDepoimentos from "@/components/admin/AdminDepoimentos";
 import AdminHomeSections from "@/components/admin/AdminHomeSections";
 import AdminStories from "@/components/admin/AdminStories";
+import AdminTourMoments from "@/components/admin/AdminTourMoments";
 import { useToast } from "@/hooks/use-toast";
 import { Tour } from "@/hooks/useTours";
 
@@ -310,6 +311,8 @@ const Admin = () => {
         return <AdminDepoimentos />;
       case 'stories':
         return <AdminStories />;
+      case 'tour-moments':
+        return <AdminTourMoments />;
       case 'home-sections':
         return <AdminHomeSections />;
       case 'loja':
@@ -382,7 +385,8 @@ const Admin = () => {
       'paginas': 'Páginas',
       'paginas-institucionais': 'Páginas Institucionais',
       'depoimentos': 'Depoimentos',
-      'stories': 'Stories',
+      'stories': 'Stories — Home',
+      'tour-moments': 'Momentos por Destino',
       'home-sections': 'Seções da Página Inicial',
       'loja': 'Loja',
       'jornada': 'Jornada do Cliente',
