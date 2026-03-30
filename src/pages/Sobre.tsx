@@ -157,6 +157,7 @@ export default function Sobre() {
           <Link to="/faq" className="hover:text-foreground transition-colors">FAQ</Link>
           <Link to="/politicas?tipo=cancelamento" className="hover:text-foreground transition-colors">Cancelamento</Link>
           <Link to="/politicas?tipo=termos" className="hover:text-foreground transition-colors">Termos</Link>
+          <Link to="/politicas?tipo=privacidade" className="hover:text-foreground transition-colors">Privacidade</Link>
         </div>
       </footer>
     </div>

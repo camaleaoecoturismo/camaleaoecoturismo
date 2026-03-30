@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Instagram, MapPin, Phone, Mail, ArrowRight } from "lucide-react";
-import logoImage from "@/assets/logo-branco.png";
+import logoImage from "@/assets/logo-lado.png";
 
 const WHATSAPP_NUMBER = "5582993649454";
 const WHATSAPP_MSG = encodeURIComponent("Olá! Tenho interesse em conhecer os passeios da Camaleão Ecoturismo.");
@@ -47,7 +47,7 @@ export default function Footer() {
             <div className="col-span-2 md:col-span-1">
               <img src={logoImage} alt="Camaleão Ecoturismo" className="h-9 w-auto mb-4 opacity-90" />
               <p className="text-white/50 text-sm leading-relaxed mb-5">
-                Expedições de ecoturismo no coração do Nordeste. Trilhas, cachoeiras e aventuras que ficam para sempre.
+                Expedições de ecoturismo para os melhores roteiros do Nordeste. Trilhas, cachoeiras e experiências que transformam.
               </p>
               <div className="flex items-center gap-3">
                 <a
@@ -76,7 +76,6 @@ export default function Footer() {
               <h4 className="text-white text-xs font-bold uppercase tracking-widest mb-5">Explorar</h4>
               <ul className="space-y-3">
                 {[
-                  { label: "Expedições", to: "/" },
                   { label: "Agenda completa", to: "/agenda" },
                   { label: "Chapada Diamantina", to: "/chapada-diamantina" },
                   { label: "Guia de destinos", to: "/guia" },

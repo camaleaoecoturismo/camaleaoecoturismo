@@ -344,9 +344,9 @@ function PoliticasManager() {
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
-        {["cancelamento", "termos"].map((t) => (
+        {["cancelamento", "termos", "privacidade"].map((t) => (
           <button key={t} onClick={() => setTipo(t)} className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all ${tipo === t ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border"}`}>
-            {t === "cancelamento" ? "Cancelamento" : "Termos e Condições"}
+            {t === "cancelamento" ? "Cancelamento" : t === "termos" ? "Termos e Condições" : "Privacidade"}
           </button>
         ))}
       </div>

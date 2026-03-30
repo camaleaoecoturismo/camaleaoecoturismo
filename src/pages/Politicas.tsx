@@ -31,7 +31,14 @@ export default function Politicas() {
       });
   }, [tipo]);
 
-  const title = tipo === "cancelamento" ? "Política de Cancelamento" : tipo === "termos" ? "Termos e Condições" : "Políticas";
+  const title =
+    tipo === "cancelamento"
+      ? "Política de Cancelamento"
+      : tipo === "termos"
+        ? "Termos e Condições"
+        : tipo === "privacidade"
+          ? "Política de Privacidade"
+          : "Políticas";
 
   return (
     <div className="min-h-screen bg-background">
@@ -53,6 +60,7 @@ export default function Politicas() {
             {[
               { value: "cancelamento", label: "Política de Cancelamento" },
               { value: "termos", label: "Termos e Condições" },
+              { value: "privacidade", label: "Privacidade" },
             ].map((tab) => (
               <Link
                 key={tab.value}
