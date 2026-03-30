@@ -93,6 +93,8 @@ const formSchema = z.object({
   card_name_main: z.string().optional(),
   card_prefix_size: z.string().default('xs'),
   card_main_size: z.string().default('2xl'),
+  card_prefix_font: z.string().optional(),
+  card_main_font: z.string().optional(),
   is_exclusive: z.boolean().default(false),
   is_featured: z.boolean().default(false),
   has_accommodation: z.boolean().default(false),
@@ -156,6 +158,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
       card_name_main: '',
       card_prefix_size: 'xs',
       card_main_size: '2xl',
+      card_prefix_font: '',
+      card_main_font: 'rubik',
       is_exclusive: false,
       is_featured: false,
       has_accommodation: false,
@@ -198,6 +202,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         card_name_main: tour.card_name_main || '',
         card_prefix_size: tour.card_prefix_size || 'xs',
         card_main_size: tour.card_main_size || '2xl',
+        card_prefix_font: tour.card_prefix_font || '',
+        card_main_font: tour.card_main_font || 'rubik',
         is_exclusive: tour.is_exclusive || false,
         is_featured: (tour as any).is_featured || false,
         has_accommodation: (tour as any).has_accommodation || false,
@@ -280,6 +286,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         card_name_main: values.card_name_main || null,
         card_prefix_size: values.card_prefix_size || 'xs',
         card_main_size: values.card_main_size || '2xl',
+        card_prefix_font: values.card_prefix_font || null,
+        card_main_font: values.card_main_font || 'rubik',
         slug: generateSlug(values.name, values.start_date),
         is_exclusive: values.is_exclusive || false,
         is_featured: values.is_featured || false,
@@ -415,6 +423,8 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         card_name_main: values.card_name_main || null,
         card_prefix_size: values.card_prefix_size || 'xs',
         card_main_size: values.card_main_size || '2xl',
+        card_prefix_font: values.card_prefix_font || null,
+        card_main_font: values.card_main_font || 'rubik',
         slug: generateSlug(values.name, values.start_date),
         is_exclusive: values.is_exclusive || false,
         is_featured: values.is_featured || false,
@@ -651,7 +661,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                       </p>
 
                       {/* Linha superior — texto pequeno */}
-                      <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
+                      <div className="grid grid-cols-[1fr_auto_auto] gap-3 items-end">
                         <FormField
                           control={form.control}
                           name="card_name_prefix"
@@ -671,7 +681,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                             <FormItem>
                               <FormLabel className="text-slate-600 text-sm">Tamanho</FormLabel>
                               <FormControl>
-                                <select {...field} className="w-28 h-9 rounded-md border border-input bg-white px-3 text-sm">
+                                <select {...field} className="w-24 h-9 rounded-md border border-input bg-white px-3 text-sm">
                                   <option value="2xs">2XS</option>
                                   <option value="xs">XS</option>
                                   <option value="sm">SM</option>
@@ -684,10 +694,28 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                             </FormItem>
                           )}
                         />
+                        <FormField
+                          control={form.control}
+                          name="card_prefix_font"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-slate-600 text-sm">Fonte</FormLabel>
+                              <FormControl>
+                                <select {...field} className="w-36 h-9 rounded-md border border-input bg-white px-3 text-sm">
+                                  <option value="">Inter (padrão)</option>
+                                  <option value="rubik">Rubik</option>
+                                  <option value="montserrat">Montserrat</option>
+                                  <option value="europa">Europa Grotesk</option>
+                                  <option value="bebas">Bebas Neue</option>
+                                </select>
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
                       </div>
 
                       {/* Linha principal — texto grande */}
-                      <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
+                      <div className="grid grid-cols-[1fr_auto_auto] gap-3 items-end">
                         <FormField
                           control={form.control}
                           name="card_name_main"
@@ -707,7 +735,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                             <FormItem>
                               <FormLabel className="text-slate-600 text-sm">Tamanho</FormLabel>
                               <FormControl>
-                                <select {...field} className="w-28 h-9 rounded-md border border-input bg-white px-3 text-sm">
+                                <select {...field} className="w-24 h-9 rounded-md border border-input bg-white px-3 text-sm">
                                   <option value="xs">XS</option>
                                   <option value="sm">SM</option>
                                   <option value="base">MD</option>
@@ -718,6 +746,24 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                                   <option value="4xl">4XL</option>
                                   <option value="5xl">5XL</option>
                                   <option value="6xl">6XL</option>
+                                </select>
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="card_main_font"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-slate-600 text-sm">Fonte</FormLabel>
+                              <FormControl>
+                                <select {...field} className="w-36 h-9 rounded-md border border-input bg-white px-3 text-sm">
+                                  <option value="">Inter (padrão)</option>
+                                  <option value="rubik">Rubik</option>
+                                  <option value="montserrat">Montserrat</option>
+                                  <option value="europa">Europa Grotesk</option>
+                                  <option value="bebas">Bebas Neue</option>
                                 </select>
                               </FormControl>
                             </FormItem>

@@ -95,6 +95,16 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
   const prefixSizeClass = PREFIX_SIZES[tour.card_prefix_size ?? "xs"] ?? "text-[11px]";
   const mainSizeClass = MAIN_SIZES[tour.card_main_size ?? "2xl"] ?? "text-2xl md:text-3xl";
 
+  const FONT_CLASSES: Record<string, string> = {
+    "": "font-sans",
+    rubik: "font-rubik",
+    montserrat: "font-montserrat",
+    europa: "font-europa",
+    bebas: "font-bebas",
+  };
+  const prefixFontClass = FONT_CLASSES[tour.card_prefix_font ?? ""] ?? "font-sans";
+  const mainFontClass = FONT_CLASSES[tour.card_main_font ?? "rubik"] ?? "font-rubik";
+
   // Date block values
   const monthAbbr = tourStartDate
     .toLocaleDateString("pt-BR", { month: "short" })
@@ -194,11 +204,11 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
             {/* Name + city + sold out — TOP LEFT */}
             <div className="absolute top-0 left-0 right-0 p-4 pr-20 z-[2]">
               {namePrefix && (
-                <p className={`text-white ${prefixSizeClass} font-medium tracking-widest drop-shadow leading-none mb-0.5 uppercase`}>
+                <p className={`text-white ${prefixFontClass} ${prefixSizeClass} font-medium tracking-widest drop-shadow leading-none mb-0.5 uppercase`}>
                   {namePrefix}
                 </p>
               )}
-              <p className={`text-white font-rubik font-bold ${mainSizeClass} leading-none drop-shadow-md tracking-tight`}>
+              <p className={`text-white ${mainFontClass} font-bold ${mainSizeClass} leading-none drop-shadow-md tracking-tight`}>
                 {nameMain}
               </p>
               {cityStateLabel && (

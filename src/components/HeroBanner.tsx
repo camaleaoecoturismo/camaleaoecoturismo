@@ -143,7 +143,7 @@ export function HeroBanner({ location = "hero" }: { location?: string }) {
           <h1 className="font-figtree text-2xl md:text-6xl lg:text-7xl font-bold text-white mb-1 leading-tight uppercase tracking-tight">
             {FALLBACK_TITLE}
           </h1>
-          <p className="font-figtree text-white/90 text-lg md:text-2xl mb-8 font-bold lowercase tracking-tight">{FALLBACK_SUBTITLE}</p>
+          <p className="font-figtree text-white text-lg md:text-2xl mb-8 font-bold lowercase tracking-tight">{FALLBACK_SUBTITLE}</p>
           <button
             onClick={() => navigate("/agenda")}
             className="inline-flex items-center gap-2 bg-[#820AD1] hover:bg-[#6e09b0] text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors shadow-lg"
@@ -202,7 +202,7 @@ export function HeroBanner({ location = "hero" }: { location?: string }) {
             )}
             {slide.subtitle && (
               <p
-                className={`text-white/90 mb-8 font-bold lowercase tracking-tight ${SUBTITLE_SIZE_CLASSES[slide.subtitle_font_size || ""] ?? SUBTITLE_SIZE_CLASSES[""]}`}
+                className={`text-white mb-8 font-bold lowercase tracking-tight ${SUBTITLE_SIZE_CLASSES[slide.subtitle_font_size || ""] ?? SUBTITLE_SIZE_CLASSES[""]}`}
                 style={slide.subtitle_font ? { fontFamily: `'${slide.subtitle_font}', sans-serif` } : { fontFamily: "Figtree, sans-serif" }}
               >
                 {slide.subtitle}

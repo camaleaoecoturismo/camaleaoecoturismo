@@ -48,6 +48,8 @@ export interface Tour {
   card_name_main: string | null;
   card_prefix_size: string | null;
   card_main_size: string | null;
+  card_prefix_font: string | null;
+  card_main_font: string | null;
   payment_mode: 'whatsapp' | 'mercadopago' | 'both';
   mp_card_fee_percent: number;
   mp_installments_max: number;
