@@ -319,7 +319,7 @@ const Passeio = () => {
       <div className="h-1 w-full bg-gradient-to-r from-transparent via-primary to-transparent opacity-60" />
       <div className="max-w-6xl mx-auto px-4 pb-40 md:pb-16">
         <div className="md:grid md:grid-cols-[1fr_380px] md:gap-10 md:items-start">
-        <div>{/* left column */}
+        <div className="md:pt-10">{/* left column */}
 
         {/* Stories do destino */}
         {tourMoments.length > 0 && (
