@@ -259,39 +259,26 @@ export default function AdminHomeSections() {
               <div className="space-y-1.5">
                 <Label>
                   {form.filter_type === "keyword" && "Preferência *"}
-                  {form.filter_type === "destination" && "Palavra-chave do destino *"}
+                  {form.filter_type === "destination" && "Destino *"}
                   {form.filter_type === "city" && "Cidade *"}
                   {form.filter_type === "state" && "Estado *"}
                 </Label>
-                {form.filter_type === "destination" ? (
-                  <div className="space-y-1">
-                    <Input
-                      placeholder="Ex: chapada, cachoeira, alagoas…"
-                      value={form.filter_value}
-                      onChange={(e) => setForm({ ...form, filter_value: e.target.value })}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Filtra passeios cujo nome contenha essa palavra.
-                    </p>
-                  </div>
-                ) : (
-                  <Select
-                    value={form.filter_value}
-                    onValueChange={(v) => setForm({ ...form, filter_value: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {valueOptions().map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                      {valueOptions().length === 0 && (
-                        <div className="p-3 text-sm text-muted-foreground text-center">Nenhuma opção encontrada</div>
-                      )}
-                    </SelectContent>
-                  </Select>
-                )}
+                <Select
+                  value={form.filter_value}
+                  onValueChange={(v) => setForm({ ...form, filter_value: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {valueOptions().map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                    {valueOptions().length === 0 && (
+                      <div className="p-3 text-sm text-muted-foreground text-center">Nenhuma opção encontrada</div>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             )}
 
