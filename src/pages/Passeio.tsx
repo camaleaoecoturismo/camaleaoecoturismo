@@ -320,31 +320,31 @@ const Passeio = () => {
 
         {/* Stories do destino */}
         {tourMoments.length > 0 && (
-          <div className="flex gap-4 overflow-x-auto pt-5 pb-2 -mx-4 px-4" style={{ scrollbarWidth: "none" }}>
-            {tourMoments.map((story, idx) => (
-              <button
-                key={story.id}
-                onClick={() => setStoryModalIdx(idx)}
-                className="flex flex-col items-center gap-2 shrink-0 group"
-              >
-                <div className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-[#820AD1] via-[#c740f0] to-[#f97316] shadow-md group-hover:scale-105 transition-transform duration-200">
-                  <div className="w-full h-full rounded-full overflow-hidden border-2 border-white">
-                    {story.cover_url ? (
-                      <img src={story.cover_url} alt="" className="w-full h-full object-cover" />
-                    ) : story.media_type === "image" ? (
-                      <img src={story.media_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-[#820AD1]/20 flex items-center justify-center">
-                        <span className="text-[#820AD1] text-lg">▶</span>
-                      </div>
-                    )}
+          <div className="pt-5 pb-2">
+            <p className="text-xs font-semibold text-foreground/50 uppercase tracking-widest mb-3 px-0.5">Stories</p>
+            <div className="flex gap-4 overflow-x-auto -mx-4 px-4" style={{ scrollbarWidth: "none" }}>
+              {tourMoments.map((story, idx) => (
+                <button
+                  key={story.id}
+                  onClick={() => setStoryModalIdx(idx)}
+                  className="flex-shrink-0 group"
+                >
+                  <div className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-[#820AD1] via-[#c740f0] to-[#f97316] shadow-md group-hover:scale-105 transition-transform duration-200">
+                    <div className="w-full h-full rounded-full overflow-hidden border-2 border-white">
+                      {story.cover_url ? (
+                        <img src={story.cover_url} alt="" className="w-full h-full object-cover" />
+                      ) : story.media_type === "image" ? (
+                        <img src={story.media_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-[#820AD1]/20 flex items-center justify-center">
+                          <span className="text-[#820AD1] text-lg">▶</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <span className="text-[11px] text-foreground/80 font-medium max-w-[64px] truncate text-center leading-tight">
-                  Story
-                </span>
-              </button>
-            ))}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
