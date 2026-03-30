@@ -138,7 +138,7 @@ const Passeio = () => {
       if (destName) {
         const { data: momentsData } = await db
           .from("tour_moments")
-          .select("id, caption, media_url, media_type")
+          .select("id, caption, media_url, media_type, cover_url")
           .eq("active", true)
           .eq("destination_name", destName)
           .order("display_order");
@@ -151,6 +151,7 @@ const Passeio = () => {
             media_type: m.media_type,
             author_name: null,
             author_photo_url: null,
+            cover_url: m.cover_url || null,
           })));
         }
       }
@@ -316,6 +317,44 @@ const Passeio = () => {
 
       {/* ── BODY ── */}
       <div className="max-w-2xl mx-auto px-4 pb-40">
+
+        {/* Stories do destino */}
+        {tourMoments.length > 0 && (
+          <div className="flex gap-4 overflow-x-auto pt-5 pb-2 -mx-4 px-4" style={{ scrollbarWidth: "none" }}>
+            {tourMoments.map((story, idx) => (
+              <button
+                key={story.id}
+                onClick={() => setStoryModalIdx(idx)}
+                className="flex flex-col items-center gap-2 shrink-0 group"
+              >
+                <div className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-[#820AD1] via-[#c740f0] to-[#f97316] shadow-md group-hover:scale-105 transition-transform duration-200">
+                  <div className="w-full h-full rounded-full overflow-hidden border-2 border-white">
+                    {story.cover_url ? (
+                      <img src={story.cover_url} alt="" className="w-full h-full object-cover" />
+                    ) : story.media_type === "image" ? (
+                      <img src={story.media_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-[#820AD1]/20 flex items-center justify-center">
+                        <span className="text-[#820AD1] text-lg">▶</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <span className="text-[11px] text-foreground/80 font-medium max-w-[64px] truncate text-center leading-tight">
+                  Story
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {storyModalIdx !== null && (
+          <StoryModal
+            stories={tourMoments}
+            initialIndex={storyModalIdx}
+            onClose={() => setStoryModalIdx(null)}
+          />
+        )}
 
         {/* Action buttons */}
         <div className="flex flex-col gap-3 mb-8 mt-5">
@@ -624,47 +663,6 @@ const Passeio = () => {
             </div>
           </div>
         </section>
-
-        {/* Momentos do destino */}
-        {tourMoments.length > 0 && (
-          <section className="mb-8">
-            <h2 className="font-semibold text-lg text-primary mb-3">Momentos</h2>
-            <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
-              {tourMoments.map((story, idx) => (
-                <button
-                  key={story.id}
-                  onClick={() => setStoryModalIdx(idx)}
-                  className="flex flex-col items-center gap-2 shrink-0 group"
-                >
-                  <div className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-[#820AD1] via-[#c740f0] to-[#f97316] shadow-md group-hover:scale-105 transition-transform duration-200">
-                    <div className="w-full h-full rounded-full overflow-hidden border-2 border-white">
-                      {story.author_photo_url ? (
-                        <img src={story.author_photo_url} alt={story.author_name || ""} className="w-full h-full object-cover" />
-                      ) : story.media_type === "image" ? (
-                        <img src={story.media_url} alt={story.title || ""} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-[#820AD1]/20 flex items-center justify-center">
-                          <span className="text-[#820AD1] text-lg">▶</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-[11px] text-foreground/80 font-medium max-w-[64px] truncate text-center leading-tight">
-                    {story.author_name || story.title || "Story"}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {storyModalIdx !== null && (
-          <StoryModal
-            stories={tourMoments}
-            initialIndex={storyModalIdx}
-            onClose={() => setStoryModalIdx(null)}
-          />
-        )}
 
         {/* Próximas datas */}
         {relatedTours.length > 0 && (

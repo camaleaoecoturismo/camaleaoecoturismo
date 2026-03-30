@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ interface TourMoment {
   destination_name: string;
   media_url: string;
   media_type: string;
+  cover_url: string | null;
   caption: string | null;
   active: boolean;
   display_order: number;
@@ -29,6 +30,7 @@ const EMPTY_FORM = {
   caption: "",
   media_url: "",
   media_type: "video",
+  cover_url: "",
   active: true,
 };
 
@@ -42,6 +44,8 @@ export default function AdminTourMoments() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [capturingCover, setCapturingCover] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -99,7 +103,7 @@ export default function AdminTourMoments() {
 
   const openEdit = (m: TourMoment) => {
     setEditingId(m.id);
-    setForm({ caption: m.caption || "", media_url: m.media_url, media_type: m.media_type, active: m.active });
+    setForm({ caption: m.caption || "", media_url: m.media_url, media_type: m.media_type, cover_url: m.cover_url || "", active: m.active });
     setShowForm(true);
   };
 
@@ -113,6 +117,7 @@ export default function AdminTourMoments() {
       destination_name: selectedDestination,
       media_url: form.media_url,
       media_type: form.media_type,
+      cover_url: form.cover_url || null,
       caption: form.caption || null,
       active: form.active,
     };
@@ -151,6 +156,31 @@ export default function AdminTourMoments() {
       (supabase as any).from("tour_moments").update({ display_order: a.display_order }).eq("id", b.id),
     ]);
     fetchMoments();
+  };
+
+  const captureVideoFrame = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    setCapturingCover(true);
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d")!.drawImage(video, 0, 0);
+    canvas.toBlob(async (blob) => {
+      if (!blob) { setCapturingCover(false); return; }
+      const path = `moments/covers/${Date.now()}.jpg`;
+      const { data, error } = await supabase.storage
+        .from("site-config")
+        .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
+      if (!error) {
+        const { data: urlData } = supabase.storage.from("site-config").getPublicUrl(data.path);
+        setForm((f) => ({ ...f, cover_url: urlData.publicUrl }));
+        toast({ title: "Capa capturada!" });
+      } else {
+        toast({ title: "Erro ao capturar capa", description: error.message, variant: "destructive" });
+      }
+      setCapturingCover(false);
+    }, "image/jpeg", 0.9);
   };
 
   const handleMediaUpload = async (file: File) => {
@@ -215,33 +245,78 @@ export default function AdminTourMoments() {
 
           <div className="space-y-2">
             <Label>Vídeo ou Foto *</Label>
-            <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-lg p-6 cursor-pointer hover:border-primary transition-colors">
-              {form.media_url ? (
-                form.media_type === "video" ? (
-                  <video src={form.media_url} className="h-48 rounded object-cover" controls />
+            {form.media_url ? (
+              <div className="space-y-2">
+                {form.media_type === "video" ? (
+                  <video
+                    ref={videoRef}
+                    src={form.media_url}
+                    className="w-full max-h-64 rounded object-contain bg-black"
+                    controls
+                  />
                 ) : (
-                  <img src={form.media_url} alt="" className="h-48 rounded object-cover" />
-                )
-              ) : (
-                <>
-                  {uploadingMedia
-                    ? <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                    : <Upload className="h-8 w-8 text-muted-foreground" />}
-                  <span className="text-sm text-muted-foreground">Clique para enviar vídeo ou foto</span>
-                  <span className="text-xs text-muted-foreground/60">Recomendado: vídeo vertical (9:16)</span>
-                </>
-              )}
-              <input
-                type="file"
-                accept="image/*,video/*"
-                className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMediaUpload(f); }}
-              />
-            </label>
-            {form.media_url && (
-              <Button variant="ghost" size="sm" onClick={() => setForm((f) => ({ ...f, media_url: "", media_type: "video" }))}>
-                Remover mídia
-              </Button>
+                  <img src={form.media_url} alt="" className="w-full max-h-64 rounded object-cover" />
+                )}
+                <div className="flex gap-2">
+                  {form.media_type === "video" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={captureVideoFrame}
+                      disabled={capturingCover}
+                    >
+                      {capturingCover
+                        ? <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        : <ImageIcon className="h-4 w-4 mr-2" />}
+                      Capturar frame como capa
+                    </Button>
+                  )}
+                  <label className="cursor-pointer">
+                    <Button type="button" variant="ghost" size="sm" asChild>
+                      <span><Upload className="h-4 w-4 mr-2" />Trocar mídia</span>
+                    </Button>
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      className="hidden"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMediaUpload(f); }}
+                    />
+                  </label>
+                  <Button variant="ghost" size="sm" onClick={() => setForm((f) => ({ ...f, media_url: "", media_type: "video", cover_url: "" }))}>
+                    Remover
+                  </Button>
+                </div>
+                {form.cover_url && (
+                  <div className="flex items-center gap-3 mt-1">
+                    <img src={form.cover_url} alt="Capa" className="w-16 h-16 rounded-full object-cover border-2 border-primary" />
+                    <div>
+                      <p className="text-xs font-medium">Capa capturada</p>
+                      <button
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, cover_url: "" }))}
+                        className="text-xs text-destructive hover:underline"
+                      >
+                        Remover capa
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-lg p-6 cursor-pointer hover:border-primary transition-colors">
+                {uploadingMedia
+                  ? <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  : <Upload className="h-8 w-8 text-muted-foreground" />}
+                <span className="text-sm text-muted-foreground">Clique para enviar vídeo ou foto</span>
+                <span className="text-xs text-muted-foreground/60">Recomendado: vídeo vertical (9:16)</span>
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMediaUpload(f); }}
+                />
+              </label>
             )}
           </div>
 
@@ -293,7 +368,9 @@ export default function AdminTourMoments() {
           {filteredMoments.map((m, idx) => (
             <div key={m.id} className="flex items-center gap-3 border border-border rounded-xl p-3 bg-card">
               <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-muted flex items-center justify-center">
-                {m.media_type === "video" ? (
+                {m.cover_url ? (
+                  <img src={m.cover_url} alt="" className="w-full h-full object-cover" />
+                ) : m.media_type === "video" ? (
                   <Play className="h-6 w-6 text-muted-foreground" />
                 ) : (
                   <img src={m.media_url} alt="" className="w-full h-full object-cover" />

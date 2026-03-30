@@ -9,6 +9,7 @@ export interface Story {
   media_type: string;
   author_name: string | null;
   author_photo_url: string | null;
+  cover_url?: string | null;
 }
 
 interface StoryModalProps {
