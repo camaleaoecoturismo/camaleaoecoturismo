@@ -49,50 +49,44 @@ const VIDEOS = [
 // ── Matérias ─────────────────────────────────────────────────────────────────
 const MATERIAS = [
   {
-    veiculo: "TRIBUNAHOJE",
-    veiculoColor: "#c0392b",
+    logo: logoMateria1,
     title: "Camaleão Ecoturismo é Reconhecida como Melhor Agência de Ecoturismo de Alagoas em 2023",
-    thumb: "https://img.youtube.com/vi/0w632v-LLkg/hqdefault.jpg",
+    thumb: materia1,
     text: "Durante a cerimônia do 6º Prêmio Oscar Alagoano, promovido pela Revista Class Magazine e Claudio Bulgarelli Comunicação, a Camaleão Ecoturismo foi premiada como a melhor agência de ecoturismo de Alagoas em 2023...",
     link: "https://tribunahoje.com/noticias/cidades/2022/11/22/112399-revista-class-magazine-e-claudio-bulgarelli-comunicacao-entregam-no-dia-12-de-dezembro-o-6o-premio-oscar-alagoano",
   },
   {
-    veiculo: "globoplay",
-    veiculoColor: "#e5007d",
+    logo: logoMateria2,
     title: "Passeio pelo Rio São Miguel - TV Gazeta #IssoÉAlagoas com Gilka Mafra",
-    thumb: "https://img.youtube.com/vi/0w632v-LLkg/hqdefault.jpg",
+    thumb: materia2,
     text: "Essa reportagem apresenta a experiência de Gilka Mafra, da TV Gazeta, durante um passeio organizado pela Camaleão Ecoturismo pelo Rio São Miguel, em São Miguel dos Campos. A aventura combina turismo sustentável e valorização cultural...",
     link: "https://www.youtube.com/watch?v=0w632v-LLkg",
   },
   {
-    veiculo: "AlagoasWeb",
-    veiculoColor: "#1a6fab",
+    logo: logoMateria3,
     title: "Rota de turismo regenerativo: Uma iniciativa promissora para São Miguel dos Campos",
-    thumb: "https://img.youtube.com/vi/tt6_CBO60kQ/hqdefault.jpg",
+    thumb: materia3,
     text: "Um projeto inovador que combina preservação ambiental, reflorestamento de manguezais e desenvolvimento sustentável, gerando emprego, renda e valorização da comunidade local, com o objetivo de alcançar reconhecimento internacional como destino sustentável...",
     link: "https://alagoasweb.com/rota-de-turismo-regenerativo-uma-iniciativa-promiss/",
   },
   {
-    veiculo: "Instituto Federal",
-    veiculoColor: "#2e7d32",
+    logo: logoMateria4,
     title: "Experiências ecológicas, autoconhecimento e turismo criativo",
-    thumb: "https://img.youtube.com/vi/le7Kc2xc7-M/hqdefault.jpg",
+    thumb: materia4,
     text: "O V Hosptur debateu estratégias inovadoras para o turismo em tempos de crise. Isaías Christian, da Camaleão Ecoturismo, destacou o turismo ecológico como ferramenta de autoconhecimento e saúde mental, promovendo uma \"ecologia da alma\"...",
     link: "https://www2.ifal.edu.br/campus/maceio/noticias/experiencias-ecologicas-autoconhecimento-e-turismo-criativo-v-hosptur-debate-tendencias-inovadoras-em-segundo-dia-do-evento",
   },
   {
-    veiculo: "Investindo por Aí",
-    veiculoColor: "#e67e22",
+    logo: logoMateria5,
     title: "Ecoturismo no Nordeste fomenta desenvolvimento regional",
-    thumb: "https://img.youtube.com/vi/lA0rJq6dEnw/hqdefault.jpg",
+    thumb: materia5,
     text: "A reportagem aborda o crescimento do ecoturismo no Nordeste como ferramenta de desenvolvimento econômico e preservação ambiental. O segmento representa um quarto das viagens...",
     link: "https://investindoporai.com.br/exclusivo-ecoturismo-no-nordeste-fomenta-desenvolvimento-regional/",
   },
   {
-    veiculo: "G1",
-    veiculoColor: "#c0392b",
+    logo: logoMateria6,
     title: "Expedição pelo Rio São Miguel atrai aventureiros e contribui para a economia de São Miguel dos Campos, AL",
-    thumb: "https://img.youtube.com/vi/0w632v-LLkg/hqdefault.jpg",
+    thumb: materia6,
     text: "A reportagem destaca o sucesso das expedições pelo Rio São Miguel, organizadas por Isaías Christian em São Miguel dos Campos, Alagoas. O passeio, que dura cerca de 4 horas e meia, oferece experiências na Mata Atlântica preservada...",
     link: "https://g1.globo.com/al/alagoas/issoealagoas/noticia/2023/05/13/expedicao-pelo-rio-sao-miguel-atrai-aventureiros-e-contribui-para-a-economia-de-sao-miguel-dos-campos-al.ghtml",
   },
@@ -279,12 +273,9 @@ export default function Midia() {
                   <h3 className="font-bold text-gray-900 text-lg leading-snug mb-4">{m.title}</h3>
                   <div className="relative rounded-xl overflow-hidden mb-4">
                     <img src={m.thumb} alt={m.title} className="w-full object-cover aspect-video" />
-                    <span
-                      className="absolute top-3 right-3 text-white text-xs font-bold px-2.5 py-1 rounded-md shadow"
-                      style={{ backgroundColor: m.veiculoColor }}
-                    >
-                      {m.veiculo}
-                    </span>
+                    <div className="absolute top-3 right-3 bg-white rounded-lg shadow-md px-2 py-1.5 flex items-center justify-center">
+                      <img src={m.logo} alt="veículo" className="h-6 w-auto object-contain" />
+                    </div>
                   </div>
                   <p className="text-gray-700 text-sm leading-relaxed text-justify mb-5">{m.text}</p>
                   <div className="text-center">
