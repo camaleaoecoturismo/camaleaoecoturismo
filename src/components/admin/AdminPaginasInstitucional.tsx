@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { LogoCropModal } from "./LogoCropModal";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -599,6 +600,7 @@ function PartnersManager() {
   const [form, setForm] = useState({ name: "", logo_url: "", website_url: "", active: true });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
   useEffect(() => { load(); }, []);
   const load = async () => {
@@ -607,11 +609,17 @@ function PartnersManager() {
     setLoading(false);
   };
 
-  const handleLogoUpload = async (file: File) => {
+  const handleFileSelect = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => setCropSrc(reader.result as string);
+    reader.readAsDataURL(file);
+  }, []);
+
+  const handleCropConfirm = async (blob: Blob) => {
+    setCropSrc(null);
     setUploading(true);
-    const ext = file.name.split(".").pop();
-    const path = `partners/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("site-config").upload(path, file, { upsert: true });
+    const path = `partners/${Date.now()}.png`;
+    const { error } = await supabase.storage.from("site-config").upload(path, blob, { upsert: true, contentType: "image/png" });
     if (error) { toast.error("Erro ao enviar imagem"); setUploading(false); return; }
     const { data } = supabase.storage.from("site-config").getPublicUrl(path);
     setForm((f) => ({ ...f, logo_url: data.publicUrl }));
@@ -644,14 +652,26 @@ function PartnersManager() {
           <div className="grid sm:grid-cols-2 gap-3">
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nome da organização (opcional)" />
             <Input value={form.website_url} onChange={(e) => setForm({ ...form, website_url: e.target.value })} placeholder="Website (opcional)" />
-            {/* Upload de logo */}
+            {/* Upload de logo com recorte */}
             <div className="sm:col-span-2 flex items-center gap-3">
               <label className="flex-1 flex items-center justify-center gap-2 h-10 px-4 rounded-lg border border-dashed border-border bg-muted cursor-pointer hover:bg-muted/70 transition-colors text-sm text-muted-foreground">
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4" />{form.logo_url ? "Trocar logo" : "Enviar logo"}</>}
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f); }} />
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4" />{form.logo_url ? "Trocar e recortar logo" : "Enviar e recortar logo"}</>}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); e.target.value = ""; }} />
               </label>
-              {form.logo_url && <img src={form.logo_url} alt="preview" className="h-10 max-w-[120px] object-contain rounded border border-border p-1 bg-white" />}
+              {form.logo_url && (
+                <div className="flex flex-col items-center gap-1">
+                  <img src={form.logo_url} alt="preview" className="h-10 max-w-[120px] object-contain rounded border border-border p-1 bg-white" />
+                  <span className="text-[10px] text-muted-foreground">prévia</span>
+                </div>
+              )}
             </div>
+            {cropSrc && (
+              <LogoCropModal
+                src={cropSrc}
+                onConfirm={handleCropConfirm}
+                onCancel={() => setCropSrc(null)}
+              />
+            )}
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="rounded" />
               <span className="text-sm">Ativo (visível no site)</span>

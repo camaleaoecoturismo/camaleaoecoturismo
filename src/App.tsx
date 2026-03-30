@@ -1,5 +1,6 @@
 // App entry point
 import { lazy, Suspense } from "react";
+import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -53,6 +54,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AnalyticsProvider>
+          <ChunkErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Home />} />
@@ -87,6 +89,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </ChunkErrorBoundary>
         </AnalyticsProvider>
       </BrowserRouter>
     </TooltipProvider>
