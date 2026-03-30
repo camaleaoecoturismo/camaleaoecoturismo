@@ -267,38 +267,45 @@ export default function Midia() {
       <NetflixVideos />
 
       {/* ── Seção 2: Matérias e reportagens ── */}
-      <section className="bg-[#820AD1] py-12 px-4">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-center text-2xl md:text-3xl font-bold text-white mb-10">
+      <section className="bg-[#820AD1] py-12">
+        <div className="px-4 md:px-8 mb-8">
+          <h2 className="text-center text-2xl md:text-3xl font-bold text-white">
             Matérias e reportagens
           </h2>
-          <Carousel total={MATERIAS.length} dark>
-            {(idx) => {
-              const m = MATERIAS[idx];
-              return (
-                <div className="bg-white rounded-2xl overflow-hidden shadow-xl">
-                  <div className="relative">
-                    <img src={m.thumb} alt={m.title} className="w-full object-cover aspect-video" />
-                    <div className="absolute top-3 right-3 bg-white rounded-lg shadow-md px-2 py-1.5 flex items-center justify-center">
-                      <img src={m.logo} alt="veículo" className="h-6 w-auto object-contain" />
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <h3 className="font-bold text-gray-900 text-base leading-snug mb-3">{m.title}</h3>
-                    <p className="text-gray-600 text-sm leading-relaxed mb-5">{m.text}</p>
-                    <a
-                      href={m.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block border border-[#820AD1] text-[#820AD1] font-semibold text-sm px-6 py-2.5 rounded-full hover:bg-[#820AD1] hover:text-white transition-colors"
-                    >
-                      Ver matéria completa
-                    </a>
-                  </div>
+        </div>
+        {/* Scroll horizontal com peek do próximo card */}
+        <div
+          className="flex gap-5 overflow-x-auto px-4 md:px-8 pb-4 snap-x snap-mandatory"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {MATERIAS.map((m, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-2xl overflow-hidden shadow-xl shrink-0 snap-start"
+              style={{ width: "min(85vw, 420px)" }}
+            >
+              <div className="relative">
+                <img src={m.thumb} alt={m.title} className="w-full object-cover aspect-video" />
+                <div className="absolute top-3 right-3 bg-white rounded-lg shadow-md px-2 py-1.5 flex items-center justify-center">
+                  <img src={m.logo} alt="veículo" className="h-6 w-auto object-contain" />
                 </div>
-              );
-            }}
-          </Carousel>
+              </div>
+              <div className="p-5">
+                <h3 className="font-bold text-gray-900 text-base leading-snug mb-3">{m.title}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed mb-5">{m.text}</p>
+                <a
+                  href={m.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block border border-[#820AD1] text-[#820AD1] font-semibold text-sm px-6 py-2.5 rounded-full hover:bg-[#820AD1] hover:text-white transition-colors"
+                >
+                  Ver matéria completa
+                </a>
+              </div>
+            </div>
+          ))}
+          {/* Espaço extra para o último card não ficar colado na borda */}
+          <div className="shrink-0 w-4" />
         </div>
       </section>
 
