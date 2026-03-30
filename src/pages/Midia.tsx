@@ -4,6 +4,18 @@ import Footer from "@/components/Footer";
 import bannerSobre from "@/assets/banner-sobre.png";
 import palestra1 from "@/assets/palestra-1.avif";
 import palestra2 from "@/assets/palestra-2.avif";
+import materia1 from "@/assets/materia-1.avif";
+import materia2 from "@/assets/materia-2.avif";
+import materia3 from "@/assets/materia-3.avif";
+import materia4 from "@/assets/materia-4.avif";
+import materia5 from "@/assets/materia-5.avif";
+import materia6 from "@/assets/materia-6.avif";
+import logoMateria1 from "@/assets/logo-materia-1.avif";
+import logoMateria2 from "@/assets/logo-materia-2.avif";
+import logoMateria3 from "@/assets/logo-materia-3.avif";
+import logoMateria4 from "@/assets/logo-materia-4.avif";
+import logoMateria5 from "@/assets/logo-materia-5.avif";
+import logoMateria6 from "@/assets/logo-materia-6.avif";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 
 // ── Vídeos ──────────────────────────────────────────────────────────────────
