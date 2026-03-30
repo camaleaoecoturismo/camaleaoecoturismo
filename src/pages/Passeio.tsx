@@ -416,30 +416,29 @@ const Passeio = () => {
         {/* Incluso / Não incluso */}
         {(tour.includes || tour.not_includes) && (
           <section id="incluso" className="mb-8 scroll-mt-4">
-            <h2 className="font-semibold text-lg text-primary mb-3">Inclusos</h2>
-            {tour.includes && tour.not_includes ? (
-              <>
-                <div className="flex justify-center border-b border-border mb-4">
-                  <button
-                    onClick={() => setInclusoTab("incluso")}
-                    className={`px-8 py-2.5 text-sm font-medium transition-colors ${inclusoTab === "incluso" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    ✓ Incluso
-                  </button>
-                  <button
-                    onClick={() => setInclusoTab("nao_incluso")}
-                    className={`px-8 py-2.5 text-sm font-medium transition-colors ${inclusoTab === "nao_incluso" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    ✗ Não incluso
-                  </button>
+            <h2 className="font-semibold text-lg text-primary mb-3">O que está incluso</h2>
+            <div className={`grid gap-4 ${tour.includes && tour.not_includes ? "sm:grid-cols-2" : "grid-cols-1"}`}>
+              {tour.includes && (
+                <div className="rounded-2xl border border-green-200 bg-green-50/60 overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-3 bg-green-100/70 border-b border-green-200">
+                    <span className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-bold shrink-0">✓</span>
+                    <span className="text-sm font-semibold text-green-800">Incluso no pacote</span>
+                  </div>
+                  <div className="px-4 py-4 prose prose-sm max-w-none text-green-900 [&_li]:marker:text-green-500 leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: sanitize(tour.includes) }} />
                 </div>
-                <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: sanitize(inclusoTab === "incluso" ? tour.includes : tour.not_includes) }} />
-              </>
-            ) : (
-              <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: sanitize(tour.includes || tour.not_includes) }} />
-            )}
+              )}
+              {tour.not_includes && (
+                <div className="rounded-2xl border border-red-200 bg-red-50/50 overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-3 bg-red-100/60 border-b border-red-200">
+                    <span className="w-5 h-5 rounded-full bg-red-400 flex items-center justify-center text-white text-xs font-bold shrink-0">✕</span>
+                    <span className="text-sm font-semibold text-red-800">Não incluso</span>
+                  </div>
+                  <div className="px-4 py-4 prose prose-sm max-w-none text-red-900 [&_li]:marker:text-red-400 leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: sanitize(tour.not_includes) }} />
+                </div>
+              )}
+            </div>
           </section>
         )}
 
