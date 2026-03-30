@@ -365,20 +365,21 @@ export default function Home() {
 
       {/* ── PARCEIROS ─────────────────────────────────────────────────────────── */}
       {partners.length > 0 && (() => {
-        const mid = Math.ceil(partners.length / 2);
-        const row1 = partners.slice(0, mid);
-        const row2 = partners.slice(mid);
-        const MarqueeRow = ({ items, reverse = false }: { items: typeof partners; reverse?: boolean }) => {
-          const doubled = [...items, ...items];
+        const third = Math.ceil(partners.length / 3);
+        const row1 = partners.slice(0, third);
+        const row2 = partners.slice(third, third * 2);
+        const row3 = partners.slice(third * 2);
+        const MarqueeRow = ({ items }: { items: typeof partners }) => {
+          // Repeat enough times to guarantee seamless loop
+          const repeated = [...items, ...items, ...items, ...items];
+          const duration = items.length * 8;
           return (
             <div className="overflow-hidden w-full">
               <div
-                className="flex items-center gap-10 w-max"
-                style={{
-                  animation: `marquee${reverse ? "Reverse" : ""} ${items.length * 4}s linear infinite`,
-                }}
+                className="flex items-center gap-6 w-max"
+                style={{ animation: `marquee ${duration}s linear infinite` }}
               >
-                {doubled.map((p, i) => (
+                {repeated.map((p, i) => (
                   <a
                     key={`${p.id}-${i}`}
                     href={p.website_url || "#"}
@@ -390,7 +391,7 @@ export default function Home() {
                     <img
                       src={p.logo_url}
                       alt={p.name || ""}
-                      className="h-12 w-32 object-contain"
+                      className="h-14 w-36 object-contain"
                     />
                   </a>
                 ))}
@@ -401,16 +402,16 @@ export default function Home() {
         return (
           <section className="py-8 border-y border-border overflow-hidden">
             <style>{`
-              @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
-              @keyframes marqueeReverse { from { transform: translateX(-50%) } to { transform: translateX(0) } }
+              @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-25%) } }
             `}</style>
             <div className="text-center mb-6 px-4">
               <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Parceiros</p>
               <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Empresas que já viajaram com a gente</h2>
             </div>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-5">
               <MarqueeRow items={row1} />
-              {row2.length > 0 && <MarqueeRow items={row2} reverse />}
+              {row2.length > 0 && <MarqueeRow items={row2} />}
+              {row3.length > 0 && <MarqueeRow items={row3} />}
             </div>
           </section>
         );
