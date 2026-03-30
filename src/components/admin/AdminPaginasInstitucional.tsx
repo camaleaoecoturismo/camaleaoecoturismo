@@ -582,9 +582,9 @@ function PartnersManager() {
   };
 
   const save = async () => {
-    if (!form.name.trim() || !form.logo_url.trim()) { toast.error("Nome e logo obrigatórios"); return; }
+    if (!form.logo_url.trim()) { toast.error("Envie o logo antes de salvar"); return; }
     setSaving(true);
-    const payload = { name: form.name, logo_url: form.logo_url, website_url: form.website_url || null, active: form.active, display_order: editing?.display_order ?? items.length };
+    const payload = { name: form.name.trim() || null, logo_url: form.logo_url, website_url: form.website_url || null, active: form.active, display_order: editing?.display_order ?? items.length };
     const { error } = editing
       ? await (supabase as any).from("partner_organizations").update(payload).eq("id", editing.id)
       : await (supabase as any).from("partner_organizations").insert(payload);
@@ -605,7 +605,7 @@ function PartnersManager() {
         <div className="space-y-3 p-4 rounded-xl border border-border bg-card">
           <h3 className="font-semibold text-sm">{editing ? "Editar Parceiro" : "Novo Parceiro"}</h3>
           <div className="grid sm:grid-cols-2 gap-3">
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nome da organização" />
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nome da organização (opcional)" />
             <Input value={form.website_url} onChange={(e) => setForm({ ...form, website_url: e.target.value })} placeholder="Website (opcional)" />
             {/* Upload de logo */}
             <div className="sm:col-span-2 flex items-center gap-3">
@@ -640,7 +640,7 @@ function PartnersManager() {
               <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
                 <img src={p.logo_url} alt={p.name} className="h-10 w-20 object-contain rounded shrink-0 bg-muted p-1" />
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm text-foreground truncate">{p.name}</p>
+                  {p.name && <p className="font-medium text-sm text-foreground truncate">{p.name}</p>}
                   {!p.active && <span className="text-xs text-muted-foreground">oculto</span>}
                 </div>
                 <div className="flex gap-1 shrink-0">

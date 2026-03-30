@@ -186,7 +186,7 @@ export function HeroBanner({ location = "hero" }: { location?: string }) {
           )}
 
           {/* Gradiente de baixo para cima */}
-          <div className="absolute inset-x-0 bottom-0 h-3/4 z-[1] bg-gradient-to-t from-black/90 via-black/55 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-4/5 z-[1] bg-gradient-to-t from-black/95 via-black/65 to-transparent" />
           {/* Gradiente de cima para baixo (menu) */}
           <div className="absolute inset-x-0 top-0 h-32 z-[1] bg-gradient-to-b from-black/50 to-transparent" />
 
