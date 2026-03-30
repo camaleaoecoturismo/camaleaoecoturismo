@@ -279,9 +279,9 @@ export default function Home() {
       )}
 
       {/* ── PRÓXIMAS AVENTURAS ────────────────────────────────────────────────── */}
-      <section className="py-5 md:py-10 px-4 bg-muted/30">
+      <section className="py-4 md:py-7 px-4 bg-muted/30">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-end justify-between mb-4 md:mb-6">
+          <div className="flex items-end justify-between mb-3 md:mb-5">
             <div>
               <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Agenda</p>
               <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Próximas Aventuras</h2>
@@ -325,9 +325,9 @@ export default function Home() {
         if (sectionTours.length === 0) return null;
         const altBg = idx % 2 === 0;
         return (
-          <section key={section.id} className={`py-5 md:py-10 ${altBg ? "bg-muted/20" : ""}`}>
+          <section key={section.id} className={`py-4 md:py-7 ${altBg ? "bg-muted/20" : ""}`}>
             <div className="max-w-7xl mx-auto">
-              <div className="flex items-end justify-between mb-4 md:mb-6 px-4">
+              <div className="flex items-end justify-between mb-3 md:mb-5 px-4">
                 <div>
                   {section.subtitle && (
                     <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-1">{section.subtitle}</p>
@@ -370,16 +370,16 @@ export default function Home() {
         const row2 = partners.slice(third, third * 2);
         const row3 = partners.slice(third * 2);
         const MarqueeRow = ({ items }: { items: typeof partners }) => {
-          // Repeat enough times to guarantee seamless loop
-          const repeated = [...items, ...items, ...items, ...items];
-          const duration = items.length * 8;
+          // Duplicate once: animate 0 → -50% for seamless loop with no visible repeat
+          const doubled = [...items, ...items];
+          const duration = items.length * 6;
           return (
             <div className="overflow-hidden w-full">
               <div
-                className="flex items-center gap-6 w-max"
+                className="flex items-center gap-10 w-max"
                 style={{ animation: `marquee ${duration}s linear infinite` }}
               >
-                {repeated.map((p, i) => (
+                {doubled.map((p, i) => (
                   <a
                     key={`${p.id}-${i}`}
                     href={p.website_url || "#"}
@@ -391,8 +391,7 @@ export default function Home() {
                     <img
                       src={p.logo_url}
                       alt={p.name || ""}
-                      className="h-16 w-auto max-w-[140px] object-contain"
-                      style={{ imageRendering: "auto" }}
+                      className="h-20 w-auto max-w-[160px] object-contain"
                     />
                   </a>
                 ))}
@@ -403,7 +402,7 @@ export default function Home() {
         return (
           <section className="py-8 border-y border-border overflow-hidden">
             <style>{`
-              @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-25%) } }
+              @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
             `}</style>
             <div className="text-center mb-6 px-4">
               <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Parceiros</p>
