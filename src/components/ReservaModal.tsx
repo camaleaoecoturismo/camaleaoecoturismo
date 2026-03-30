@@ -245,6 +245,7 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
   const [trackingSessionId, setTrackingSessionId] = useState<string>('');
   const trackingIdRef = useRef<string | null>(null);
   const currentStepRef = useRef<number>(1); // Track current step for abandonment
+  const confirmedCloseRef = useRef(false);
   
   const [formData, setFormData] = useState<FormData>({
     nome_completo: "",
@@ -2826,6 +2827,11 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
 
   const handleDialogClose = async (open: boolean) => {
     if (!open) {
+      // Already confirmed via the confirmation dialog — skip re-checking
+      if (confirmedCloseRef.current) {
+        confirmedCloseRef.current = false;
+        return;
+      }
       // If payment is complete, just close
       if (paymentComplete) {
         resetForm();
@@ -2853,6 +2859,7 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
   };
 
   const confirmClose = async () => {
+    confirmedCloseRef.current = true;
     // Register abandonment before closing (if not paid)
     if (trackingIdRef.current && !paymentComplete) {
       console.log('ReservaModal: Registering abandonment on close, step:', currentStepRef.current);
