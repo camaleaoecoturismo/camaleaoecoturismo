@@ -264,26 +264,82 @@ export default function AdminHomeSections() {
               <div className="space-y-1.5">
                 <Label>
                   {form.filter_type === "keyword" && "Preferência *"}
-                  {form.filter_type === "destination" && "Destino *"}
+                  {form.filter_type === "destination" && "Destinos *"}
                   {form.filter_type === "city" && "Cidade *"}
                   {form.filter_type === "state" && "Estado *"}
                 </Label>
-                <Select
-                  value={form.filter_value}
-                  onValueChange={(v) => setForm({ ...form, filter_value: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {valueOptions().map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                    {valueOptions().length === 0 && (
-                      <div className="p-3 text-sm text-muted-foreground text-center">Nenhuma opção encontrada</div>
+
+                {form.filter_type === "destination" ? (
+                  <div className="space-y-2">
+                    {/* Tags selecionadas */}
+                    {form.filter_value && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {form.filter_value.split(",").map((v) => v.trim()).filter(Boolean).map((v) => (
+                          <span key={v} className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs font-medium px-2.5 py-1 rounded-full">
+                            {destOptions.find((d) => d.toLowerCase() === v) || v}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const current = form.filter_value.split(",").map(s => s.trim()).filter(Boolean);
+                                setForm({ ...form, filter_value: current.filter(s => s !== v).join(",") });
+                              }}
+                              className="ml-0.5 hover:text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
                     )}
-                  </SelectContent>
-                </Select>
+                    {/* Lista de opções com checkbox */}
+                    <div className="border border-border rounded-lg max-h-48 overflow-y-auto divide-y divide-border/50">
+                      {valueOptions().length === 0 ? (
+                        <p className="p-3 text-sm text-muted-foreground text-center">Nenhuma opção encontrada</p>
+                      ) : valueOptions().map((opt) => {
+                        const selected = form.filter_value.split(",").map(s => s.trim()).includes(opt.value);
+                        return (
+                          <label key={opt.value} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-muted/50 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={() => {
+                                const current = form.filter_value.split(",").map(s => s.trim()).filter(Boolean);
+                                const next = selected
+                                  ? current.filter(s => s !== opt.value)
+                                  : [...current, opt.value];
+                                setForm({ ...form, filter_value: next.join(",") });
+                              }}
+                              className="rounded"
+                            />
+                            <span className="text-sm">{opt.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {form.filter_value && (
+                      <p className="text-xs text-muted-foreground">
+                        {form.filter_value.split(",").filter(Boolean).length} destino(s) selecionado(s)
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <Select
+                    value={form.filter_value}
+                    onValueChange={(v) => setForm({ ...form, filter_value: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {valueOptions().map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                      {valueOptions().length === 0 && (
+                        <div className="p-3 text-sm text-muted-foreground text-center">Nenhuma opção encontrada</div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             )}
 

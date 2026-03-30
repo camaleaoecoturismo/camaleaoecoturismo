@@ -198,8 +198,11 @@ export default function Home() {
           return (t.city || "").toLowerCase().includes(val);
         case "state":
           return (t.state || "").toLowerCase().includes(val);
-        case "destination":
-          return (t.destination_name || t.name || "").toLowerCase().includes(val);
+        case "destination": {
+          const haystack = (t.destination_name || t.name || "").toLowerCase();
+          const vals = val.split(",").map(v => v.trim()).filter(Boolean);
+          return vals.length === 0 ? false : vals.some(v => haystack.includes(v));
+        }
         default:
           return false;
       }
