@@ -78,7 +78,6 @@ export default function Footer() {
                 {[
                   { label: "Agenda completa", to: "/agenda" },
                   { label: "Chapada Diamantina", to: "/chapada-diamantina" },
-                  { label: "Guia de destinos", to: "/guia" },
                   { label: "Blog", to: "/blog" },
                   { label: "Camaleão na Mídia", to: "/midia" },
                 ].map((l) => (
@@ -100,7 +99,6 @@ export default function Footer() {
                   { label: "Nossa equipe", to: "/equipe" },
                   { label: "Central de Ajuda", to: "/faq" },
                   { label: "Políticas", to: "/politicas" },
-                  { label: "Área do cliente", to: "/cliente" },
                 ].map((l) => (
                   <li key={l.to}>
                     <Link to={l.to} className="text-sm hover:text-white transition-colors">
@@ -139,6 +137,15 @@ export default function Footer() {
                   >
                     <Instagram className="w-4 h-4 shrink-0 text-[#820AD1]" />
                     @camaleaoecoturismo
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="mailto:contato@camaleaoecoturismo.com.br"
+                    className="flex items-center gap-2.5 text-sm hover:text-white transition-colors"
+                  >
+                    <Mail className="w-4 h-4 shrink-0 text-[#820AD1]" />
+                    contato@camaleaoecoturismo.com.br
                   </a>
                 </li>
               </ul>
