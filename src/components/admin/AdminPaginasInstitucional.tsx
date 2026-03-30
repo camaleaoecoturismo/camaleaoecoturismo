@@ -371,9 +371,9 @@ function EquipeManager() {
     setUploading(true);
     const ext = file.name.split(".").pop();
     const path = `team/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("banners").upload(path, file, { upsert: true });
+    const { error } = await supabase.storage.from("site-config").upload(path, file, { upsert: true });
     if (error) { toast.error("Erro ao enviar foto"); setUploading(false); return; }
-    const { data } = supabase.storage.from("banners").getPublicUrl(path);
+    const { data } = supabase.storage.from("site-config").getPublicUrl(path);
     setForm((f) => ({ ...f, foto_url: data.publicUrl }));
     setUploading(false);
   };
@@ -574,9 +574,9 @@ function PartnersManager() {
     setUploading(true);
     const ext = file.name.split(".").pop();
     const path = `partners/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("banners").upload(path, file, { upsert: true });
+    const { error } = await supabase.storage.from("site-config").upload(path, file, { upsert: true });
     if (error) { toast.error("Erro ao enviar imagem"); setUploading(false); return; }
-    const { data } = supabase.storage.from("banners").getPublicUrl(path);
+    const { data } = supabase.storage.from("site-config").getPublicUrl(path);
     setForm((f) => ({ ...f, logo_url: data.publicUrl }));
     setUploading(false);
   };
