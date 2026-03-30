@@ -326,37 +326,27 @@ export default function Home() {
       )}
 
       {/* ── EQUIPE ────────────────────────────────────────────────────────────── */}
-      {team.length > 0 && (
-        <section className="py-20 px-4 max-w-7xl mx-auto">
-          <div className="text-center mb-12">
+      <section className="py-20 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-8">
             <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Quem somos</p>
-            <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Conheça nossa equipe</h2>
-            <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
-              Apaixonados pela natureza e dedicados a criar experiências únicas para você.
-            </p>
+            <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Nossa Equipe</h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {team.map((m) => (
-              <div key={m.id} className="text-center">
-                {m.foto_url ? (
-                  <img src={m.foto_url} alt={m.nome} className="w-24 h-24 md:w-28 md:h-28 rounded-full object-cover mx-auto mb-3 ring-4 ring-primary/10" />
-                ) : (
-                  <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3 text-primary font-bold text-2xl">
-                    {m.nome[0]}
-                  </div>
-                )}
-                <p className="font-semibold text-foreground text-sm">{m.nome}</p>
-                <p className="text-primary text-xs mt-0.5">{m.cargo}</p>
-              </div>
-            ))}
-          </div>
-          <div className="text-center mt-10">
-            <Button asChild variant="outline" className="rounded-full">
-              <Link to="/sobre">Ver equipe completa <ArrowRight className="ml-2 h-4 w-4" /></Link>
-            </Button>
-          </div>
-        </section>
-      )}
+          <Link to="/equipe" className="block group relative overflow-hidden rounded-2xl shadow-lg">
+            <img
+              src="/equipe.jpg"
+              alt="Equipe Camaleão Ecoturismo"
+              className="w-full object-cover max-h-[480px] group-hover:scale-105 transition-transform duration-500"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+              <span className="inline-flex items-center gap-2 bg-white/90 hover:bg-white text-foreground font-semibold text-sm px-5 py-2.5 rounded-full shadow transition-colors whitespace-nowrap">
+                Conheça a equipe <ArrowRight className="h-4 w-4 text-primary" />
+              </span>
+            </div>
+          </Link>
+        </div>
+      </section>
 
       {/* ── BLOG ──────────────────────────────────────────────────────────────── */}
       {blogPosts.length > 0 && (
