@@ -279,9 +279,9 @@ export default function Home() {
       )}
 
       {/* ── PRÓXIMAS AVENTURAS ────────────────────────────────────────────────── */}
-      <section className="py-6 md:py-16 px-4 bg-muted/30">
+      <section className="py-5 md:py-10 px-4 bg-muted/30">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-end justify-between mb-4 md:mb-10">
+          <div className="flex items-end justify-between mb-4 md:mb-6">
             <div>
               <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Agenda</p>
               <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Próximas Aventuras</h2>
@@ -325,9 +325,9 @@ export default function Home() {
         if (sectionTours.length === 0) return null;
         const altBg = idx % 2 === 0;
         return (
-          <section key={section.id} className={`py-5 md:py-14 ${altBg ? "bg-muted/20" : ""}`}>
+          <section key={section.id} className={`py-5 md:py-10 ${altBg ? "bg-muted/20" : ""}`}>
             <div className="max-w-7xl mx-auto">
-              <div className="flex items-end justify-between mb-4 md:mb-7 px-4">
+              <div className="flex items-end justify-between mb-4 md:mb-6 px-4">
                 <div>
                   {section.subtitle && (
                     <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-1">{section.subtitle}</p>
@@ -353,9 +353,9 @@ export default function Home() {
 
       {/* ── DEPOIMENTOS ───────────────────────────────────────────────────────── */}
       {/* ── DEPOIMENTOS (Google Reviews via Elfsight) ─────────────────────────── */}
-      <section className="py-16 px-4">
+      <section className="py-8 md:py-12 px-4">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
+          <div className="text-center mb-6">
             <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Avaliações</p>
             <h2 className="font-figtree text-3xl md:text-4xl font-bold uppercase tracking-tight text-foreground">O que dizem nossos viajantes</h2>
           </div>
@@ -399,12 +399,12 @@ export default function Home() {
           );
         };
         return (
-          <section className="py-16 border-y border-border overflow-hidden">
+          <section className="py-8 border-y border-border overflow-hidden">
             <style>{`
               @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
               @keyframes marqueeReverse { from { transform: translateX(-50%) } to { transform: translateX(0) } }
             `}</style>
-            <div className="text-center mb-10 px-4">
+            <div className="text-center mb-6 px-4">
               <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Parceiros</p>
               <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Empresas que já viajaram com a gente</h2>
             </div>
