@@ -745,10 +745,261 @@ const Passeio = () => {
             </div>
           </section>
         )}
-      </div>
+        </div>{/* end left column */}
+
+          {/* RIGHT COLUMN — desktop sticky booking sidebar */}
+          <div className="hidden md:block sticky top-24 self-start mt-5">
+            <div className="border border-border rounded-2xl p-5 bg-card shadow-sm space-y-4">
+
+              {isSoldOut && (
+                <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                  <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                  <p className="text-sm font-semibold text-red-600">Vagas esgotadas para este passeio</p>
+                </div>
+              )}
+
+              {tour.pricing_options && tour.pricing_options.length > 0 ? (
+                <>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {isSoldOut ? "Pacotes disponíveis" : "Pacotes"}
+                  </p>
+                  <div className="space-y-2">
+                    {tour.pricing_options.map((opt) => {
+                      const qty = packageQuantities[opt.id] || 0;
+                      const isSelected = qty > 0;
+                      return (
+                        <div
+                          key={opt.id}
+                          className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
+                            isSoldOut
+                              ? "border-border/50 opacity-60"
+                              : isSelected
+                              ? "border-primary/40 bg-primary/5"
+                              : "border-border bg-muted/20 hover:border-border/80"
+                          }`}
+                        >
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">{opt.option_name}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <PixIcon size={12} />
+                              <span className="text-sm font-bold text-primary">{formatCurrency(opt.pix_price)}</span>
+                              <span className="text-xs text-muted-foreground">/ pessoa</span>
+                            </div>
+                          </div>
+                          {!isSoldOut && (
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => setPackageQuantities(prev => ({ ...prev, [opt.id]: Math.max(0, (prev[opt.id] || 0) - 1) }))}
+                                disabled={qty === 0}
+                                className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-muted-foreground disabled:opacity-20 hover:border-primary hover:text-primary transition-colors"
+                              >
+                                <Minus className="w-3.5 h-3.5" />
+                              </button>
+                              <span className={`w-5 text-center font-bold text-sm ${isSelected ? "text-primary" : "text-muted-foreground"}`}>{qty}</span>
+                              <button
+                                onClick={() => setPackageQuantities(prev => ({ ...prev, [opt.id]: Math.min(10, (prev[opt.id] || 0) + 1) }))}
+                                className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors shadow-sm"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {Object.values(packageQuantities).some(q => q > 0) && (
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-1">
+                      {tour.pricing_options.filter(opt => (packageQuantities[opt.id] || 0) > 0).map(opt => (
+                        <div key={opt.id} className="flex justify-between text-xs text-muted-foreground">
+                          <span>{packageQuantities[opt.id]}x {opt.option_name}</span>
+                          <span>{formatCurrency(opt.pix_price * (packageQuantities[opt.id] || 0))}</span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between text-sm font-bold border-t border-primary/20 pt-1.5 mt-1">
+                        <span>Total no PIX</span>
+                        <span className="text-primary">{formatCurrency(
+                          tour.pricing_options.reduce((sum, opt) => sum + (opt.pix_price * (packageQuantities[opt.id] || 0)), 0)
+                        )}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {minPrice > 0 && (
+                    <>
+                      <button
+                        onClick={() => setShowInstallments(!showInstallments)}
+                        className="w-full flex items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <span>Ver parcelamento no cartão</span>
+                        {showInstallments ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      </button>
+                      {showInstallments && (
+                        <div className="border border-border rounded-xl overflow-hidden text-xs">
+                          <div className="grid grid-cols-3 bg-muted/60 px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                            <span>Parcelas</span>
+                            <span className="text-center">Valor/mês</span>
+                            <span className="text-right">Total</span>
+                          </div>
+                          {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
+                            const total = installmentBase * (1 + INSTALLMENT_FEES[n] / 100);
+                            const monthly = total / n;
+                            return (
+                              <div key={n} className="grid grid-cols-3 px-3 py-2 border-t border-border/40 items-center">
+                                <span className="font-medium text-foreground">{n === 1 ? "À vista" : `${n}x`}</span>
+                                <span className="text-center font-semibold text-primary">{formatCurrency(monthly)}</span>
+                                <span className="text-right text-muted-foreground">{formatCurrency(total)}</span>
+                              </div>
+                            );
+                          })}
+                          <p className="text-muted-foreground text-[10px] px-3 py-2 border-t border-border/50 bg-muted/30">
+                            {installmentBase > minPrice ? "*Total selecionado." : "*Menor pacote."} Juros InfinitePay.
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  {minPrice > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">A partir de</p>
+                      <div className="flex items-center gap-2">
+                        <PixIcon size={20} />
+                        <p className="text-3xl font-bold text-primary">{formatCurrency(minPrice)}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">no PIX / à vista</p>
+                    </div>
+                  )}
+                  {minPrice > 0 && (
+                    <>
+                      <button
+                        onClick={() => setShowInstallments(!showInstallments)}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showInstallments ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        Ver parcelamento no cartão
+                      </button>
+                      {showInstallments && (
+                        <div className="border border-border rounded-xl overflow-hidden text-xs">
+                          <div className="grid grid-cols-3 bg-muted/60 px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                            <span>Parcelas</span>
+                            <span className="text-center">Valor/mês</span>
+                            <span className="text-right">Total</span>
+                          </div>
+                          {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
+                            const total = minPrice * (1 + INSTALLMENT_FEES[n] / 100);
+                            const monthly = total / n;
+                            return (
+                              <div key={n} className="grid grid-cols-3 px-3 py-2 border-t border-border/40 items-center">
+                                <span className="font-medium text-foreground">{n === 1 ? "À vista" : `${n}x`}</span>
+                                <span className="text-center font-semibold text-primary">{formatCurrency(monthly)}</span>
+                                <span className="text-right text-muted-foreground">{formatCurrency(total)}</span>
+                              </div>
+                            );
+                          })}
+                          <p className="text-muted-foreground text-[10px] px-3 py-2 border-t border-border/50 bg-muted/30">*Juros InfinitePay.</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+
+              {isSoldOut ? (
+                <div className="space-y-2">
+                  <div className="w-full bg-muted text-muted-foreground text-center py-3 rounded-lg text-sm font-medium">Vagas Esgotadas</div>
+                  {isFutureTour && (
+                    <Button variant="outline" className="w-full border-orange-400 text-orange-600 hover:bg-orange-50" onClick={() => setWaitlistOpen(true)}>
+                      <Bell className="w-4 h-4 mr-2" />
+                      Entrar na lista de espera
+                    </Button>
+                  )}
+                </div>
+              ) : tour.pricing_options && tour.pricing_options.length > 0 ? (
+                <Button
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 text-base font-semibold"
+                  onClick={() => setReservaOpen(true)}
+                  disabled={!Object.values(packageQuantities).some(q => q > 0)}
+                >
+                  {Object.values(packageQuantities).some(q => q > 0) ? "Continuar →" : "Escolha a quantidade de vagas"}
+                </Button>
+              ) : (
+                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 text-base font-semibold" onClick={() => setReservaOpen(true)}>
+                  Reservar agora
+                </Button>
+              )}
+
+              <button onClick={handleWhatsApp} className="w-full flex items-center justify-center gap-2 text-sm text-green-600 hover:text-green-700 transition-colors py-1">
+                <WhatsAppIcon className="w-4 h-4" />
+                Falar com atendente
+              </button>
+
+              <div className="pt-2 border-t border-border text-sm text-muted-foreground space-y-1">
+                <div className="flex justify-between">
+                  <span>Data</span>
+                  <span className="font-medium text-foreground">{dateStr}</span>
+                </div>
+                {durationDays > 1 && (
+                  <div className="flex justify-between">
+                    <span>Duração</span>
+                    <span className="font-medium text-foreground">{durationDays} dias</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span>Local</span>
+                  <span className="font-medium text-foreground">{[tour.city, tour.state?.toUpperCase()].filter(Boolean).join(", ")}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Related tours — desktop sidebar */}
+            {relatedTours.length > 0 && (
+              <div className="mt-6">
+                <h2 className="font-semibold text-base text-primary mb-3">Próximas datas</h2>
+                <div className="space-y-2">
+                  {relatedTours.slice(0, 4).map((related) => {
+                    const relStart = new Date(related.start_date + "T12:00:00");
+                    const relEnd = related.end_date ? new Date(related.end_date + "T12:00:00") : null;
+                    const relPrice = related.pricing_options?.length > 0
+                      ? Math.min(...related.pricing_options.map((o) => o.pix_price))
+                      : related.valor_padrao || 0;
+                    const relDays = relEnd
+                      ? Math.ceil((relEnd.getTime() - relStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+                      : 1;
+                    return (
+                      <button
+                        key={related.id}
+                        onClick={() => navigate(`/passeio/${related.slug || related.id}`)}
+                        className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border hover:border-primary hover:bg-primary/5 transition-all bg-card"
+                      >
+                        {(relatedCoverImages.get(related.id) || related.image_url) && (
+                          <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0">
+                            <img src={relatedCoverImages.get(related.id) || related.image_url!} alt={related.name} className="w-full h-full object-cover" loading="lazy" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-foreground line-clamp-2 leading-snug">{related.name}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {relStart.getDate()} de {MONTH_NAMES[relStart.getMonth()]}
+                            {relDays > 1 ? ` · ${relDays} dias` : ""}
+                          </p>
+                          {relPrice > 0 && <p className="text-xs font-bold text-primary">{formatCurrency(relPrice)}</p>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>{/* end right column */}
+        </div>{/* end grid */}
+      </div>{/* end outer wrapper */}
 
       {/* ── SECTION NAV BAR with elevated center Reservar button ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-card/95 backdrop-blur-sm border-t border-border shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 dark:bg-card/95 backdrop-blur-sm border-t border-border shadow-lg">
         <div className="flex items-end max-w-lg mx-auto px-2">
           {navItems.slice(0, midIndex).map(({ id, label, icon: Icon }) => (
             <button key={id} onClick={() => scrollTo(id)} className="flex-1 flex flex-col items-center gap-0.5 py-3 text-muted-foreground hover:text-primary transition-colors">
