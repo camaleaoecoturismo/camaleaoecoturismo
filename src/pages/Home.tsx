@@ -355,12 +355,12 @@ export default function Home() {
       {blogPosts.length > 0 && (
         <section className="py-20 bg-muted/30">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-end justify-between mb-8 px-4">
+            <div className="flex items-end justify-between px-4 mb-8">
               <div>
                 <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Blog</p>
-                <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Últimas aventuras</h2>
+                <h2 className="font-figtree text-2xl md:text-4xl font-bold text-foreground uppercase tracking-tight whitespace-nowrap">Fique por dentro das novidades</h2>
               </div>
-              <Link to="/blog" className="flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all">
+              <Link to="/blog" className="hidden md:flex items-center gap-1 text-primary font-semibold text-sm hover:gap-2 transition-all shrink-0 ml-6">
                 Ver todos <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -391,6 +391,13 @@ export default function Home() {
                   </div>
                 </Link>
               ))}
+            </div>
+
+            {/* Ver todos — abaixo dos cards no mobile, oculto no desktop */}
+            <div className="md:hidden flex justify-end px-4 mt-4">
+              <Link to="/blog" className="flex items-center gap-1 text-primary font-semibold text-sm">
+                Ver todos <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
           </div>
         </section>
