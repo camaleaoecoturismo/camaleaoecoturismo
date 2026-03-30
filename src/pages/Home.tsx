@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { TopMenu } from "@/components/TopMenu";
 import { HeroBanner } from "@/components/HeroBanner";
@@ -10,9 +10,8 @@ import { StoryModal, type Story } from "@/components/StoryModal";
 import { useTours } from "@/hooks/useTours";
 import { useTourCoverImages } from "@/hooks/useTourCoverImages";
 import {
-  Star, ChevronLeft, ChevronRight, ArrowRight, Waves, TreePine, Loader2, CalendarDays,
+  Star, ChevronLeft, ChevronRight, ArrowRight, Loader2, CalendarDays,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 
@@ -126,7 +125,6 @@ interface HomeSection {
 // ─── Componente principal ──────────────────────────────────────────────────────
 
 export default function Home() {
-  const navigate = useNavigate();
   const { tours, loading: toursLoading } = useTours();
 
   const [heroImage, setHeroImage] = useState<string>("");
@@ -448,30 +446,6 @@ export default function Home() {
 
       {/* ── STATS ─────────────────────────────────────────────────────────────── */}
       <StatsSection />
-
-      {/* ── CTA FINAL ─────────────────────────────────────────────────────────── */}
-      <section className="relative py-14 md:py-20 px-4 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#820AD1] to-[#1a0533]" />
-        <div className="absolute inset-0 opacity-10">
-          <TreePine className="absolute top-8 left-8 h-32 w-32 text-white" />
-          <Waves className="absolute bottom-8 right-8 h-32 w-32 text-white" />
-        </div>
-        <div className="relative z-10 text-center text-white max-w-2xl mx-auto">
-          <h2 className="font-figtree text-3xl md:text-5xl font-bold mb-4 uppercase tracking-tight">
-            Pronto para sua<br />próxima aventura?
-          </h2>
-          <p className="text-white/80 text-lg mb-10">
-            Reserve agora e garanta sua vaga nos próximos passeios da Camaleão Ecoturismo.
-          </p>
-          <Button size="lg"
-            className="bg-white hover:bg-white/90 text-[#820AD1] font-bold px-10 py-6 text-base rounded-full shadow-xl"
-            onClick={() => navigate("/agenda")}
-          >
-            Reservar agora
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-        </div>
-      </section>
 
       <Footer />
       <FloatingContactButton />

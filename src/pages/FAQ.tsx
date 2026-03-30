@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import bannerFaq from "@/assets/banner-faq.png";
 import { supabase } from "@/integrations/supabase/client";
 import { TopMenu } from "@/components/TopMenu";
-import { Link } from "react-router-dom";
-import { ChevronDown, HelpCircle, Loader2 } from "lucide-react";
+import Footer from "@/components/Footer";
+import { ChevronDown, Loader2, MessageCircle } from "lucide-react";
 import DOMPurify from "dompurify";
 
 interface FaqItem {
@@ -14,11 +14,20 @@ interface FaqItem {
   display_order: number;
 }
 
+const CATEGORY_ICONS: Record<string, string> = {
+  "Minha Primeira Trilha": "🌿",
+  "Nível de Dificuldade e Preparação": "🎒",
+  "Política de Reservas e Cancelamento": "📋",
+  "Transporte e Logística": "🚐",
+  "Alimentação e Estrutura": "🍃",
+};
+
 export default function FAQ() {
   const [items, setItems] = useState<FaqItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase
@@ -31,13 +40,12 @@ export default function FAQ() {
       });
   }, []);
 
-  const categories = ["all", ...Array.from(new Set(items.map((i) => i.categoria).filter(Boolean) as string[]))];
+  const categories = Array.from(new Set(items.map((i) => i.categoria).filter(Boolean) as string[]));
 
   const filtered = items.filter(
     (i) => activeCategory === "all" || i.categoria === activeCategory
   );
 
-  // Group by category
   const grouped: Record<string, FaqItem[]> = {};
   filtered.forEach((item) => {
     const cat = item.categoria || "Geral";
@@ -45,127 +53,209 @@ export default function FAQ() {
     grouped[cat].push(item);
   });
 
+  const handleCategoryClick = (cat: string) => {
+    setActiveCategory(cat);
+    setOpenId(null);
+    // On mobile, scroll to content
+    if (window.innerWidth < 1024) {
+      setTimeout(() => contentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <TopMenu />
 
-      {/* Hero banner */}
-      <div className="relative w-full h-48 md:h-64 overflow-hidden">
+      {/* Hero */}
+      <div className="relative w-full h-52 md:h-72 overflow-hidden">
         <img src={bannerFaq} alt="Central de Ajuda" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-black/45 flex flex-col justify-end px-6 pb-6 md:px-10 md:pb-8">
-          <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">Dúvidas frequentes</p>
-          <h1 className="font-bold text-4xl md:text-5xl text-white leading-none">Central de Ajuda</h1>
-          <p className="text-white/80 text-sm mt-1">Respostas para as perguntas mais comuns sobre nossas expedições</p>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/20 flex flex-col justify-end px-6 pb-8 md:px-12 md:pb-10">
+          <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-2">Central de Ajuda</p>
+          <h1 className="font-bold text-4xl md:text-6xl text-white leading-none mb-2">
+            Perguntas<br className="md:hidden" /> frequentes
+          </h1>
+          <p className="text-white/70 text-sm md:text-base max-w-md">
+            Tudo que você precisa saber antes de embarcar na sua expedição.
+          </p>
         </div>
       </div>
 
-      <section className="py-12 px-4">
-        <div className="max-w-3xl mx-auto">
-          {/* Category filter */}
-          {categories.length > 2 && (
-            <div className="flex flex-wrap gap-2 mb-8">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all ${
-                    activeCategory === cat
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-card text-muted-foreground border-border hover:border-primary/50"
-                  }`}
-                >
-                  {cat === "all" ? "Todas" : cat}
-                </button>
-              ))}
-            </div>
-          )}
+      {/* Mobile category pills */}
+      <div className="lg:hidden border-b border-border bg-card sticky top-0 z-10">
+        <div className="flex gap-2 overflow-x-auto px-4 py-3" style={{ scrollbarWidth: "none" }}>
+          <button
+            onClick={() => handleCategoryClick("all")}
+            className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+              activeCategory === "all"
+                ? "bg-primary text-white border-primary"
+                : "bg-muted text-muted-foreground border-border"
+            }`}
+          >
+            Todas
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => handleCategoryClick(cat)}
+              className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                activeCategory === cat
+                  ? "bg-primary text-white border-primary"
+                  : "bg-muted text-muted-foreground border-border"
+              }`}
+            >
+              {CATEGORY_ICONS[cat] || ""} {cat}
+            </button>
+          ))}
+        </div>
+      </div>
 
-          {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : items.length === 0 ? (
-            <div className="text-center py-20">
-              <HelpCircle className="h-16 w-16 text-muted-foreground/20 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-foreground mb-2">FAQ em breve</h2>
-              <p className="text-muted-foreground">
-                Estamos preparando as respostas mais importantes para você.
-              </p>
+      <div className="max-w-6xl mx-auto px-4 py-10 lg:py-16">
+        <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-12 lg:items-start">
+
+          {/* ── Desktop sidebar ── */}
+          <aside className="hidden lg:block sticky top-24 self-start">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Categorias</p>
+            <nav className="space-y-1">
+              <button
+                onClick={() => handleCategoryClick("all")}
+                className={`w-full text-left flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                  activeCategory === "all"
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-foreground hover:bg-muted"
+                }`}
+              >
+                <span>Todas as perguntas</span>
+                <span className={`text-xs rounded-full px-2 py-0.5 font-bold ${activeCategory === "all" ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"}`}>
+                  {items.length}
+                </span>
+              </button>
+              {categories.map((cat) => {
+                const count = items.filter((i) => i.categoria === cat).length;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => handleCategoryClick(cat)}
+                    className={`w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all ${
+                      activeCategory === cat
+                        ? "bg-primary text-white shadow-sm font-semibold"
+                        : "text-foreground hover:bg-muted font-medium"
+                    }`}
+                  >
+                    <span className="text-base shrink-0">{CATEGORY_ICONS[cat] || "•"}</span>
+                    <span className="flex-1 leading-snug">{cat}</span>
+                    <span className={`text-xs rounded-full px-2 py-0.5 font-bold shrink-0 ${activeCategory === cat ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"}`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* WhatsApp CTA */}
+            <div className="mt-8 p-4 rounded-2xl bg-green-50 border border-green-200">
+              <p className="text-sm font-semibold text-green-800 mb-1">Não encontrou sua dúvida?</p>
+              <p className="text-xs text-green-700 mb-3">Fale direto com nossa equipe pelo WhatsApp.</p>
               <a
                 href="https://wa.me/5582993649454"
-                className="inline-flex items-center gap-2 mt-6 bg-primary text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 text-xs font-bold text-green-700 hover:text-green-800 transition-colors"
               >
-                Fale diretamente conosco
+                <MessageCircle className="w-4 h-4" />
+                Abrir WhatsApp
               </a>
             </div>
-          ) : (
-            <div className="space-y-8">
-              {Object.entries(grouped).map(([category, faqItems]) => (
-                <div key={category}>
-                  {Object.keys(grouped).length > 1 && (
-                    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
-                      {category}
-                    </h2>
-                  )}
-                  <div className="space-y-2">
-                    {faqItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="border border-border rounded-xl overflow-hidden bg-card"
-                      >
-                        <button
-                          onClick={() => setOpenId(openId === item.id ? null : item.id)}
-                          className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-muted/50 transition-colors"
-                        >
-                          <span className="font-medium text-foreground text-sm leading-snug">
-                            {item.pergunta}
-                          </span>
-                          <ChevronDown
-                            className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${
-                              openId === item.id ? "rotate-180" : ""
-                            }`}
-                          />
-                        </button>
-                        {openId === item.id && (
-                          <div
-                            className="px-5 pb-4 text-sm text-muted-foreground leading-relaxed border-t border-border/50 pt-3 prose prose-sm prose-gray dark:prose-invert max-w-none"
-                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.resposta) }}
-                          />
-                        )}
+          </aside>
+
+          {/* ── Content ── */}
+          <div ref={contentRef}>
+            {loading ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="space-y-10">
+                {Object.entries(grouped).map(([category, faqItems]) => (
+                  <div key={category}>
+                    {/* Category header */}
+                    {Object.keys(grouped).length > 1 && (
+                      <div className="flex items-center gap-3 mb-4">
+                        <span className="text-2xl">{CATEGORY_ICONS[category] || "📌"}</span>
+                        <div>
+                          <h2 className="font-bold text-base text-foreground">{category}</h2>
+                          <p className="text-xs text-muted-foreground">{faqItems.length} perguntas</p>
+                        </div>
                       </div>
-                    ))}
+                    )}
+
+                    {/* Accordion */}
+                    <div className="space-y-2">
+                      {faqItems.map((item, idx) => {
+                        const isOpen = openId === item.id;
+                        return (
+                          <div
+                            key={item.id}
+                            className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                              isOpen
+                                ? "border-primary/30 bg-primary/[0.03] shadow-sm"
+                                : "border-border bg-card hover:border-border/80"
+                            }`}
+                          >
+                            <button
+                              onClick={() => setOpenId(isOpen ? null : item.id)}
+                              className="w-full flex items-center gap-4 px-5 py-4 text-left"
+                            >
+                              <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                                isOpen ? "bg-primary text-white" : "bg-muted text-muted-foreground"
+                              }`}>
+                                {idx + 1}
+                              </span>
+                              <span className={`flex-1 text-sm font-medium leading-snug transition-colors ${
+                                isOpen ? "text-primary" : "text-foreground"
+                              }`}>
+                                {item.pergunta}
+                              </span>
+                              <ChevronDown
+                                className={`h-4 w-4 shrink-0 transition-transform duration-300 ${
+                                  isOpen ? "rotate-180 text-primary" : "text-muted-foreground"
+                                }`}
+                              />
+                            </button>
+                            {isOpen && (
+                              <div
+                                className="px-5 pb-5 pt-1 text-sm text-muted-foreground leading-relaxed border-t border-primary/10 ml-[60px] prose prose-sm prose-gray dark:prose-invert max-w-none"
+                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.resposta) }}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+
+            {/* Mobile WhatsApp CTA */}
+            <div className="lg:hidden mt-10 p-6 rounded-2xl bg-primary/5 border border-primary/20 text-center">
+              <h3 className="font-semibold text-foreground mb-1">Não encontrou o que procurava?</h3>
+              <p className="text-sm text-muted-foreground mb-4">Nossa equipe responde pelo WhatsApp.</p>
+              <a
+                href="https://wa.me/5582993649454"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Falar no WhatsApp
+              </a>
             </div>
-          )}
-
-          {/* Still have questions */}
-          <div className="mt-12 text-center p-8 rounded-2xl bg-primary/5 border border-primary/20">
-            <h3 className="font-semibold text-foreground mb-2">Não encontrou o que procurava?</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Nossa equipe está pronta para responder suas dúvidas pelo WhatsApp.
-            </p>
-            <a
-              href="https://wa.me/5582993649454"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors"
-            >
-              Falar no WhatsApp
-            </a>
           </div>
-        </div>
-      </section>
 
-      <footer className="py-8 px-4 text-center text-xs text-muted-foreground border-t border-border">
-        <p>© {new Date().getFullYear()} Camaleão Ecoturismo</p>
-        <div className="flex justify-center gap-4 mt-2">
-          <Link to="/" className="hover:text-foreground transition-colors">Expedições</Link>
-          <Link to="/sobre" className="hover:text-foreground transition-colors">Sobre nós</Link>
-          <Link to="/politicas?tipo=cancelamento" className="hover:text-foreground transition-colors">Cancelamento</Link>
         </div>
-      </footer>
+      </div>
+
+      <Footer />
     </div>
   );
 }
