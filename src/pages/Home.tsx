@@ -391,7 +391,8 @@ export default function Home() {
                     <img
                       src={p.logo_url}
                       alt={p.name || ""}
-                      className="h-14 w-36 object-contain"
+                      className="h-16 w-auto max-w-[140px] object-contain"
+                      style={{ imageRendering: "auto" }}
                     />
                   </a>
                 ))}
