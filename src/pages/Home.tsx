@@ -309,25 +309,57 @@ export default function Home() {
       </section>
 
       {/* ── PARCEIROS ─────────────────────────────────────────────────────────── */}
-      {partners.length > 0 && (
-        <section className="py-16 px-4 border-y border-border">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-10">
+      {partners.length > 0 && (() => {
+        const mid = Math.ceil(partners.length / 2);
+        const row1 = partners.slice(0, mid);
+        const row2 = partners.slice(mid);
+        const MarqueeRow = ({ items, reverse = false }: { items: typeof partners; reverse?: boolean }) => {
+          const doubled = [...items, ...items];
+          return (
+            <div className="overflow-hidden w-full">
+              <div
+                className="flex items-center gap-10 w-max"
+                style={{
+                  animation: `marquee${reverse ? "Reverse" : ""} ${items.length * 4}s linear infinite`,
+                }}
+              >
+                {doubled.map((p, i) => (
+                  <a
+                    key={`${p.id}-${i}`}
+                    href={p.website_url || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:opacity-70 transition-opacity duration-200 shrink-0"
+                    title={p.name || ""}
+                  >
+                    <img
+                      src={p.logo_url}
+                      alt={p.name || ""}
+                      className="h-12 w-32 object-contain"
+                    />
+                  </a>
+                ))}
+              </div>
+            </div>
+          );
+        };
+        return (
+          <section className="py-16 border-y border-border overflow-hidden">
+            <style>{`
+              @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+              @keyframes marqueeReverse { from { transform: translateX(-50%) } to { transform: translateX(0) } }
+            `}</style>
+            <div className="text-center mb-10 px-4">
               <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-2">Parceiros</p>
               <h2 className="font-figtree text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">Empresas que já viajaram com a gente</h2>
             </div>
-            <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
-              {partners.map((p) => (
-                <a key={p.id} href={p.website_url || "#"} target="_blank" rel="noopener noreferrer"
-                  className="hover:opacity-80 transition-opacity duration-200" title={p.name || ""}
-                >
-                  <img src={p.logo_url} alt={p.name || ""} className="h-10 md:h-12 w-auto object-contain" />
-                </a>
-              ))}
+            <div className="flex flex-col gap-6">
+              <MarqueeRow items={row1} />
+              {row2.length > 0 && <MarqueeRow items={row2} reverse />}
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        );
+      })()}
 
 
       {/* ── BLOG ──────────────────────────────────────────────────────────────── */}
