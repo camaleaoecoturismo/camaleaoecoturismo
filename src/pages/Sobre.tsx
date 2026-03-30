@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import bannerSobre from "@/assets/banner-sobre.png";
 import { supabase } from "@/integrations/supabase/client";
 import { TopMenu } from "@/components/TopMenu";
 import { Link } from "react-router-dom";
@@ -28,20 +29,15 @@ export default function Sobre() {
     <div className="min-h-screen bg-background">
       <TopMenu />
 
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground py-20 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <p className="text-primary-foreground/70 text-sm font-semibold uppercase tracking-widest mb-3">
-            Nossa História
-          </p>
-          <h1 className="font-sans font-bold text-5xl md:text-7xl mb-6 leading-none">
-            CAMALEÃO ECOTURISMO
-          </h1>
-          <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed">
-            Conectamos pessoas à natureza através de aventuras inesquecíveis na Chapada Diamantina e destinos únicos do Brasil.
-          </p>
+      {/* Hero banner */}
+      <div className="relative w-full h-48 md:h-64 overflow-hidden">
+        <img src={bannerSobre} alt="A Camaleão" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-black/45 flex flex-col justify-end px-6 pb-6 md:px-10 md:pb-8">
+          <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">Nossa História</p>
+          <h1 className="font-bold text-4xl md:text-5xl text-white leading-none">CAMALEÃO ECOTURISMO</h1>
+          <p className="text-white/80 text-sm mt-1 max-w-xl">Conectamos pessoas à natureza através de aventuras inesquecíveis.</p>
         </div>
-      </section>
+      </div>
 
       {/* Mission */}
       <section className="py-16 px-4">

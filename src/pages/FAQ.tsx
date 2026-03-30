@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import bannerFaq from "@/assets/banner-faq.png";
 import { supabase } from "@/integrations/supabase/client";
 import { TopMenu } from "@/components/TopMenu";
 import { Link } from "react-router-dom";
@@ -47,18 +48,15 @@ export default function FAQ() {
     <div className="min-h-screen bg-background">
       <TopMenu />
 
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground py-16 px-4">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="text-primary-foreground/70 text-sm font-semibold uppercase tracking-widest mb-3">
-            Dúvidas frequentes
-          </p>
-          <h1 className="font-sans font-bold text-5xl md:text-7xl leading-none mb-4">FAQ</h1>
-          <p className="text-primary-foreground/80 text-lg">
-            Encontre respostas para as perguntas mais comuns sobre nossas expedições
-          </p>
+      {/* Hero banner */}
+      <div className="relative w-full h-48 md:h-64 overflow-hidden">
+        <img src={bannerFaq} alt="Central de Ajuda" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-black/45 flex flex-col justify-end px-6 pb-6 md:px-10 md:pb-8">
+          <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">Dúvidas frequentes</p>
+          <h1 className="font-bold text-4xl md:text-5xl text-white leading-none">Central de Ajuda</h1>
+          <p className="text-white/80 text-sm mt-1">Respostas para as perguntas mais comuns sobre nossas expedições</p>
         </div>
-      </section>
+      </div>
 
       <section className="py-12 px-4">
         <div className="max-w-3xl mx-auto">

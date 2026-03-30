@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import bannerPoliticas from "@/assets/banner-politicas.png";
 import { useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { TopMenu } from "@/components/TopMenu";
@@ -34,15 +35,14 @@ export default function Politicas() {
     <div className="min-h-screen bg-background">
       <TopMenu />
 
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground py-16 px-4">
-        <div className="max-w-3xl mx-auto">
-          <p className="text-primary-foreground/70 text-sm font-semibold uppercase tracking-widest mb-3">
-            Legal
-          </p>
-          <h1 className="font-sans font-bold text-4xl md:text-6xl leading-none">{title.toUpperCase()}</h1>
+      {/* Hero banner */}
+      <div className="relative w-full h-48 md:h-64 overflow-hidden">
+        <img src={bannerPoliticas} alt="Políticas" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-black/45 flex flex-col justify-end px-6 pb-6 md:px-10 md:pb-8">
+          <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">Legal</p>
+          <h1 className="font-bold text-4xl md:text-5xl text-white leading-none">{title.toUpperCase()}</h1>
         </div>
-      </section>
+      </div>
 
       {/* Tab switcher */}
       <div className="border-b border-border bg-card">
