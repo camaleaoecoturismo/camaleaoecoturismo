@@ -146,8 +146,18 @@ export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) =
       <div className={transparent ? 'fixed top-0 left-0 right-0 z-40' : ''}>
       {/* Logo Bar - Mobile Only */}
       <div className={`md:hidden px-4 py-3 flex items-center justify-between transition-colors duration-300 ${bgClass}`}>
-        <img src={logoImage} alt="Camaleão Ecoturismo" className="h-8 w-auto" width={109} height={32} />
-        <div className="flex items-center gap-2">
+        <img
+          src={logoImage}
+          alt="Camaleão Ecoturismo"
+          className="h-8 w-auto"
+          width={109}
+          height={32}
+          style={transparent && !scrolled ? { filter: "drop-shadow(0 1px 6px rgba(0,0,0,0.85))" } : undefined}
+        />
+        <div
+          className="flex items-center gap-2"
+          style={transparent && !scrolled ? { filter: "drop-shadow(0 1px 6px rgba(0,0,0,0.85))" } : undefined}
+        >
           <Button
             variant="ghost"
             size="icon"
