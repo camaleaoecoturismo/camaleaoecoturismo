@@ -20,11 +20,12 @@ export function LogoCropModal({ src, onConfirm, onCancel }: LogoCropModalProps) 
   const [zoom,   setZoom]   = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
-  // minZoom — imagem preenche o quadrado inteiro (nenhum vazio)
-  const minZoom = naturalSize.w > 0
-    ? Math.max(DISPLAY / naturalSize.w, DISPLAY / naturalSize.h)
+  // fitZoom — zoom que faz a imagem caber inteira no quadrado com margem
+  const fitZoom = naturalSize.w > 0
+    ? Math.min(DISPLAY / naturalSize.w, DISPLAY / naturalSize.h) * 0.8
     : 1;
-  const maxZoom = minZoom * 5;
+  const minZoom = fitZoom * 0.3; // permite diminuir bastante
+  const maxZoom = fitZoom * 10;  // permite ampliar bastante
 
   // Carrega a imagem e define zoom inicial para cobrir o quadrado
   useEffect(() => {
@@ -34,7 +35,7 @@ export function LogoCropModal({ src, onConfirm, onCancel }: LogoCropModalProps) 
       const nw = img.naturalWidth;
       const nh = img.naturalHeight;
       setNaturalSize({ w: nw, h: nh });
-      const initial = Math.max(DISPLAY / nw, DISPLAY / nh);
+      const initial = Math.min(DISPLAY / nw, DISPLAY / nh) * 0.8;
       setZoom(initial);
       setOffset({ x: 0, y: 0 });
     };
@@ -115,7 +116,7 @@ export function LogoCropModal({ src, onConfirm, onCancel }: LogoCropModalProps) 
     out.toBlob((blob) => { if (blob) onConfirm(blob); }, "image/png");
   };
 
-  const zoomPct = naturalSize.w > 0 ? Math.round((zoom / minZoom) * 100) : 100;
+  const zoomPct = naturalSize.w > 0 ? Math.round((zoom / fitZoom) * 100) : 100;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
@@ -198,8 +199,8 @@ export function LogoCropModal({ src, onConfirm, onCancel }: LogoCropModalProps) 
             </button>
           </div>
           <div className="flex justify-between text-[10px] text-muted-foreground">
-            <span>Logo maior no quadrado</span>
-            <span>Logo menor no quadrado</span>
+            <span>← Menor</span>
+            <span>Maior →</span>
           </div>
         </div>
 
