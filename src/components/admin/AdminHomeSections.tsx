@@ -72,12 +72,17 @@ export default function AdminHomeSections() {
   useEffect(() => {
     fetchSections();
     // Fetch distinct destinations, cities, states from tours
-    supabase.from("tours").select("name, destination_name, city, state").eq("is_active", true)
-      .then(({ data }) => {
+    supabase.from("tours").select("name, destination_name, city, state").then(({ data }) => {
         if (!data) return;
-        // destination_name tem prioridade; se vazio, usa name
+        // Usa destination_name se existir; senão usa name sem sufixos de data/grupo
+        const baseName = (raw: string) =>
+          raw
+            .replace(/\s*[-–]\s*(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)(\s+\d{4})?/gi, "")
+            .replace(/\s*[-–]\s*\d{4}/g, "")
+            .replace(/\s*\([^)]+\)/g, "")
+            .trim();
         const dests = [...new Set(
-          data.map((t: any) => t.destination_name || t.name).filter(Boolean)
+          data.map((t: any) => t.destination_name || baseName(t.name || "")).filter(Boolean)
         )].sort() as string[];
         const cities = [...new Set(data.map((t: any) => t.city).filter(Boolean))].sort() as string[];
         const states = [...new Set(data.map((t: any) => t.state).filter(Boolean))].sort() as string[];
