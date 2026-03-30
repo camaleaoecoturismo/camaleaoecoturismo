@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Upload, ChevronUp, ChevronDown } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Edit, Trash2, ChevronUp, ChevronDown, Monitor, Smartphone, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ const FONTS = [
   { value: "Playfair Display",label: "Playfair Display" },
   { value: "Lora",            label: "Lora" },
 ];
+const GOOGLE_FONTS_LIST = FONTS.filter(f => f.value).map(f => f.value);
 
 const FONT_SIZES = [
   { value: "",    label: "Padrão" },
@@ -33,6 +34,100 @@ const FONT_SIZES = [
   { value: "2xl", label: "2XL — Gigante" },
   { value: "3xl", label: "3XL — Máximo" },
 ];
+
+// Tamanhos de fonte para o preview (px), escalonados para o frame pequeno
+const PREVIEW_TITLE_PX: Record<string, { desktop: number; mobile: number }> = {
+  "2xs": { desktop: 11, mobile: 9  },
+  "xs":  { desktop: 13, mobile: 11 },
+  "sm":  { desktop: 16, mobile: 13 },
+  "md":  { desktop: 19, mobile: 15 },
+  "":    { desktop: 22, mobile: 17 },
+  "lg":  { desktop: 26, mobile: 20 },
+  "xl":  { desktop: 31, mobile: 23 },
+  "2xl": { desktop: 37, mobile: 27 },
+  "3xl": { desktop: 43, mobile: 31 },
+};
+
+const PREVIEW_SUBTITLE_PX: Record<string, { desktop: number; mobile: number }> = {
+  "2xs": { desktop: 6,  mobile: 5  },
+  "xs":  { desktop: 7,  mobile: 6  },
+  "sm":  { desktop: 8,  mobile: 7  },
+  "md":  { desktop: 9,  mobile: 8  },
+  "":    { desktop: 11, mobile: 9  },
+  "lg":  { desktop: 13, mobile: 10 },
+  "xl":  { desktop: 15, mobile: 11 },
+  "2xl": { desktop: 17, mobile: 13 },
+  "3xl": { desktop: 20, mobile: 15 },
+};
+
+interface BannerPreviewProps {
+  formData: { image_url: string; video_url: string; title: string; subtitle: string; button_text: string; title_font: string; title_font_size: string; subtitle_font: string; subtitle_font_size: string };
+  mode: "desktop" | "mobile";
+}
+
+function BannerPreview({ formData, mode }: BannerPreviewProps) {
+  const isDesktop = mode === "desktop";
+  const titlePx  = (PREVIEW_TITLE_PX[formData.title_font_size]    ?? PREVIEW_TITLE_PX[""])[isDesktop ? "desktop" : "mobile"];
+  const subtitlePx = (PREVIEW_SUBTITLE_PX[formData.subtitle_font_size] ?? PREVIEW_SUBTITLE_PX[""])[isDesktop ? "desktop" : "mobile"];
+  const titleFamily    = formData.title_font    ? `'${formData.title_font}', sans-serif`    : "Figtree, sans-serif";
+  const subtitleFamily = formData.subtitle_font ? `'${formData.subtitle_font}', sans-serif` : "Figtree, sans-serif";
+
+  const hasContent = formData.image_url || formData.video_url;
+
+  return (
+    <div
+      className="relative overflow-hidden rounded-xl border border-border bg-neutral-900 select-none"
+      style={isDesktop ? { aspectRatio: "16/9", width: "100%" } : { aspectRatio: "9/19.5", width: "120px", flexShrink: 0 }}
+    >
+      {/* Fundo */}
+      {formData.video_url ? (
+        <video src={formData.video_url} muted loop autoPlay playsInline className="absolute inset-0 w-full h-full object-cover" />
+      ) : formData.image_url ? (
+        <img src={formData.image_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-[#820AD1]/70 to-[#1a0533]" />
+      )}
+
+      {/* Gradientes */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-black/40 to-transparent" />
+
+      {/* Conteúdo */}
+      <div className="absolute inset-x-0 bottom-0 flex flex-col items-center text-center px-2 pb-3">
+        {formData.title ? (
+          <p style={{ fontSize: titlePx, fontFamily: titleFamily, color: "white", fontWeight: 700, textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: 3 }}>
+            {formData.title}
+          </p>
+        ) : (
+          <p style={{ fontSize: titlePx, fontFamily: titleFamily, color: "rgba(255,255,255,0.25)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: 3 }}>
+            Título do banner
+          </p>
+        )}
+        {formData.subtitle ? (
+          <p style={{ fontSize: subtitlePx, fontFamily: subtitleFamily, color: "rgba(255,255,255,0.65)", fontWeight: 700, textTransform: "lowercase", marginBottom: formData.button_text ? 5 : 0 }}>
+            {formData.subtitle}
+          </p>
+        ) : (
+          <p style={{ fontSize: subtitlePx, fontFamily: subtitleFamily, color: "rgba(255,255,255,0.18)", fontWeight: 700, textTransform: "lowercase", marginBottom: 5 }}>
+            subtítulo
+          </p>
+        )}
+        {formData.button_text && (
+          <div style={{ background: "#820AD1", color: "white", fontSize: isDesktop ? 10 : 7, fontWeight: 600, padding: isDesktop ? "3px 10px" : "2px 6px", borderRadius: 6, display: "inline-flex", alignItems: "center", gap: 3 }}>
+            {formData.button_text}
+          </div>
+        )}
+      </div>
+
+      {/* Label do modo */}
+      {!hasContent && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <p className="text-white/20 text-[10px] font-medium">Sem imagem/vídeo</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface Banner {
   id: string;
@@ -90,10 +185,25 @@ export function BannerManagement() {
     subtitle_font_size: "",
   });
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+  const loadedFontsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     fetchBanners();
   }, []);
+
+  // Carrega Google Fonts quando selecionadas no formulário
+  useEffect(() => {
+    const fonts = [formData.title_font, formData.subtitle_font].filter(
+      (f) => f && GOOGLE_FONTS_LIST.includes(f) && !loadedFontsRef.current.has(f)
+    ) as string[];
+    if (fonts.length === 0) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = `https://fonts.googleapis.com/css2?${fonts.map((f) => `family=${encodeURIComponent(f)}:wght@400;700`).join("&")}&display=swap`;
+    document.head.appendChild(link);
+    fonts.forEach((f) => loadedFontsRef.current.add(f));
+  }, [formData.title_font, formData.subtitle_font]);
 
   const fetchBanners = async () => {
     try {
@@ -306,8 +416,12 @@ export function BannerManagement() {
               Novo Banner
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
+          <DialogContent className="max-w-4xl p-0 overflow-hidden">
+            <div className="flex flex-col md:flex-row h-full max-h-[90vh]">
+
+            {/* ── Painel esquerdo: formulário ── */}
+            <div className="flex-1 overflow-y-auto p-6">
+            <DialogHeader className="mb-4">
               <DialogTitle>
                 {editingBanner ? "Editar Banner" : "Novo Banner"}
               </DialogTitle>
@@ -421,6 +535,44 @@ export function BannerManagement() {
                 <Button type="button" variant="outline" onClick={resetForm} className="flex-1">Cancelar</Button>
               </div>
             </form>
+            </div>
+
+            {/* ── Painel direito: preview ── */}
+            <div className="w-full md:w-80 border-t md:border-t-0 md:border-l bg-muted/30 p-5 flex flex-col gap-4 shrink-0">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold">Pré-visualização</p>
+                <div className="flex gap-1 p-0.5 bg-muted rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("desktop")}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${previewMode === "desktop" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Monitor className="w-3.5 h-3.5" /> Desktop
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("mobile")}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${previewMode === "mobile" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <Smartphone className="w-3.5 h-3.5" /> Mobile
+                  </button>
+                </div>
+              </div>
+
+              {previewMode === "desktop" ? (
+                <BannerPreview formData={formData} mode="desktop" />
+              ) : (
+                <div className="flex justify-center">
+                  <BannerPreview formData={formData} mode="mobile" />
+                </div>
+              )}
+
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Pré-visualização aproximada. Fontes e tamanhos podem variar levemente no site real.
+              </p>
+            </div>
+
+            </div>{/* flex row */}
           </DialogContent>
         </Dialog>
       </div>
