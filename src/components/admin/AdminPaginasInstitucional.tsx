@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus, Pencil, Trash2, Check, X, Loader2, Globe, BookOpen,
-  HelpCircle, FileText, Users, Eye, EyeOff, Star, Building2,
+  HelpCircle, FileText, Users, Eye, EyeOff, Star, Building2, Upload,
 } from "lucide-react";
 import RichTextEditor from "@/components/RichTextEditor";
 
@@ -543,6 +543,7 @@ function PartnersManager() {
   const [editing, setEditing] = useState<Partner | null>(null);
   const [form, setForm] = useState({ name: "", logo_url: "", website_url: "", active: true });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { load(); }, []);
   const load = async () => {
@@ -551,8 +552,19 @@ function PartnersManager() {
     setLoading(false);
   };
 
+  const handleLogoUpload = async (file: File) => {
+    setUploading(true);
+    const ext = file.name.split(".").pop();
+    const path = `partners/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("banners").upload(path, file, { upsert: true });
+    if (error) { toast.error("Erro ao enviar imagem"); setUploading(false); return; }
+    const { data } = supabase.storage.from("banners").getPublicUrl(path);
+    setForm((f) => ({ ...f, logo_url: data.publicUrl }));
+    setUploading(false);
+  };
+
   const save = async () => {
-    if (!form.name.trim() || !form.logo_url.trim()) { toast.error("Nome e URL do logo obrigatórios"); return; }
+    if (!form.name.trim() || !form.logo_url.trim()) { toast.error("Nome e logo obrigatórios"); return; }
     setSaving(true);
     const payload = { name: form.name, logo_url: form.logo_url, website_url: form.website_url || null, active: form.active, display_order: editing?.display_order ?? items.length };
     const { error } = editing
@@ -577,8 +589,14 @@ function PartnersManager() {
           <div className="grid sm:grid-cols-2 gap-3">
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nome da organização" />
             <Input value={form.website_url} onChange={(e) => setForm({ ...form, website_url: e.target.value })} placeholder="Website (opcional)" />
-            <Input className="sm:col-span-2" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} placeholder="URL do logo" />
-            {form.logo_url && <img src={form.logo_url} alt="preview" className="h-10 object-contain rounded border border-border p-1 bg-muted" />}
+            {/* Upload de logo */}
+            <div className="sm:col-span-2 flex items-center gap-3">
+              <label className="flex-1 flex items-center justify-center gap-2 h-10 px-4 rounded-lg border border-dashed border-border bg-muted cursor-pointer hover:bg-muted/70 transition-colors text-sm text-muted-foreground">
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4" />{form.logo_url ? "Trocar logo" : "Enviar logo"}</>}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f); }} />
+              </label>
+              {form.logo_url && <img src={form.logo_url} alt="preview" className="h-10 max-w-[120px] object-contain rounded border border-border p-1 bg-white" />}
+            </div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="rounded" />
               <span className="text-sm">Ativo (visível no site)</span>
@@ -586,7 +604,7 @@ function PartnersManager() {
           </div>
           <div className="flex gap-2 justify-end">
             <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button size="sm" onClick={save} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}</Button>
+            <Button size="sm" onClick={save} disabled={saving || uploading}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}</Button>
           </div>
         </div>
       ) : (
