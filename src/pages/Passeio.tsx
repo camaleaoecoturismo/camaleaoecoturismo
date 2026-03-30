@@ -316,6 +316,7 @@ const Passeio = () => {
       </div>
 
       {/* ── BODY ── */}
+      <div className="border-t border-border" />
       <div className="max-w-6xl mx-auto px-4 pb-40 md:pb-16">
         <div className="md:grid md:grid-cols-[1fr_380px] md:gap-10 md:items-start">
         <div>{/* left column */}
@@ -932,10 +933,24 @@ const Passeio = () => {
                 </Button>
               )}
 
-              <button onClick={handleWhatsApp} className="w-full flex items-center justify-center gap-2 text-sm text-green-600 hover:text-green-700 transition-colors py-1">
-                <WhatsAppIcon className="w-4 h-4" />
-                Falar com atendente
-              </button>
+              <div className="flex gap-2">
+                {tour.pdf_file_path && (
+                  <button
+                    onClick={() => setRoteiroOpen(true)}
+                    className="flex-1 flex items-center justify-center gap-1.5 text-sm text-primary border border-primary/40 hover:bg-primary/5 rounded-lg py-2 transition-colors"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Portfólio
+                  </button>
+                )}
+                <button
+                  onClick={handleWhatsApp}
+                  className="flex-1 flex items-center justify-center gap-1.5 text-sm text-green-600 border border-green-400/50 hover:bg-green-50 rounded-lg py-2 transition-colors"
+                >
+                  <WhatsAppIcon className="w-4 h-4" />
+                  Atendente
+                </button>
+              </div>
 
               <div className="pt-2 border-t border-border text-sm text-muted-foreground space-y-1">
                 <div className="flex justify-between">
