@@ -72,10 +72,13 @@ export default function AdminHomeSections() {
   useEffect(() => {
     fetchSections();
     // Fetch distinct destinations, cities, states from tours
-    supabase.from("tours").select("destination_name, city, state").eq("is_active", true)
+    supabase.from("tours").select("name, destination_name, city, state").eq("is_active", true)
       .then(({ data }) => {
         if (!data) return;
-        const dests = [...new Set(data.map((t: any) => t.destination_name).filter(Boolean))].sort() as string[];
+        // destination_name tem prioridade; se vazio, usa name
+        const dests = [...new Set(
+          data.map((t: any) => t.destination_name || t.name).filter(Boolean)
+        )].sort() as string[];
         const cities = [...new Set(data.map((t: any) => t.city).filter(Boolean))].sort() as string[];
         const states = [...new Set(data.map((t: any) => t.state).filter(Boolean))].sort() as string[];
         setDestOptions(dests);

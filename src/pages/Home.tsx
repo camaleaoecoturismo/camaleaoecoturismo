@@ -199,7 +199,7 @@ export default function Home() {
         case "state":
           return (t.state || "").toLowerCase().includes(val);
         case "destination":
-          return (t.destination_name || "").toLowerCase().includes(val);
+          return (t.destination_name || t.name || "").toLowerCase().includes(val);
         default:
           return false;
       }
