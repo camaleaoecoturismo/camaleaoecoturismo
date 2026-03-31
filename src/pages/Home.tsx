@@ -135,6 +135,22 @@ export default function Home() {
   const [homeSections, setHomeSections] = useState<HomeSection[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [storyModalIdx, setStoryModalIdx] = useState<number | null>(null);
+  const [viewedStoryIds, setViewedStoryIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem("stories_viewed_home");
+      return stored ? new Set(JSON.parse(stored)) : new Set<string>();
+    } catch { return new Set<string>(); }
+  });
+
+  const markViewed = (id: string) => {
+    setViewedStoryIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      try { localStorage.setItem("stories_viewed_home", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
   const [testimonialIdx, setTestimonialIdx] = useState(0);
   const testimonialTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -228,53 +244,69 @@ export default function Home() {
       <HeroBanner />
 
       {/* ── STORIES ───────────────────────────────────────────────────────────── */}
-      {stories.length > 0 && (
-        <section className="py-6 px-4 bg-background">
-          <div className="max-w-7xl mx-auto">
-            <p className="text-primary text-xs font-semibold uppercase tracking-widest mb-4 px-0">Stories</p>
-            <div
-              className="flex gap-4 overflow-x-auto pb-2"
-              style={{ scrollbarWidth: "none" }}
-            >
-              {stories.map((story, idx) => (
-                <button
-                  key={story.id}
-                  onClick={() => setStoryModalIdx(idx)}
-                  className="flex flex-col items-center gap-2 shrink-0 group"
-                >
-                  {/* Ring + thumb */}
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full p-0.5 bg-gradient-to-tr from-[#820AD1] via-[#c740f0] to-[#f97316] shadow-md group-hover:scale-105 transition-transform duration-200">
-                    <div className="w-full h-full rounded-full overflow-hidden border-2 border-white">
-                      {story.author_photo_url ? (
-                        <img src={story.author_photo_url} alt={story.author_name || ""} className="w-full h-full object-cover" />
-                      ) : story.media_type === "image" ? (
-                        <img src={story.media_url} alt={story.title || ""} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-[#820AD1]/20 flex items-center justify-center">
-                          <span className="text-[#820AD1] text-xl">▶</span>
+      {stories.length > 0 && (() => {
+        const sortedStories = [
+          ...stories.filter((s) => !viewedStoryIds.has(s.id)),
+          ...stories.filter((s) => viewedStoryIds.has(s.id)),
+        ];
+        return (
+          <section className="py-6 px-4 bg-background">
+            <div className="max-w-7xl mx-auto">
+              <p className="text-primary text-xs font-semibold uppercase tracking-widest mb-4 px-0">Stories</p>
+              <div
+                className="flex gap-4 overflow-x-auto pb-2"
+                style={{ scrollbarWidth: "none" }}
+              >
+                {sortedStories.map((story) => {
+                  const viewed = viewedStoryIds.has(story.id);
+                  return (
+                    <button
+                      key={story.id}
+                      onClick={() => setStoryModalIdx(sortedStories.indexOf(story))}
+                      className="flex flex-col items-center gap-2 shrink-0 group"
+                    >
+                      {/* Ring + thumb */}
+                      <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full p-0.5 shadow-md group-hover:scale-105 transition-transform duration-200 ${viewed ? "bg-muted-foreground/30" : "bg-gradient-to-tr from-[#820AD1] via-[#c740f0] to-[#f97316]"}`}>
+                        <div className="w-full h-full rounded-full overflow-hidden border-2 border-white">
+                          {story.author_photo_url ? (
+                            <img src={story.author_photo_url} alt={story.author_name || ""} className={`w-full h-full object-cover ${viewed ? "opacity-60" : ""}`} />
+                          ) : story.media_type === "image" ? (
+                            <img src={story.media_url} alt={story.title || ""} className={`w-full h-full object-cover ${viewed ? "opacity-60" : ""}`} />
+                          ) : (
+                            <div className={`w-full h-full bg-[#820AD1]/20 flex items-center justify-center ${viewed ? "opacity-60" : ""}`}>
+                              <span className="text-[#820AD1] text-xl">▶</span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  {/* Name */}
-                  <span className="text-[11px] text-foreground/80 font-medium max-w-[72px] md:max-w-[80px] truncate text-center leading-tight">
-                    {story.author_name || story.title || "Story"}
-                  </span>
-                </button>
-              ))}
+                      </div>
+                      {/* Name */}
+                      <span className={`text-[11px] font-medium max-w-[72px] md:max-w-[80px] truncate text-center leading-tight ${viewed ? "text-muted-foreground" : "text-foreground/80"}`}>
+                        {story.author_name || story.title || "Story"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        );
+      })()}
 
       {/* Story Modal */}
-      {storyModalIdx !== null && (
-        <StoryModal
-          stories={stories}
-          initialIndex={storyModalIdx}
-          onClose={() => setStoryModalIdx(null)}
-        />
-      )}
+      {storyModalIdx !== null && (() => {
+        const sortedStories = [
+          ...stories.filter((s) => !viewedStoryIds.has(s.id)),
+          ...stories.filter((s) => viewedStoryIds.has(s.id)),
+        ];
+        return (
+          <StoryModal
+            stories={sortedStories}
+            initialIndex={storyModalIdx}
+            onClose={() => setStoryModalIdx(null)}
+            onStoryView={markViewed}
+          />
+        );
+      })()}
 
       {/* ── PRÓXIMAS AVENTURAS ────────────────────────────────────────────────── */}
       <section className="py-4 md:py-7 px-4 bg-muted/30">
