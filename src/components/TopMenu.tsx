@@ -200,7 +200,12 @@ export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) =
           {/* Menu Items */}
           <div className="flex items-center gap-6">
             {!loading && menuItems.map((item) => (
-              <div key={item.id} className="relative menu-dropdown">
+              <div
+                key={item.id}
+                className="relative menu-dropdown"
+                onMouseEnter={() => hasChildren(item) && setOpenDropdown(item.id)}
+                onMouseLeave={() => hasChildren(item) && setOpenDropdown((current) => current === item.id ? null : current)}
+              >
                 {hasChildren(item) ? (
                   <>
                     <button
@@ -208,6 +213,7 @@ export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) =
                         e.stopPropagation();
                         setOpenDropdown(openDropdown === item.id ? null : item.id);
                       }}
+                      onFocus={() => setOpenDropdown(item.id)}
                       className={`
                         text-sm font-bold transition-colors duration-200 whitespace-nowrap flex items-center gap-1
                         ${isActiveItem(item.url) || item.children?.some(c => isActiveItem(c.url))
@@ -227,6 +233,7 @@ export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) =
                           <button
                             key={child.id}
                             onClick={() => handleNavigation(child)}
+                            onFocus={() => setOpenDropdown(item.id)}
                             className={`
                               w-full text-left px-4 py-2.5 text-sm font-medium transition-colors
                               ${isActiveItem(child.url) 
