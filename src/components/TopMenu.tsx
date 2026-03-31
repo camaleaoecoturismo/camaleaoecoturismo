@@ -26,6 +26,7 @@ export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) =
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [pinnedDropdown, setPinnedDropdown] = useState<string | null>(null);
   const [expandedMobileItems, setExpandedMobileItems] = useState<string[]>([]);
   const [scrolled, setScrolled] = useState(false);
 
@@ -85,6 +86,7 @@ export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) =
     const handleClickOutside = (event: MouseEvent) => {
       if (openDropdown && !(event.target as Element).closest('.menu-dropdown')) {
         setOpenDropdown(null);
+        setPinnedDropdown(null);
       }
     };
     document.addEventListener('click', handleClickOutside);
@@ -104,6 +106,7 @@ export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) =
   const handleNavigation = (item: MenuItem) => {
     setIsMobileMenuOpen(false);
     setOpenDropdown(null);
+    setPinnedDropdown(null);
     
     if (item.url === '#') return; // Parent menu without URL
     
@@ -203,15 +206,25 @@ export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) =
               <div
                 key={item.id}
                 className="relative menu-dropdown"
-                onMouseEnter={() => hasChildren(item) && setOpenDropdown(item.id)}
-                onMouseLeave={() => hasChildren(item) && setOpenDropdown((current) => current === item.id ? null : current)}
+                onMouseEnter={() => {
+                  if (hasChildren(item) && !pinnedDropdown) {
+                    setOpenDropdown(item.id);
+                  }
+                }}
+                onMouseLeave={() => {
+                  if (hasChildren(item) && pinnedDropdown !== item.id) {
+                    setOpenDropdown((current) => current === item.id ? null : current);
+                  }
+                }}
               >
                 {hasChildren(item) ? (
                   <>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setOpenDropdown(openDropdown === item.id ? null : item.id);
+                        const isPinned = pinnedDropdown === item.id;
+                        setPinnedDropdown(isPinned ? null : item.id);
+                        setOpenDropdown(isPinned ? null : item.id);
                       }}
                       onFocus={() => setOpenDropdown(item.id)}
                       className={`
@@ -228,23 +241,25 @@ export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) =
                     
                     {/* Dropdown */}
                     {openDropdown === item.id && (
-                      <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl py-2 min-w-[200px] z-50 border border-border">
-                        {item.children?.map((child) => (
-                          <button
-                            key={child.id}
-                            onClick={() => handleNavigation(child)}
-                            onFocus={() => setOpenDropdown(item.id)}
-                            className={`
-                              w-full text-left px-4 py-2.5 text-sm font-medium transition-colors
-                              ${isActiveItem(child.url) 
-                                ? 'text-primary bg-primary/10' 
-                                : 'text-foreground hover:bg-muted hover:text-primary'
-                              }
-                            `}
-                          >
-                            {child.name}
-                          </button>
-                        ))}
+                      <div className="absolute top-full left-0 pt-2 min-w-[200px] z-50">
+                        <div className="bg-white rounded-lg shadow-xl py-2 border border-border">
+                          {item.children?.map((child) => (
+                            <button
+                              key={child.id}
+                              onClick={() => handleNavigation(child)}
+                              onFocus={() => setOpenDropdown(item.id)}
+                              className={`
+                                w-full text-left px-4 py-2.5 text-sm font-medium transition-colors
+                                ${isActiveItem(child.url) 
+                                  ? 'text-primary bg-primary/10' 
+                                  : 'text-foreground hover:bg-muted hover:text-primary'
+                                }
+                              `}
+                            >
+                              {child.name}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </>
