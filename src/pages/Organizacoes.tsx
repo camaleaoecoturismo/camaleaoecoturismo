@@ -322,20 +322,20 @@ export default function Organizacoes() {
             <p className="font-bold text-xs uppercase tracking-widest text-foreground mb-8">
               Organizações que já viveram a experiência Camaleão
             </p>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-x-6 gap-y-8 items-center">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-x-3 gap-y-4 sm:gap-x-4 sm:gap-y-5 items-center">
               {partners.map((p) => (
                 <a
                   key={p.id}
                   href={p.website_url || "#"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center hover:opacity-60 transition-opacity"
+                  className="flex min-h-[82px] items-center justify-center hover:opacity-60 transition-opacity"
                   title={p.name}
                 >
                   <img
                     src={p.logo_url}
                     alt={p.name}
-                    className="h-12 md:h-14 w-auto max-w-full object-contain grayscale hover:grayscale-0 transition-all duration-300"
+                    className="h-16 md:h-20 w-auto max-w-full object-contain grayscale hover:grayscale-0 transition-all duration-300"
                   />
                 </a>
               ))}
