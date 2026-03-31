@@ -115,7 +115,7 @@ const ClientReportsTab = ({ viewMode = 'clientes' }: ClientReportsTabProps) => {
     setLoading(true);
 
     const [{ data: clientes }, { data: accounts }, { data: reservas }, { data: badgesData }, { data: levelsData }, { data: clientBadges }] = await Promise.all([
-      supabase.from('clientes').select('id, nome_completo, cpf, email, whatsapp').order('nome_completo'),
+      supabase.from('clientes').select('id, nome_completo, cpf, email, whatsapp').not('cpf', 'like', '9992025%').order('nome_completo'),
       supabase.from('client_accounts').select('id, cliente_id, total_points'),
       supabase.from('reservas').select('cliente_id, valor_pago, status, payment_status'),
       supabase.from('badge_definitions').select('*').order('requirement_value'),
