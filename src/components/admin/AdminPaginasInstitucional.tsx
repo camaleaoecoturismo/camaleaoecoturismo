@@ -219,6 +219,42 @@ function BlogManager() {
 
 interface FaqItem { id: string; pergunta: string; resposta: string; categoria: string | null; display_order: number; }
 
+// Converte texto puro (com \n e •) em HTML para armazenar
+function textToHtml(text: string): string {
+  if (/<[a-z][\s\S]*>/i.test(text)) return text; // já é HTML
+  const lines = text.split('\n');
+  let html = '';
+  let inUl = false;
+  for (const line of lines) {
+    const t = line.trim();
+    if (t.startsWith('•') || t.startsWith('-') || t.startsWith('*')) {
+      if (!inUl) { html += '<ul>'; inUl = true; }
+      html += `<li>${t.replace(/^[•\-*]\s*/, '')}</li>`;
+    } else {
+      if (inUl) { html += '</ul>'; inUl = false; }
+      if (t) html += `<p>${t}</p>`;
+    }
+  }
+  if (inUl) html += '</ul>';
+  return html || `<p>${text}</p>`;
+}
+
+// Converte HTML em texto puro para exibir no textarea
+function htmlToText(html: string): string {
+  if (!/<[a-z][\s\S]*>/i.test(html)) return html;
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<p[^>]*>/gi, '')
+    .replace(/<li[^>]*>/gi, '• ')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<\/?(ul|ol)[^>]*>/gi, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function FAQManager() {
   const [items, setItems] = useState<FaqItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -237,7 +273,7 @@ function FAQManager() {
   const save = async () => {
     if (!form.pergunta.trim() || !form.resposta.trim()) { toast.error("Pergunta e resposta obrigatórias"); return; }
     setSaving(true);
-    const payload = { pergunta: form.pergunta, resposta: form.resposta, categoria: form.categoria || null, display_order: editing?.display_order || items.length + 1 };
+    const payload = { pergunta: form.pergunta, resposta: textToHtml(form.resposta), categoria: form.categoria || null, display_order: editing?.display_order || items.length + 1 };
     const { error } = editing
       ? await supabase.from("faq_items").update(payload).eq("id", editing.id)
       : await supabase.from("faq_items").insert(payload);
@@ -285,7 +321,7 @@ function FAQManager() {
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.resposta}</p>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    <button onClick={() => { setEditing(item); setForm({ pergunta: item.pergunta, resposta: item.resposta, categoria: item.categoria || "" }); setShowForm(true); }} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors"><Pencil className="h-4 w-4" /></button>
+                    <button onClick={() => { setEditing(item); setForm({ pergunta: item.pergunta, resposta: htmlToText(item.resposta), categoria: item.categoria || "" }); setShowForm(true); }} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors"><Pencil className="h-4 w-4" /></button>
                     <button onClick={() => remove(item.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="h-4 w-4" /></button>
                   </div>
                 </div>
