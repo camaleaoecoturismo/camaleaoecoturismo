@@ -7,7 +7,7 @@ import {
   Calendar, DollarSign, Mountain, ChevronRight,
   Ticket, Clock, AlertCircle, Star, Bell,
 } from 'lucide-react';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/logo-lado-roxo.png';
 import ClientProfile from '@/components/client-portal/ClientProfile';
 import ClientExperiences from '@/components/client-portal/ClientExperiences';
 import ClientTickets from '@/components/client-portal/ClientTickets';
