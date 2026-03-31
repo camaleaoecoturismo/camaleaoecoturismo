@@ -245,7 +245,7 @@ export default function FAQ() {
                             </button>
                             {isOpen && (
                               <div
-                                className="px-5 pb-5 pt-1 text-sm text-muted-foreground leading-relaxed border-t border-primary/10 ml-[60px] prose prose-sm prose-gray dark:prose-invert max-w-none"
+                                className="px-5 pb-5 pt-1 text-sm text-muted-foreground leading-relaxed whitespace-pre-line border-t border-primary/10 ml-[60px] prose prose-sm prose-gray dark:prose-invert max-w-none"
                                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.resposta) }}
                               />
                             )}
