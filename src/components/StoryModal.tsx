@@ -16,12 +16,13 @@ interface StoryModalProps {
   stories: Story[];
   initialIndex: number;
   onClose: () => void;
+  onStoryView?: (id: string) => void;
 }
 
 const IMAGE_DURATION = 5000; // ms
 const TICK = 100; // ms
 
-export function StoryModal({ stories, initialIndex, onClose }: StoryModalProps) {
+export function StoryModal({ stories, initialIndex, onClose, onStoryView }: StoryModalProps) {
   const [current, setCurrent] = useState(initialIndex);
   const [progress, setProgress] = useState(0); // 0–100
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -52,6 +53,11 @@ export function StoryModal({ stories, initialIndex, onClose }: StoryModalProps) 
     stopTimer();
     if (current > 0) setCurrent((c) => c - 1);
   }, [current]);
+
+  // Notify parent when story becomes active
+  useEffect(() => {
+    onStoryView?.(stories[current].id);
+  }, [current]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Start progress timer when slide changes
   useEffect(() => {

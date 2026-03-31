@@ -72,6 +72,12 @@ const Passeio = () => {
   const [showInstallments, setShowInstallments] = useState(false);
   const [tourMoments, setTourMoments] = useState<Story[]>([]);
   const [storyModalIdx, setStoryModalIdx] = useState<number | null>(null);
+  const [viewedStoryIds, setViewedStoryIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem(`stories_viewed_${tourId}`);
+      return stored ? new Set(JSON.parse(stored)) : new Set<string>();
+    } catch { return new Set<string>(); }
+  });
 
   const { availability } = useTourAvailability(tour?.id);
 
