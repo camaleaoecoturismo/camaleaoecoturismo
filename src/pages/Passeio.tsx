@@ -221,6 +221,22 @@ const Passeio = () => {
     window.open(`https://wa.me/5582993649454?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
+  const markViewed = (id: string) => {
+    setViewedStoryIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      try { localStorage.setItem(`stories_viewed_${tourId}`, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
+
+  // Unwatched first, watched last — like Instagram
+  const sortedMoments = [
+    ...tourMoments.filter((s) => !viewedStoryIds.has(s.id)),
+    ...tourMoments.filter((s) => viewedStoryIds.has(s.id)),
+  ];
+
   const showEtiqueta =
     tour.etiqueta &&
     tour.etiqueta !== "Histórico" &&
@@ -327,40 +343,48 @@ const Passeio = () => {
         <div className="md:pt-10">{/* left column */}
 
         {/* Stories do destino */}
-        {tourMoments.length > 0 && (
+        {sortedMoments.length > 0 && (
           <div className="pt-5 pb-2">
             <p className="text-xs font-semibold text-foreground/50 uppercase tracking-widest mb-3 px-0.5">Stories</p>
             <div className="flex gap-4 overflow-x-auto -mx-4 px-4" style={{ scrollbarWidth: "none" }}>
-              {tourMoments.map((story, idx) => (
-                <button
-                  key={story.id}
-                  onClick={() => setStoryModalIdx(idx)}
-                  className="flex-shrink-0 group"
-                >
-                  <div className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-[#820AD1] via-[#c740f0] to-[#f97316] shadow-md group-hover:scale-105 transition-transform duration-200">
-                    <div className="w-full h-full rounded-full overflow-hidden border-2 border-white">
-                      {story.cover_url ? (
-                        <img src={story.cover_url} alt="" className="w-full h-full object-cover" />
-                      ) : story.media_type === "image" ? (
-                        <img src={story.media_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-[#820AD1]/20 flex items-center justify-center">
-                          <span className="text-[#820AD1] text-lg">▶</span>
-                        </div>
-                      )}
+              {sortedMoments.map((story, idx) => {
+                const viewed = viewedStoryIds.has(story.id);
+                return (
+                  <button
+                    key={story.id}
+                    onClick={() => setStoryModalIdx(idx)}
+                    className="flex-shrink-0 group"
+                  >
+                    <div className={`w-16 h-16 rounded-full p-0.5 shadow-md group-hover:scale-105 transition-transform duration-200 ${
+                      viewed
+                        ? "bg-muted-foreground/30"
+                        : "bg-gradient-to-tr from-[#820AD1] via-[#c740f0] to-[#f97316]"
+                    }`}>
+                      <div className="w-full h-full rounded-full overflow-hidden border-2 border-white">
+                        {story.cover_url ? (
+                          <img src={story.cover_url} alt="" className={`w-full h-full object-cover ${viewed ? "opacity-60" : ""}`} />
+                        ) : story.media_type === "image" ? (
+                          <img src={story.media_url} alt="" className={`w-full h-full object-cover ${viewed ? "opacity-60" : ""}`} />
+                        ) : (
+                          <div className="w-full h-full bg-[#820AD1]/20 flex items-center justify-center">
+                            <span className="text-[#820AD1] text-lg">▶</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
         {storyModalIdx !== null && (
           <StoryModal
-            stories={tourMoments}
+            stories={sortedMoments}
             initialIndex={storyModalIdx}
             onClose={() => setStoryModalIdx(null)}
+            onStoryView={markViewed}
           />
         )}
 
