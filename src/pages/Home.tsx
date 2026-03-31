@@ -401,7 +401,7 @@ export default function Home() {
               Organizações que levaram seus times para viver a{" "}
               <span className="text-primary">reconexão com a natureza.</span>
             </h2>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-x-3 gap-y-5 sm:gap-x-8 sm:gap-y-8 items-center">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-6 sm:gap-x-6 sm:gap-y-8 items-center">
               {partners.map((p) => (
                 <a
                   key={p.id}
@@ -414,7 +414,7 @@ export default function Home() {
                   <img
                     src={p.logo_url}
                     alt={p.name || ""}
-                    className="h-14 sm:h-16 w-auto max-w-full object-contain"
+                    className="h-20 sm:h-24 w-auto max-w-full object-contain"
                   />
                 </a>
               ))}
