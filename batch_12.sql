@@ -1,0 +1,23 @@
+INSERT INTO clientes (nome_completo, cpf, email, whatsapp, data_nascimento)
+VALUES
+  ('Maria elayne dos Santos Silva', '8340393464', 'elaynesantoss753@gmail.com', '82988761288', '1991-02-09'),
+  ('Geliane de Oliveira Santos', '8378645428', 'Gelianeoliveira973@gmail.com', '82987788913', '1989-03-12'),
+  ('Lidjane Xavier Gomes Ferreira', '5829181460', 'lidjane.xavier1@gmail.com', '82996232872', '1984-04-21'),
+  ('Maria Quitéria pacífico da Silva', '7718880400', 'Mquiteria379@gmail.com', '8299170971', '1985-04-09'),
+  ('Suymelre Albuquerque Mitomari', '4843674478', 'suymelremitomari@gmail.com', '82998312353', '1983-10-19'),
+  ('SILVANEIDE CAVALCANTE DOS SANTOS', '3224874473', 'Silvaneidec808@gmail.com', '82991202618', '1971-12-20'),
+  ('Silvania de lima feitosa', '792082400', 'Sillfeitosalima539@gmail.com', '82988156568', '1976-01-21'),
+  ('Camila Alves Lima dos Santos', '7347895480', 'camillinhaalveslima@gmail.com', '82999120403', '1989-02-07'),
+  ('Ariedson da silva dias', '7547601464', 'Nadjamaria457839@gmail.com', '82993948211', '1991-11-18'),
+  ('Marciana da Silva Santos', '7226654407', 'Marcianadasilva916@gmail.com', '82987164264', '0198-11-13'),
+  ('Alessandra do Nascimento Pereira', '1515871401', 'anp.alessandra@gmail.com', '82988242130', '1988-08-10'),
+  ('Bruna Leticia Barbosa da Silva', '7736157413', 'brunah.leticia@gmail.com', '82999692049', '1990-04-06'),
+  ('Denise Dantas da Silva Pinto', '9086042465', 'dm02denise@gmail.com', '82999102401', '1986-10-10'),
+  ('Alessandra Queiroz da Silva', '4625191475', 'sandrinha_queiroz23@hotmail.com', '82991849007', '1982-12-16'),
+  ('Mariana Fernandes de Melo Soares', '4459403447', 'maribio84@yahoo.com.br', '82988986474', '1984-08-25'),
+  ('Sthefany da Silva Alves', '7630726481', 'stylosecores@gmail.com', '82987341149', '1989-08-17'),
+  ('Mariana Léa Correia Santos', '2750310474', 'beatrycemaite@gmail.com', '82987022795', '1976-09-19'),
+  ('Thaiany Suellen Amorim da Silva', '9096603443', 'thaiany.amorim91@gmail.com', '82996004236', '1991-04-20'),
+  ('Rafaela Santos nobre', '3736163410', 'rafaelawyz@hotmail.com', '82999422667', '1982-03-14'),
+  ('Thayse Barros Oliveira', '7768993411', 'thayseboliveira@gmail.com', '82996007126', '1989-11-24'),
+  ('NATALIA GABRIELLE SANTOS SANTANA', '8755548490', 'gabrielle.natalia1@gmail.com', '82987615602', '1990-10-02');
