@@ -403,12 +403,9 @@ export default function Home() {
             </h2>
             <div className="grid grid-cols-3 md:grid-cols-4 gap-x-3 gap-y-2 sm:gap-x-4 sm:gap-y-5 items-center">
               {partners.map((p) => (
-                <a
+                <div
                   key={p.id}
-                  href={p.website_url || "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex min-h-[68px] sm:min-h-[104px] items-center justify-center hover:opacity-70 transition-opacity duration-200"
+                  className="flex min-h-[68px] sm:min-h-[104px] items-center justify-center"
                   title={p.name || ""}
                 >
                   <img
@@ -416,7 +413,7 @@ export default function Home() {
                     alt={p.name || ""}
                     className="h-20 sm:h-32 md:h-36 w-auto max-w-full object-contain"
                   />
-                </a>
+                </div>
               ))}
             </div>
           </div>
