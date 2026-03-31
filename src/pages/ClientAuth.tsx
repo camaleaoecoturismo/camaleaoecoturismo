@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { useToast } from '@/hooks/use-toast';
 import { User, Mail, Lock, ArrowRight, Loader2, ArrowLeft, CheckCircle, Home } from 'lucide-react';
-import logo from '@/assets/logo de lado roxo.png';
+import logo from '@/assets/logo-lado.png';
 type AuthStep = 'credentials' | 'forgot-password' | 'reset-sent' | 'confirm-email' | 'reset-password';
 type RegisterStep = 'cpf' | 'details' | 'password';
 const PROD_CLIENT_PORTAL_URL = 'https://camaleaoecoturismo.com.br/cliente';
