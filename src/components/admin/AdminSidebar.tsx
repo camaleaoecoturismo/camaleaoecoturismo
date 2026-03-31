@@ -145,6 +145,18 @@ const navGroups: NavGroup[] = [
           { id: 'clientes-analytics', label: 'Análise', icon: <BarChart3 className="h-4 w-4" /> },
         ],
       },
+      {
+        id: 'fidelidade',
+        label: 'Fidelidade',
+        icon: <Crown className="h-5 w-5" />,
+        subItems: [
+          { id: 'fidelidade-clientes', label: 'Clientes', icon: <Users className="h-4 w-4" /> },
+          { id: 'fidelidade-pontos', label: 'Pontos', icon: <Star className="h-4 w-4" /> },
+          { id: 'fidelidade-selos', label: 'Selos', icon: <Award className="h-4 w-4" /> },
+          { id: 'fidelidade-niveis', label: 'Níveis', icon: <Trophy className="h-4 w-4" /> },
+          { id: 'fidelidade-mensagens', label: 'Mensagens', icon: <MessageSquare className="h-4 w-4" /> },
+        ],
+      },
     ],
   },
   {
@@ -156,7 +168,6 @@ const navGroups: NavGroup[] = [
         icon: <Megaphone className="h-5 w-5" />,
         subItems: [
           { id: 'jornada', label: 'Jornada', icon: <Route className="h-4 w-4" /> },
-          { id: 'fidelidade-niveis', label: 'Fidelidade', icon: <Crown className="h-4 w-4" /> },
           { id: 'conteudo-calendario', label: 'Social', icon: <Instagram className="h-4 w-4" /> },
           { id: 'paginas-institucionais', label: 'Blog & FAQ', icon: <BookOpen className="h-4 w-4" /> },
         ],
@@ -339,7 +350,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const isItemActive = (item: NavItem) => {
     if (item.id === 'marketing') {
       return activeTab === 'jornada'
-        || activeTab.startsWith('fidelidade-')
         || activeTab.startsWith('conteudo-')
         || activeTab === 'paginas-institucionais';
     }
