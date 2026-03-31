@@ -522,7 +522,12 @@ const ClientPortal = () => {
             <ClientCommunications clientAccountId={clientData.id} />
           )}
           {activeTab === 'perfil' && (
-            <ClientProfile clientData={clientData} />
+            <ClientProfile
+              clientData={clientData}
+              onUpdate={(updates) =>
+                setClientData(prev => prev ? { ...prev, cliente: { ...prev.cliente, ...updates } } : prev)
+              }
+            />
           )}
         </main>
 
