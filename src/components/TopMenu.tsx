@@ -304,10 +304,10 @@ export const TopMenu = ({ className, transparent = false }: TopMenuProps = {}) =
       {isMobileMenuOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 bg-black/50 z-[200]"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <div className="fixed top-0 right-0 h-auto max-h-[85vh] w-72 bg-[#820AD1] z-50 rounded-bl-2xl shadow-2xl animate-in slide-in-from-right duration-200">
+          <div className="fixed top-0 right-0 h-auto max-h-[85vh] w-72 bg-[#820AD1] z-[201] rounded-bl-2xl shadow-2xl animate-in slide-in-from-right duration-200">
             <div className="flex flex-col">
               <div className="flex items-center justify-between p-4 border-b border-white/20">
                 <span className="text-white font-bold text-lg">Menu</span>
