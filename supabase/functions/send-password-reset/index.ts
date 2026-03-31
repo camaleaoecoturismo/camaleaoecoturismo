@@ -14,6 +14,34 @@ interface PasswordResetRequest {
   redirectUrl: string;
 }
 
+const DEFAULT_REDIRECT_URL = "https://camaleaoecoturismo.com.br/cliente";
+const ALLOWED_ORIGINS = new Set([
+  "https://camaleaoecoturismo.com.br",
+  "https://www.camaleaoecoturismo.com.br",
+  "https://camaleaoecoturismo.vercel.app",
+  "https://agenda.camaleaoecoturismo.com",
+]);
+
+const resolveRedirectUrl = (redirectUrl?: string) => {
+  const configuredAppUrl = Deno.env.get("CLIENT_PORTAL_URL")?.trim();
+  const fallbackUrl = configuredAppUrl || DEFAULT_REDIRECT_URL;
+
+  if (!redirectUrl) {
+    return fallbackUrl;
+  }
+
+  try {
+    const parsedUrl = new URL(redirectUrl);
+    if (!ALLOWED_ORIGINS.has(parsedUrl.origin)) {
+      return fallbackUrl;
+    }
+
+    return `${parsedUrl.origin}/cliente`;
+  } catch (_error) {
+    return fallbackUrl;
+  }
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -21,8 +49,10 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const { email, redirectUrl }: PasswordResetRequest = await req.json();
+    const safeRedirectUrl = resolveRedirectUrl(redirectUrl);
 
     console.log("Processing password reset for:", email);
+    console.log("Using password reset redirect:", safeRedirectUrl);
 
     // Create Supabase admin client
     const supabaseAdmin = createClient(
@@ -35,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
       type: 'recovery',
       email: email,
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: safeRedirectUrl,
       }
     });
 

@@ -255,7 +255,7 @@ const ClientPortal = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT' && !navigatingRef.current) {
         navigatingRef.current = true;
-        navigate('/cliente');
+        navigate('/cliente', { replace: true });
       }
     });
     return () => subscription.unsubscribe();
@@ -265,7 +265,7 @@ const ClientPortal = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigatingRef.current = true;
-      navigate('/cliente');
+      navigate('/cliente', { replace: true });
       return;
     }
 
@@ -278,7 +278,7 @@ const ClientPortal = () => {
       .maybeSingle();
     if (adminRole) {
       navigatingRef.current = true;
-      navigate('/cliente');
+      navigate('/cliente', { replace: true });
       return;
     }
 
@@ -302,7 +302,7 @@ const ClientPortal = () => {
     }
     if (!clientAccount) {
       navigatingRef.current = true;
-      navigate('/cliente');
+      navigate('/cliente', { replace: true });
       return;
     }
 
@@ -330,7 +330,7 @@ const ClientPortal = () => {
   const handleLogout = async () => {
     navigatingRef.current = true;
     await supabase.auth.signOut();
-    navigate('/cliente');
+    navigate('/cliente', { replace: true });
   };
 
   if (loading) {

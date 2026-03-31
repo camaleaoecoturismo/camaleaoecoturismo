@@ -9,9 +9,32 @@ import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { useToast } from '@/hooks/use-toast';
 import { User, Mail, Lock, ArrowRight, Loader2, ArrowLeft, CheckCircle, Home } from 'lucide-react';
-import logo from '@/assets/logo.png';
-type AuthStep = 'credentials' | 'forgot-password' | 'reset-sent' | 'confirm-email';
+import logo from '@/assets/logo de lado roxo.png';
+type AuthStep = 'credentials' | 'forgot-password' | 'reset-sent' | 'confirm-email' | 'reset-password';
 type RegisterStep = 'cpf' | 'details' | 'password';
+const PROD_CLIENT_PORTAL_URL = 'https://camaleaoecoturismo.com.br/cliente';
+const ALLOWED_CLIENT_PORTAL_ORIGINS = new Set([
+  'https://camaleaoecoturismo.com.br',
+  'https://www.camaleaoecoturismo.com.br',
+  'https://camaleaoecoturismo.vercel.app',
+  'https://agenda.camaleaoecoturismo.com'
+]);
+
+const getClientPortalUrl = () => {
+  if (typeof window === 'undefined') {
+    return PROD_CLIENT_PORTAL_URL;
+  }
+
+  const currentOrigin = window.location.origin;
+  if (ALLOWED_CLIENT_PORTAL_ORIGINS.has(currentOrigin)) {
+    return `${currentOrigin}/cliente`;
+  }
+
+  return PROD_CLIENT_PORTAL_URL;
+};
+
+const getClientAccountUrl = () => getClientPortalUrl().replace(/\/cliente$/, '/minha-conta');
+
 const ClientAuth = () => {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [loginType, setLoginType] = useState<'email' | 'cpf'>('email');
@@ -23,18 +46,106 @@ const ClientAuth = () => {
   const [step, setStep] = useState<AuthStep>('credentials');
   const [registerStep, setRegisterStep] = useState<RegisterStep>('cpf');
   const [resetEmail, setResetEmail] = useState('');
+  const [recoveryPassword, setRecoveryPassword] = useState('');
+  const [recoveryConfirmPassword, setRecoveryConfirmPassword] = useState('');
   const [nomeCompleto, setNomeCompleto] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [whatsappCountryCode, setWhatsappCountryCode] = useState('+55');
   const [dataNascimento, setDataNascimento] = useState('');
   const [cpfFound, setCpfFound] = useState(false);
   const [pendingClienteId, setPendingClienteId] = useState<string | null>(null);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const navigate = useNavigate();
   const {
     toast
   } = useToast();
+
+  const ensureClientAccountExists = async (userId: string, fallbackClienteId?: string | null) => {
+    const {
+      data: existingAccount,
+      error: existingAccountError
+    } = await supabase.from('client_accounts').select('id').eq('user_id', userId).maybeSingle();
+    if (existingAccountError) {
+      console.error('Error checking existing client account:', existingAccountError);
+      return false;
+    }
+    if (existingAccount) {
+      return true;
+    }
+    if (fallbackClienteId) {
+      await createClientAccountAndProcessReservations(userId, fallbackClienteId);
+    }
+    const {
+      data: confirmedAccount,
+      error: confirmedAccountError
+    } = await supabase.from('client_accounts').select('id').eq('user_id', userId).maybeSingle();
+    if (confirmedAccountError) {
+      console.error('Error confirming client account:', confirmedAccountError);
+      return false;
+    }
+    return !!confirmedAccount;
+  };
+
+  useEffect(() => {
+    const handleRecoveryFromUrl = async () => {
+      if (typeof window === 'undefined' || !window.location.hash) {
+        return;
+      }
+
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const recoveryType = hashParams.get('type');
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      const errorDescription = hashParams.get('error_description');
+
+      if (errorDescription) {
+        toast({
+          title: "Link inválido ou expirado",
+          description: decodeURIComponent(errorDescription.replace(/\+/g, ' ')),
+          variant: "destructive"
+        });
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+
+      if (recoveryType !== 'recovery' || !accessToken || !refreshToken) {
+        return;
+      }
+
+      setLoading(true);
+      setIsRecoveryMode(true);
+
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      });
+
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      if (error) {
+        setIsRecoveryMode(false);
+        setLoading(false);
+        toast({
+          title: "Erro ao validar recuperação",
+          description: "Solicite um novo link para redefinir sua senha.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setStep('reset-password');
+      setLoading(false);
+    };
+
+    handleRecoveryFromUrl();
+  }, [toast]);
+
   useEffect(() => {
     const checkAuth = async () => {
+      const hasRecoveryHash = typeof window !== 'undefined' && window.location.hash.includes('type=recovery');
+      if (isRecoveryMode || hasRecoveryHash) {
+        return;
+      }
       const {
         data: {
           session
@@ -46,7 +157,9 @@ const ClientAuth = () => {
           data: clientAccount
         } = await supabase.from('client_accounts').select('id').eq('user_id', session.user.id).maybeSingle();
         if (clientAccount) {
-          navigate('/minha-conta');
+          navigate('/minha-conta', {
+            replace: true
+          });
           return;
         }
 
@@ -64,7 +177,65 @@ const ClientAuth = () => {
       }
     };
     checkAuth();
-  }, [navigate, toast]);
+  }, [isRecoveryMode, navigate, toast]);
+
+  const handleResetPasswordUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!recoveryPassword || !recoveryConfirmPassword) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha e confirme a nova senha.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (recoveryPassword.length < 6) {
+      toast({
+        title: "Senha muito curta",
+        description: "A senha deve ter pelo menos 6 caracteres.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (recoveryPassword !== recoveryConfirmPassword) {
+      toast({
+        title: "Senhas não conferem",
+        description: "As duas senhas digitadas precisam ser iguais.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({
+      password: recoveryPassword
+    });
+
+    if (error) {
+      setLoading(false);
+      toast({
+        title: "Erro ao redefinir senha",
+        description: error.message || "Solicite um novo link e tente novamente.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setRecoveryPassword('');
+    setRecoveryConfirmPassword('');
+    setIsRecoveryMode(false);
+    setLoading(false);
+    toast({
+      title: "Senha redefinida!",
+      description: "Sua nova senha foi salva com sucesso."
+    });
+    navigate('/minha-conta', {
+      replace: true
+    });
+  };
   const formatCPF = (value: string) => {
     const numbers = value.replace(/\D/g, '');
     return numbers.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').replace(/(-\d{2})\d+?$/, '$1');
@@ -152,29 +323,33 @@ const ClientAuth = () => {
           });
         }
       } else if (authData.user) {
-        const {
-          data: existingAccount
-        } = await supabase.from('client_accounts').select('id').eq('user_id', authData.user.id).maybeSingle();
-        if (!existingAccount) {
-          const clienteId = authData.user.user_metadata?.cliente_id;
-          if (clienteId) {
-            await createClientAccountAndProcessReservations(authData.user.id, clienteId);
-          } else {
-            // Use secure RPC function for email lookup
-            const {
-              data: clienteData
-            } = await supabase.rpc('lookup_client_by_email', { search_email: loginEmail });
-            const cliente = clienteData && clienteData.length > 0 ? clienteData[0] : null;
-            if (cliente) {
-              await createClientAccountAndProcessReservations(authData.user.id, cliente.id);
-            }
-          }
+        let clienteId = authData.user.user_metadata?.cliente_id || null;
+        if (!clienteId) {
+          const {
+            data: clienteData
+          } = await supabase.rpc('lookup_client_by_email', {
+            search_email: loginEmail
+          });
+          const cliente = clienteData && clienteData.length > 0 ? clienteData[0] : null;
+          clienteId = cliente?.id || null;
+        }
+        const accountReady = await ensureClientAccountExists(authData.user.id, clienteId);
+        if (!accountReady) {
+          toast({
+            title: "Conta ainda não vinculada",
+            description: "Seu login foi reconhecido, mas sua conta do portal ainda não foi vinculada. Tente novamente em instantes.",
+            variant: "destructive"
+          });
+          await supabase.auth.signOut();
+          return;
         }
         toast({
           title: "Login realizado!",
           description: "Bem-vindo de volta!"
         });
-        navigate('/minha-conta');
+        navigate('/minha-conta', {
+          replace: true
+        });
       }
     } catch (error) {
       toast({
@@ -343,7 +518,7 @@ const ClientAuth = () => {
             cliente_id: clienteId,
             full_name: nomeCompleto
           },
-          emailRedirectTo: `${window.location.origin}/cliente`
+          emailRedirectTo: getClientPortalUrl()
         }
       });
       if (signUpError) {
@@ -371,6 +546,16 @@ const ClientAuth = () => {
         if (clienteId) {
           await createClientAccountAndProcessReservations(authData.user!.id, clienteId);
         }
+        const accountReady = await ensureClientAccountExists(authData.user!.id, clienteId);
+        if (!accountReady) {
+          toast({
+            title: "Conta criada parcialmente",
+            description: "Seu cadastro foi feito, mas o portal ainda não ficou disponível. Tente entrar novamente em instantes.",
+            variant: "destructive"
+          });
+          await supabase.auth.signOut();
+          return;
+        }
         
         // Trigger welcome email
         try {
@@ -380,7 +565,7 @@ const ClientAuth = () => {
               to_email: userEmail,
               data: {
                 nome: nomeCompleto.split(' ')[0],
-                portal_link: `${window.location.origin}/minha-conta`
+                portal_link: getClientAccountUrl()
               }
             }
           });
@@ -393,7 +578,9 @@ const ClientAuth = () => {
           title: "Conta criada com sucesso!",
           description: "Bem-vindo à Área do Cliente!"
         });
-        navigate('/minha-conta');
+        navigate('/minha-conta', {
+          replace: true
+        });
       } else if (authData?.user?.identities && authData.user.identities.length > 0) {
         // User created but needs email confirmation
         setStep('confirm-email');
@@ -406,7 +593,7 @@ const ClientAuth = () => {
               to_email: userEmail,
               data: {
                 nome: nomeCompleto.split(' ')[0],
-                portal_link: `${window.location.origin}/minha-conta`
+                portal_link: getClientAccountUrl()
               }
             }
           });
@@ -450,7 +637,7 @@ const ClientAuth = () => {
     }
     setLoading(true);
     try {
-      const redirectUrl = `${window.location.origin}/cliente`;
+      const redirectUrl = getClientPortalUrl();
 
       // Call edge function to send password reset email via Resend
       const response = await supabase.functions.invoke('send-password-reset', {
@@ -493,7 +680,7 @@ const ClientAuth = () => {
         type: 'signup',
         email: email.trim().toLowerCase(),
         options: {
-          emailRedirectTo: `${window.location.origin}/cliente`
+          emailRedirectTo: getClientPortalUrl()
         }
       });
       if (error) {
@@ -519,13 +706,72 @@ const ClientAuth = () => {
     }
   };
 
+  if (step === 'reset-password') {
+    return <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary to-primary/80 p-4">
+        <Card className="w-full max-w-md shadow-2xl">
+          <CardHeader className="text-center space-y-4">
+            <div className="flex justify-center">
+              <img src={logo} alt="Camaleão Ecoturismo" className="h-14 w-auto object-contain" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-primary">
+              Definir Nova Senha
+            </CardTitle>
+            <CardDescription>
+              Crie uma nova senha para acessar sua Área do Cliente.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <form onSubmit={handleResetPasswordUpdate} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="recoveryPassword">Nova senha</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="recoveryPassword"
+                    type="password"
+                    placeholder="Mínimo 6 caracteres"
+                    value={recoveryPassword}
+                    onChange={e => setRecoveryPassword(e.target.value)}
+                    className="pl-10"
+                    autoFocus
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="recoveryConfirmPassword">Confirmar nova senha</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="recoveryConfirmPassword"
+                    type="password"
+                    placeholder="Repita a nova senha"
+                    value={recoveryConfirmPassword}
+                    onChange={e => setRecoveryConfirmPassword(e.target.value)}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
+                Salvar nova senha
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>;
+  }
+
   // Confirm Email Screen
   if (step === 'confirm-email') {
     return <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary to-primary/80 p-4">
         <Card className="w-full max-w-md shadow-2xl">
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center">
-              <img src={logo} alt="Camaleão Ecoturismo" className="h-20" />
+              <img src={logo} alt="Camaleão Ecoturismo" className="h-14 w-auto object-contain" />
             </div>
             <div className="flex justify-center">
               <CheckCircle className="w-16 h-16 text-green-500" />
@@ -574,7 +820,7 @@ const ClientAuth = () => {
         <Card className="w-full max-w-md shadow-2xl">
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center">
-              <img src={logo} alt="Camaleão Ecoturismo" className="h-20" />
+              <img src={logo} alt="Camaleão Ecoturismo" className="h-14 w-auto object-contain" />
             </div>
             <CardTitle className="text-2xl font-bold text-primary">
               Recuperar Senha
@@ -623,7 +869,7 @@ const ClientAuth = () => {
         <Card className="w-full max-w-md shadow-2xl">
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center">
-              <img src={logo} alt="Camaleão Ecoturismo" className="h-20" />
+              <img src={logo} alt="Camaleão Ecoturismo" className="h-14 w-auto object-contain" />
             </div>
             <CardTitle className="text-2xl font-bold text-primary">
               E-mail Enviado!
@@ -664,11 +910,11 @@ const ClientAuth = () => {
 
   // Main Login/Register Screen
   return <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary to-primary/80 p-4">
-      <Card className="w-full max-w-md shadow-2xl">
-        <CardHeader className="text-center space-y-4">
-          <div className="flex justify-center">
-            <img alt="Camaleão Ecoturismo" src="/lovable-uploads/6713efa9-8258-4a00-9dac-d73040e6e3cf.png" className="h-10" />
-          </div>
+        <Card className="w-full max-w-md shadow-2xl">
+          <CardHeader className="text-center space-y-4">
+            <div className="flex justify-center">
+              <img src={logo} alt="Camaleão Ecoturismo" className="h-14 w-auto object-contain" />
+            </div>
           <CardTitle className="text-2xl font-bold text-primary">
             Área do Cliente
           </CardTitle>

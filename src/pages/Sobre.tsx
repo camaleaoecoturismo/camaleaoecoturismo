@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
-import camping from "@/assets/camping.png";
-import equipe from "@/assets/colaboradores/equipe.avif";
-import isaias from "@/assets/colaboradores/Isaias.avif";
 import { TopMenu } from "@/components/TopMenu";
+
+const HERO    = "/sobre/banner-sobre.png";
+const camping = "/sobre/camping.png";
+const equipe  = "/sobre/equipe.avif";
+const isaias  = "/sobre/isaias.avif";
 import Footer from "@/components/Footer";
 import { FloatingContactButton } from "@/components/FloatingContactButton";
 import { ArrowRight } from "lucide-react";
@@ -23,7 +25,7 @@ export default function Sobre() {
       {/* ── Hero ── */}
       <div className="relative w-full h-[55vh] md:h-[65vh] overflow-hidden">
         <img
-          src={camping}
+          src={HERO}
           alt="Camaleão Ecoturismo"
           className="w-full h-full object-cover object-center"
         />
@@ -98,12 +100,15 @@ export default function Sobre() {
         </div>
       </section>
 
-      {/* ── Foto acampamento ── */}
-      <div className="w-full h-64 md:h-[420px] overflow-hidden">
+      {/* ── Banner acampamento ── */}
+      <div
+        className="w-full overflow-hidden"
+        style={{ height: "clamp(120px, 25vw, 460px)" }}
+      >
         <img
           src={camping}
           alt="Acampamento Camaleão Ecoturismo"
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-cover object-top"
         />
       </div>
 
