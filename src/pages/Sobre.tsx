@@ -1,165 +1,253 @@
-import { useState, useEffect } from "react";
-import bannerSobre from "@/assets/banner-sobre.png";
-import { supabase } from "@/integrations/supabase/client";
-import { TopMenu } from "@/components/TopMenu";
 import { Link } from "react-router-dom";
-import { MapPin, Heart, Mountain, Users, Instagram, Phone } from "lucide-react";
+import bannerSobre from "@/assets/banner-sobre.png";
+import rioGelado from "@/assets/rio-gelado.jpg";
+import equipe from "@/assets/colaboradores/equipe.avif";
+import isaias from "@/assets/colaboradores/Isaias.avif";
+import { TopMenu } from "@/components/TopMenu";
+import Footer from "@/components/Footer";
+import { FloatingContactButton } from "@/components/FloatingContactButton";
+import { ArrowRight } from "lucide-react";
 
-interface TeamMember {
-  id: string;
-  nome: string;
-  cargo: string;
-  bio: string | null;
-  foto_url: string | null;
-  display_order: number;
-}
+// ─── Números ──────────────────────────────────────────────────────────────────
+const STATS = [
+  { value: "6",     suffix: " anos",      label: "de história" },
+  { value: "+5mil", suffix: "",           label: "pessoas atendidas" },
+  { value: "+25",   suffix: " roteiros",  label: "diferentes" },
+  { value: "2023",  suffix: "",           label: "melhor agência de ecoturismo de AL" },
+];
 
 export default function Sobre() {
-  const [team, setTeam] = useState<TeamMember[]>([]);
-
-  useEffect(() => {
-    supabase
-      .from("team_members")
-      .select("*")
-      .order("display_order")
-      .then(({ data }) => { if (data) setTeam(data); });
-  }, []);
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       <TopMenu />
 
-      {/* Hero banner */}
-      <div className="relative w-full h-48 md:h-64 overflow-hidden">
-        <img src={bannerSobre} alt="A Camaleão" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-black/45 flex flex-col justify-end px-6 pb-6 md:px-10 md:pb-8">
-          <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">Nossa História</p>
-          <h1 className="font-bold text-4xl md:text-5xl text-white leading-none">CAMALEÃO ECOTURISMO</h1>
-          <p className="text-white/80 text-sm mt-1 max-w-xl">Conectamos pessoas à natureza através de aventuras inesquecíveis.</p>
+      {/* ── Hero ── */}
+      <div className="relative w-full h-[55vh] md:h-[65vh] overflow-hidden">
+        <img
+          src={bannerSobre}
+          alt="Camaleão Ecoturismo"
+          className="w-full h-full object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-black/50" />
+        <div className="absolute inset-0 flex flex-col items-start justify-end px-6 pb-10 md:px-16 md:pb-14 max-w-5xl mx-auto w-full left-0 right-0">
+          <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-3">
+            Maceió, Alagoas — desde 2018
+          </p>
+          <h1 className="font-black text-5xl md:text-7xl text-white leading-none tracking-tight">
+            SOMOS DA<br />NATUREZA.
+          </h1>
         </div>
       </div>
 
-      {/* Mission */}
-      <section className="py-16 px-4">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-8">
-          {[
-            {
-              icon: Mountain,
-              title: "Nossa Missão",
-              text: "Proporcionar experiências de ecoturismo transformadoras, aliando aventura, cultura e preservação ambiental.",
-            },
-            {
-              icon: Heart,
-              title: "Nossos Valores",
-              text: "Segurança, respeito à natureza, valorização das comunidades locais e experiências autênticas para cada viajante.",
-            },
-            {
-              icon: Users,
-              title: "Nossa Comunidade",
-              text: "Mais de 800 aventureiros que já confiaram em nós para explorar cachoeiras, trilhas e paisagens de tirar o fôlego.",
-            },
-          ].map(({ icon: Icon, title, text }) => (
-            <div key={title} className="text-center p-6">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <Icon className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="font-semibold text-foreground text-lg mb-2">{title}</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">{text}</p>
+      {/* ── Frase de abertura ── */}
+      <section className="py-16 md:py-20 px-6 md:px-16 max-w-5xl mx-auto">
+        <p className="font-bold text-2xl md:text-4xl text-[#820AD1] leading-snug max-w-3xl">
+          A Camaleão nasceu da crença de que a natureza tem o poder de transformar pessoas — e que Alagoas guarda experiências que o mundo ainda não conhece.
+        </p>
+      </section>
+
+      {/* ── História ── */}
+      <section className="px-6 md:px-16 pb-16 max-w-5xl mx-auto grid md:grid-cols-2 gap-12 md:gap-20 items-start">
+        {/* Texto */}
+        <div className="space-y-6 text-foreground/75 text-base leading-relaxed">
+          <p>
+            Tudo começou com Isaías Christian — psicólogo que descobriu, no meio da mata, que a natureza faz pelo ser humano o que nenhum consultório consegue sozinho. Em vez de abandonar a psicologia, ele decidiu uni-la ao ecoturismo. A Camaleão nasceu dessa fusão: aventura com propósito.
+          </p>
+          <p>
+            O primeiro roteiro foi o Rio São Miguel, em São Miguel dos Campos. Um rio escondido entre margens de Mata Atlântica preservada, a poucos quilômetros do litoral alagoano — completamente desconhecido pelo turismo de massa. Era exatamente o tipo de lugar que a Camaleão queria apresentar ao mundo.
+          </p>
+          <p>
+            De lá pra cá foram mais de 5.000 pessoas levadas à natureza, dezenas de roteiros criados e um prêmio de melhor agência de ecoturismo de Alagoas em 2023. Mas o que mais nos orgulha não está em nenhum troféu: é a mensagem que chega depois de cada passeio. "Isso me curou." "Nunca me senti tão vivo." "Já marquei o próximo."
+          </p>
+          <p>
+            Hoje a Camaleão é um time de 8 pessoas — guias, educadores físicos, bombeiros civis, fotógrafos — todos unidos pela mesma paixão. Cada saída é pensada com cuidado. Cada grupo tratado como se fosse o primeiro.
+          </p>
+        </div>
+
+        {/* Foto do Isaías */}
+        <div className="flex flex-col gap-4">
+          <div className="rounded-2xl overflow-hidden aspect-[3/4] shadow-lg">
+            <img
+              src={isaias}
+              alt="Isaías Christian — fundador da Camaleão"
+              className="w-full h-full object-cover object-top"
+            />
+          </div>
+          <div className="px-1">
+            <p className="font-bold text-foreground text-sm">Isaías Christian</p>
+            <p className="text-muted-foreground text-sm">
+              Fundador · Guia de Turismo · Psicólogo
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Números ── */}
+      <section className="bg-[#820AD1] py-12 px-6">
+        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-y-10 gap-x-6">
+          {STATS.map(({ value, suffix, label }) => (
+            <div key={label} className="flex flex-col items-start">
+              <span className="font-black text-4xl md:text-5xl text-white leading-none">
+                {value}
+                <span className="text-2xl md:text-3xl font-bold">{suffix}</span>
+              </span>
+              <span className="text-white/65 text-xs uppercase tracking-widest mt-2 leading-tight">
+                {label}
+              </span>
             </div>
           ))}
         </div>
       </section>
 
-      {/* About */}
-      <section className="bg-muted/30 py-16 px-4">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="font-sans font-bold text-4xl text-foreground mb-6">QUEM SOMOS</h2>
-          <div className="prose prose-gray dark:prose-invert max-w-none space-y-4 text-muted-foreground leading-relaxed">
-            <p>
-              A Camaleão Ecoturismo nasceu da paixão pela natureza e pela vontade de compartilhar a beleza dos destinos do Brasil com quem busca aventura de verdade. Fundada em Lençóis, coração da Chapada Diamantina, nossa agência conecta pessoas a experiências únicas que vão muito além do turismo convencional.
+      {/* ── Foto do rio ── */}
+      <div className="w-full h-64 md:h-[420px] overflow-hidden">
+        <img
+          src={rioGelado}
+          alt="Rio São Miguel — um dos roteiros da Camaleão"
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      {/* ── O que nos move ── */}
+      <section className="py-16 md:py-24 px-6 md:px-16 max-w-5xl mx-auto">
+        <p className="text-[#820AD1] text-xs font-semibold uppercase tracking-widest mb-8">
+          O que nos move
+        </p>
+        <div className="grid md:grid-cols-3 gap-10 md:gap-16">
+          <div className="space-y-3">
+            <h3 className="font-black text-foreground text-xl leading-tight">
+              Acreditamos que a natureza é terapia.
+            </h3>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Uma tarde no Rio São Miguel faz pelo equilíbrio mental o que meses de rotina não conseguem. Não é exagero — é o que 5.000 pessoas já viveram com a gente.
             </p>
-            <p>
-              Cada expedição é cuidadosamente planejada com guias experientes, roteiros seguros e um olhar atento à preservação dos ecossistemas que visitamos. Acreditamos que o turismo responsável é o caminho para garantir que as próximas gerações também possam se maravilhar com esses destinos.
+          </div>
+          <div className="space-y-3">
+            <h3 className="font-black text-foreground text-xl leading-tight">
+              Alagoas tem muito mais do que praias.
+            </h3>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Cachoeiras, rios, mangues, mata fechada — o interior alagoano é um tesouro que a maioria dos próprios alagoanos nunca explorou. A Camaleão existe para mudar isso.
             </p>
-            <p>
-              Seja em cachoeiras escondidas, trilhas desafiadoras, rapel em paredões ou mergulho nas piscinas naturais — cada aventura com a Camaleão é uma experiência que fica marcada para sempre.
+          </div>
+          <div className="space-y-3">
+            <h3 className="font-black text-foreground text-xl leading-tight">
+              Segurança não é diferencial, é obrigação.
+            </h3>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Nosso time inclui bombeiros civis, guarda-vidas e instrutores certificados. Cada passeio tem protocolo. Porque aventura de verdade não é aventura na segurança — é aventura na natureza.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Team */}
-      {team.length > 0 && (
-        <section className="py-16 px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-10">
-              <h2 className="font-sans font-bold text-4xl text-foreground">NOSSA EQUIPE</h2>
-              <p className="text-muted-foreground mt-2">As pessoas por trás das aventuras</p>
-            </div>
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {team.map((member) => (
-                <div key={member.id} className="text-center bg-card rounded-xl border border-border p-6">
-                  {member.foto_url ? (
-                    <img
-                      src={member.foto_url}
-                      alt={member.nome}
-                      className="w-20 h-20 rounded-full object-cover mx-auto mb-4"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                      <span className="text-2xl font-bold text-primary">{member.nome[0]}</span>
-                    </div>
-                  )}
-                  <h3 className="font-semibold text-foreground">{member.nome}</h3>
-                  <p className="text-sm text-primary font-medium mt-0.5">{member.cargo}</p>
-                  {member.bio && (
-                    <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{member.bio}</p>
-                  )}
-                </div>
-              ))}
+      {/* ── Equipe ── */}
+      <section className="bg-[#f0f0f0] py-16 px-6">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-10 md:gap-16">
+          <div className="flex-1 min-w-0">
+            <div className="rounded-2xl overflow-hidden shadow-md aspect-video md:aspect-[4/3]">
+              <img
+                src={equipe}
+                alt="Equipe Camaleão Ecoturismo"
+                className="w-full h-full object-cover object-top"
+              />
             </div>
           </div>
-        </section>
-      )}
-
-      {/* CTA */}
-      <section className="bg-primary text-primary-foreground py-16 px-4">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="font-sans font-bold text-4xl mb-4">PRONTO PARA AVENTURAR?</h2>
-          <p className="text-primary-foreground/80 mb-8">
-            Veja nossa agenda de passeios e reserve a sua próxima expedição.
-          </p>
-          <div className="flex flex-wrap gap-4 justify-center">
+          <div className="flex-1 space-y-5">
+            <p className="text-[#820AD1] text-xs font-semibold uppercase tracking-widest">
+              As pessoas por trás das aventuras
+            </p>
+            <h2 className="font-black text-3xl md:text-4xl text-foreground leading-tight">
+              8 pessoas. Uma paixão só.
+            </h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Guias, educadores físicos, bombeiros civis, fotógrafo, psicólogo, advogada — cada membro do time trouxe uma especialidade, mas todos chegaram pela mesma razão: o amor pela natureza e pelas pessoas.
+            </p>
             <Link
-              to="/"
-              className="inline-flex items-center gap-2 bg-white text-primary font-semibold px-6 py-3 rounded-xl hover:bg-white/90 transition-colors"
+              to="/equipe"
+              className="inline-flex items-center gap-2 text-[#820AD1] font-bold text-sm hover:gap-3 transition-all"
             >
-              <Mountain className="h-4 w-4" />
-              Ver Expedições
+              Conheça o time <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Reconhecimentos ── */}
+      <section className="py-16 px-6 md:px-16 max-w-5xl mx-auto">
+        <p className="text-[#820AD1] text-xs font-semibold uppercase tracking-widest mb-10">
+          Reconhecimentos
+        </p>
+        <div className="grid md:grid-cols-3 gap-6">
+          {[
+            {
+              ano: "2023",
+              titulo: "Melhor Agência de Ecoturismo de Alagoas",
+              fonte: "6º Prêmio Oscar Alagoano · Revista Class Magazine",
+            },
+            {
+              ano: "2023",
+              titulo: "Expedição pelo Rio São Miguel no G1 Alagoas",
+              fonte: "Globo · #IssoÉAlagoas com Gilka Mafra, TV Gazeta",
+            },
+            {
+              ano: "2022",
+              titulo: "Rota de Turismo Regenerativo",
+              fonte: "Alagoas Web · IFAL · Investindo por Aí",
+            },
+          ].map(({ ano, titulo, fonte }) => (
+            <div
+              key={titulo}
+              className="border border-border rounded-2xl p-6 flex flex-col gap-3"
+            >
+              <span className="text-[#820AD1] font-bold text-xs uppercase tracking-widest">
+                {ano}
+              </span>
+              <p className="font-bold text-foreground text-base leading-snug">{titulo}</p>
+              <p className="text-muted-foreground text-xs leading-relaxed">{fonte}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 text-right">
+          <Link
+            to="/midia"
+            className="inline-flex items-center gap-1.5 text-[#820AD1] font-semibold text-sm hover:gap-2.5 transition-all"
+          >
+            Ver toda a cobertura na mídia <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="bg-[#820AD1] py-16 px-6 text-center">
+        <div className="max-w-xl mx-auto flex flex-col items-center gap-6">
+          <h2 className="font-black text-3xl md:text-4xl text-white leading-tight">
+            Pronto pra viver isso?
+          </h2>
+          <p className="text-white/75 text-base">
+            Veja a nossa agenda e reserve a sua próxima aventura.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link
+              to="/agenda"
+              className="inline-flex items-center gap-2 bg-white text-[#820AD1] font-bold px-7 py-3.5 rounded-xl hover:bg-white/90 transition-colors shadow-lg"
+            >
+              Ver agenda
             </Link>
             <a
               href="https://wa.me/5582993649454"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 border border-white/50 text-white font-semibold px-6 py-3 rounded-xl hover:bg-white/10 transition-colors"
+              className="inline-flex items-center gap-2 border-2 border-white/50 text-white font-bold px-7 py-3.5 rounded-xl hover:bg-white/10 transition-colors"
             >
-              <Phone className="h-4 w-4" />
-              Fale Conosco
+              Fale no WhatsApp
             </a>
           </div>
         </div>
       </section>
 
-      {/* Footer minimal */}
-      <footer className="py-8 px-4 text-center text-xs text-muted-foreground border-t border-border">
-        <p>© {new Date().getFullYear()} Camaleão Ecoturismo · Lençóis, BA</p>
-        <div className="flex justify-center gap-4 mt-2">
-          <Link to="/faq" className="hover:text-foreground transition-colors">FAQ</Link>
-          <Link to="/politicas?tipo=cancelamento" className="hover:text-foreground transition-colors">Cancelamento</Link>
-          <Link to="/politicas?tipo=termos" className="hover:text-foreground transition-colors">Termos</Link>
-          <Link to="/politicas?tipo=privacidade" className="hover:text-foreground transition-colors">Privacidade</Link>
-        </div>
-      </footer>
+      <Footer />
+      <FloatingContactButton />
     </div>
   );
 }
