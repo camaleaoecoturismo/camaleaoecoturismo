@@ -3,7 +3,17 @@ import bannerFaq from "@/assets/banner-faq.png";
 import { supabase } from "@/integrations/supabase/client";
 import { TopMenu } from "@/components/TopMenu";
 import Footer from "@/components/Footer";
-import { ChevronDown, Loader2, MessageCircle } from "lucide-react";
+import {
+  BusFront,
+  ChevronDown,
+  ClipboardList,
+  Leaf,
+  Loader2,
+  MessageCircle,
+  Mountain,
+  UtensilsCrossed,
+  type LucideIcon,
+} from "lucide-react";
 import DOMPurify from "dompurify";
 
 interface FaqItem {
@@ -14,12 +24,17 @@ interface FaqItem {
   display_order: number;
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  "Minha Primeira Trilha": "🌿",
-  "Nível de Dificuldade e Preparação": "🎒",
-  "Política de Reservas e Cancelamento": "📋",
-  "Transporte e Logística": "🚐",
-  "Alimentação e Estrutura": "🍃",
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  "Minha Primeira Trilha": Mountain,
+  "Nível de Dificuldade e Preparação": Mountain,
+  "Política de Reservas e Cancelamento": ClipboardList,
+  "Transporte e Logística": BusFront,
+  "Alimentação e Estrutura": UtensilsCrossed,
+};
+
+const renderCategoryIcon = (category: string, className = "w-4 h-4") => {
+  const Icon = CATEGORY_ICONS[category] || Leaf;
+  return <Icon className={className} aria-hidden="true" />;
 };
 
 export default function FAQ() {
@@ -103,7 +118,10 @@ export default function FAQ() {
                   : "bg-muted text-muted-foreground border-border"
               }`}
             >
-              {CATEGORY_ICONS[cat] || ""} {cat}
+              <span className="inline-flex items-center gap-1.5">
+                {renderCategoryIcon(cat, "w-3.5 h-3.5")}
+                <span>{cat}</span>
+              </span>
             </button>
           ))}
         </div>
@@ -141,7 +159,9 @@ export default function FAQ() {
                         : "text-foreground hover:bg-muted font-medium"
                     }`}
                   >
-                    <span className="text-base shrink-0">{CATEGORY_ICONS[cat] || "•"}</span>
+                    <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/5">
+                      {renderCategoryIcon(cat, "w-4 h-4")}
+                    </span>
                     <span className="flex-1 leading-snug">{cat}</span>
                     <span className={`text-xs rounded-full px-2 py-0.5 font-bold shrink-0 ${activeCategory === cat ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"}`}>
                       {count}
@@ -180,7 +200,9 @@ export default function FAQ() {
                     {/* Category header */}
                     {Object.keys(grouped).length > 1 && (
                       <div className="flex items-center gap-3 mb-4">
-                        <span className="text-2xl">{CATEGORY_ICONS[category] || "📌"}</span>
+                        <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/8 text-primary">
+                          {renderCategoryIcon(category, "w-5 h-5")}
+                        </span>
                         <div>
                           <h2 className="font-bold text-base text-foreground">{category}</h2>
                           <p className="text-xs text-muted-foreground">{faqItems.length} perguntas</p>
