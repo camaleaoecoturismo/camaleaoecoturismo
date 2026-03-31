@@ -5,12 +5,16 @@ import { Button } from '@/components/ui/button';
 import {
   Home, User, MapPin, LogOut, Loader2,
   Calendar, DollarSign, Mountain, ChevronRight,
-  Ticket, Clock, AlertCircle,
+  Ticket, Clock, AlertCircle, Star, Bell,
 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import ClientProfile from '@/components/client-portal/ClientProfile';
 import ClientExperiences from '@/components/client-portal/ClientExperiences';
 import ClientTickets from '@/components/client-portal/ClientTickets';
+import ClientPayments from '@/components/client-portal/ClientPayments';
+import ClientPoints from '@/components/client-portal/ClientPoints';
+import ClientBadges from '@/components/client-portal/ClientBadges';
+import ClientCommunications from '@/components/client-portal/ClientCommunications';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -41,7 +45,7 @@ interface Stats {
   viagensConfirmadas: number;
 }
 
-type Tab = 'inicio' | 'viagens' | 'tickets' | 'perfil';
+type Tab = 'inicio' | 'viagens' | 'tickets' | 'conquistas' | 'pagamentos' | 'comunicacoes' | 'perfil';
 
 // ─── Dashboard Section ────────────────────────────────────────────────────────
 
@@ -228,14 +232,45 @@ function DashboardSection({
           <span className="text-xs text-muted-foreground">Acesse seus tickets</span>
         </button>
         <button
-          onClick={() => onNavigate('perfil')}
+          onClick={() => onNavigate('conquistas')}
           className="flex flex-col items-start gap-2 p-4 rounded-xl border border-border bg-card hover:border-primary/40 transition-colors"
         >
-          <User className="h-5 w-5 text-primary" />
-          <span className="text-sm font-medium">Meu Perfil</span>
-          <span className="text-xs text-muted-foreground">Seus dados pessoais</span>
+          <Star className="h-5 w-5 text-primary" />
+          <span className="text-sm font-medium">Conquistas</span>
+          <span className="text-xs text-muted-foreground">Pontos e selos</span>
+        </button>
+        <button
+          onClick={() => onNavigate('pagamentos')}
+          className="flex flex-col items-start gap-2 p-4 rounded-xl border border-border bg-card hover:border-primary/40 transition-colors"
+        >
+          <DollarSign className="h-5 w-5 text-primary" />
+          <span className="text-sm font-medium">Pagamentos</span>
+          <span className="text-xs text-muted-foreground">Histórico financeiro</span>
+        </button>
+        <button
+          onClick={() => onNavigate('comunicacoes')}
+          className="flex flex-col items-start gap-2 p-4 rounded-xl border border-border bg-card hover:border-primary/40 transition-colors"
+        >
+          <Bell className="h-5 w-5 text-primary" />
+          <span className="text-sm font-medium">Mensagens</span>
+          <span className="text-xs text-muted-foreground">Avisos e novidades</span>
         </button>
       </section>
+    </div>
+  );
+}
+
+// ─── Conquistas Section (Pontos + Badges unificados) ─────────────────────────
+
+function ConquistasSection({ clientData }: { clientData: ClientData }) {
+  return (
+    <div className="space-y-6">
+      <ClientPoints
+        clientAccountId={clientData.id}
+        totalPoints={clientData.total_points}
+        level={clientData.level}
+      />
+      <ClientBadges clientAccountId={clientData.id} />
     </div>
   );
 }
@@ -269,7 +304,6 @@ const ClientPortal = () => {
       return;
     }
 
-    // Block admin accounts
     const { data: adminRole } = await supabase
       .from('user_roles')
       .select('role')
@@ -282,7 +316,6 @@ const ClientPortal = () => {
       return;
     }
 
-    // Load client account
     const { data: clientAccount, error } = await supabase
       .from('client_accounts')
       .select(`
@@ -294,7 +327,6 @@ const ClientPortal = () => {
       .eq('user_id', session.user.id)
       .maybeSingle();
 
-    // ⚠️ Separate error (DB/network failure) from "no account" (wrong user)
     if (error) {
       setLoadError(true);
       setLoading(false);
@@ -306,7 +338,6 @@ const ClientPortal = () => {
       return;
     }
 
-    // Level info
     const { data: levelData } = await supabase
       .rpc('get_client_level', { total_points: clientAccount.total_points });
 
@@ -359,101 +390,163 @@ const ClientPortal = () => {
 
   if (!clientData) return null;
 
-  const tabs: { id: Tab; label: string; icon: typeof Home }[] = [
-    { id: 'inicio',   label: 'Início',    icon: Home },
-    { id: 'viagens',  label: 'Viagens',   icon: MapPin },
-    { id: 'tickets',  label: 'Ingressos', icon: Ticket },
-    { id: 'perfil',   label: 'Perfil',    icon: User },
+  // Sidebar nav items (all tabs)
+  const sidebarItems: { id: Tab; label: string; icon: typeof Home }[] = [
+    { id: 'inicio',       label: 'Início',      icon: Home },
+    { id: 'viagens',      label: 'Viagens',     icon: MapPin },
+    { id: 'tickets',      label: 'Ingressos',   icon: Ticket },
+    { id: 'conquistas',   label: 'Conquistas',  icon: Star },
+    { id: 'pagamentos',   label: 'Pagamentos',  icon: DollarSign },
+    { id: 'comunicacoes', label: 'Mensagens',   icon: Bell },
+    { id: 'perfil',       label: 'Perfil',      icon: User },
   ];
 
-  return (
-    <div className="min-h-screen bg-muted/30 pb-24 md:pb-0">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="Camaleão" className="h-8 object-contain" />
-            <div className="hidden sm:block">
-              <p className="text-xs text-muted-foreground leading-none">Minha Conta</p>
-              <p className="text-sm font-semibold text-foreground leading-tight">
-                {clientData.cliente.nome_completo.split(' ')[0]}
-              </p>
-            </div>
-          </div>
+  // Mobile bottom nav (5 most important)
+  const mobileNavItems = sidebarItems.filter(t =>
+    ['inicio', 'viagens', 'tickets', 'conquistas', 'perfil'].includes(t.id)
+  );
 
-          {/* Desktop tabs */}
-          <nav className="hidden md:flex items-center gap-1">
-            {tabs.map((t) => (
+  const sectionTitle: Record<Tab, string> = {
+    inicio:       'Início',
+    viagens:      'Minhas Viagens',
+    tickets:      'Meus Ingressos',
+    conquistas:   'Conquistas',
+    pagamentos:   'Pagamentos',
+    comunicacoes: 'Mensagens',
+    perfil:       'Meu Perfil',
+  };
+
+  return (
+    <div className="flex min-h-screen bg-muted/30">
+
+      {/* ── Sidebar (desktop only) ── */}
+      <aside className="hidden md:flex w-64 flex-col border-r border-border bg-background sticky top-0 h-screen shrink-0">
+        {/* Logo */}
+        <div className="px-5 py-5 border-b border-border">
+          <img src={logo} alt="Camaleão" className="h-8 object-contain" />
+        </div>
+
+        {/* Client info */}
+        <div className="px-5 py-4 border-b border-border">
+          <p className="font-semibold text-foreground text-sm leading-tight">
+            {clientData.cliente.nome_completo.split(' ')[0]}
+          </p>
+          {clientData.level ? (
+            <span
+              className="inline-block mt-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+              style={{ background: clientData.level.color + '20', color: clientData.level.color }}
+            >
+              {clientData.level.icon} {clientData.level.name}
+            </span>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-0.5">Minha Conta</p>
+          )}
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+          {sidebarItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
+                activeTab === item.id
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              <item.icon className="h-4 w-4 shrink-0" />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Logout */}
+        <div className="px-3 py-4 border-t border-border">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            Sair
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Main area ── */}
+      <div className="flex-1 flex flex-col min-h-screen min-w-0">
+
+        {/* Mobile header */}
+        <header className="md:hidden sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
+          <div className="px-4 h-14 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="Camaleão" className="h-8 object-contain" />
+              <div>
+                <p className="text-xs text-muted-foreground leading-none">Minha Conta</p>
+                <p className="text-sm font-semibold text-foreground leading-tight">
+                  {clientData.cliente.nome_completo.split(' ')[0]}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        </header>
+
+        {/* Content */}
+        <main className="flex-1 max-w-4xl mx-auto w-full px-4 md:px-8 py-6 pb-28 md:pb-8">
+          {activeTab !== 'inicio' && (
+            <h2 className="text-xl font-bold text-foreground mb-6">{sectionTitle[activeTab]}</h2>
+          )}
+
+          {activeTab === 'inicio' && (
+            <DashboardSection clientData={clientData} onNavigate={setActiveTab} />
+          )}
+          {activeTab === 'viagens' && (
+            <ClientExperiences clienteId={clientData.cliente_id} />
+          )}
+          {activeTab === 'tickets' && (
+            <ClientTickets cpf={clientData.cliente.cpf} />
+          )}
+          {activeTab === 'conquistas' && (
+            <ConquistasSection clientData={clientData} />
+          )}
+          {activeTab === 'pagamentos' && (
+            <ClientPayments clienteId={clientData.cliente_id} />
+          )}
+          {activeTab === 'comunicacoes' && (
+            <ClientCommunications clientAccountId={clientData.id} />
+          )}
+          {activeTab === 'perfil' && (
+            <ClientProfile clientData={clientData} />
+          )}
+        </main>
+
+        {/* Mobile bottom nav */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur border-t border-border">
+          <div className="flex">
+            {mobileNavItems.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setActiveTab(t.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === t.id
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                className={`flex-1 flex flex-col items-center gap-0.5 py-3 transition-colors relative ${
+                  activeTab === t.id ? 'text-primary' : 'text-muted-foreground'
                 }`}
               >
-                <t.icon className="h-4 w-4" />
-                {t.label}
+                {activeTab === t.id && (
+                  <span className="absolute top-0 inset-x-0 h-0.5 bg-primary rounded-full" />
+                )}
+                <t.icon className="h-5 w-5" />
+                <span className="text-[10px] font-medium">{t.label}</span>
               </button>
             ))}
-          </nav>
-
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Sair</span>
-          </button>
-        </div>
-      </header>
-
-      {/* Content */}
-      <main className="max-w-2xl mx-auto px-4 py-6">
-        {activeTab === 'inicio' && (
-          <DashboardSection clientData={clientData} onNavigate={setActiveTab} />
-        )}
-        {activeTab === 'viagens' && (
-          <div>
-            <h2 className="text-xl font-bold text-foreground mb-4">Minhas Viagens</h2>
-            <ClientExperiences clienteId={clientData.cliente_id} />
           </div>
-        )}
-        {activeTab === 'tickets' && (
-          <div>
-            <h2 className="text-xl font-bold text-foreground mb-4">Meus Ingressos</h2>
-            <ClientTickets cpf={clientData.cliente.cpf} />
-          </div>
-        )}
-        {activeTab === 'perfil' && (
-          <div>
-            <h2 className="text-xl font-bold text-foreground mb-4">Meu Perfil</h2>
-            <ClientProfile clientData={clientData} />
-          </div>
-        )}
-      </main>
-
-      {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur border-t border-border">
-        <div className="flex">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-3 transition-colors relative ${
-                activeTab === t.id ? 'text-primary' : 'text-muted-foreground'
-              }`}
-            >
-              {activeTab === t.id && (
-                <span className="absolute top-0 inset-x-0 h-0.5 bg-primary rounded-full" />
-              )}
-              <t.icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{t.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
+        </nav>
+      </div>
     </div>
   );
 };
