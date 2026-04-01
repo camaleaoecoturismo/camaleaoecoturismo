@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2, CheckCircle2 } from 'lucide-react';
+import { useNoIndex } from '@/hooks/useNoIndex';
 
 interface TourRow {
   id: string;
@@ -68,6 +69,7 @@ function stripHtml(html: string | null): string {
 }
 
 export default function ExportTours() {
+  useNoIndex();
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [tours, setTours] = useState<TourRow[]>([]);
   const [downloaded, setDownloaded] = useState(false);

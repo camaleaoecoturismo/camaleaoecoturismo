@@ -10,14 +10,14 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { useToast } from '@/hooks/use-toast';
 import { User, Mail, Lock, ArrowRight, Loader2, ArrowLeft, CheckCircle, Home } from 'lucide-react';
 import logo from '@/assets/logo-lado.png';
+import { useNoIndex } from '@/hooks/useNoIndex';
 type AuthStep = 'credentials' | 'forgot-password' | 'reset-sent' | 'confirm-email' | 'reset-password';
 type RegisterStep = 'cpf' | 'details' | 'password';
 const PROD_CLIENT_PORTAL_URL = 'https://camaleaoecoturismo.com.br/cliente';
 const ALLOWED_CLIENT_PORTAL_ORIGINS = new Set([
   'https://camaleaoecoturismo.com.br',
   'https://www.camaleaoecoturismo.com.br',
-  'https://camaleaoecoturismo.vercel.app',
-  'https://agenda.camaleaoecoturismo.com'
+  'https://camaleaoecoturismo.vercel.app'
 ]);
 
 const getClientPortalUrl = () => {
@@ -36,6 +36,7 @@ const getClientPortalUrl = () => {
 const getClientAccountUrl = () => getClientPortalUrl().replace(/\/cliente$/, '/minha-conta');
 
 const ClientAuth = () => {
+  useNoIndex();
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [loginType, setLoginType] = useState<'email' | 'cpf'>('email');
   const [email, setEmail] = useState('');

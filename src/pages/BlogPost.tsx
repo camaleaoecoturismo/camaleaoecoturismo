@@ -98,7 +98,7 @@ export default function BlogPost() {
       publisher: {
         "@type": "Organization",
         name: "Camaleão Ecoturismo",
-        url: "https://agenda.camaleaoecoturismo.com",
+        url: "https://www.camaleaoecoturismo.com.br",
       },
       datePublished: post.published_at || undefined,
       url: window.location.href,

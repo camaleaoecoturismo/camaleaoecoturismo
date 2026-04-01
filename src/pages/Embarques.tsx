@@ -33,6 +33,7 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import QRCode from 'qrcode';
+import { useNoIndex } from '@/hooks/useNoIndex';
 
 interface TourStats {
   total: number;
@@ -76,6 +77,7 @@ type ScanResult =
   | null;
 
 export default function Embarques() {
+  useNoIndex();
   const navigate = useNavigate();
   const [passwordVerified, setPasswordVerified] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');

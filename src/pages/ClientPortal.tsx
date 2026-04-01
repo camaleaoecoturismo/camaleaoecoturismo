@@ -15,6 +15,7 @@ import ClientPayments from '@/components/client-portal/ClientPayments';
 import ClientPoints from '@/components/client-portal/ClientPoints';
 import ClientBadges from '@/components/client-portal/ClientBadges';
 import ClientCommunications from '@/components/client-portal/ClientCommunications';
+import { useNoIndex } from '@/hooks/useNoIndex';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -278,6 +279,7 @@ function ConquistasSection({ clientData }: { clientData: ClientData }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const ClientPortal = () => {
+  useNoIndex();
   const [loading, setLoading] = useState(true);
   const [clientData, setClientData] = useState<ClientData | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('inicio');

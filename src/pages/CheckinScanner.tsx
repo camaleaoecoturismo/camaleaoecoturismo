@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useNoIndex } from '@/hooks/useNoIndex';
 
 interface TicketInfo {
   id: string;
@@ -49,6 +50,7 @@ type ScanResult =
   | null;
 
 export default function CheckinScanner() {
+  useNoIndex();
   const navigate = useNavigate();
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult>(null);

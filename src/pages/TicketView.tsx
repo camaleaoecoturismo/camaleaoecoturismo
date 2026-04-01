@@ -7,6 +7,7 @@ import { Download, Loader2, AlertTriangle, CheckCircle2, XCircle, Share2 } from 
 import { TicketPreview } from "@/components/TicketPreview";
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { useNoIndex } from '@/hooks/useNoIndex';
 
 interface Ticket {
   id: string;
@@ -55,6 +56,7 @@ interface TicketTemplate {
 }
 
 export default function TicketView() {
+  useNoIndex();
   const { qrToken } = useParams<{ qrToken: string }>();
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [template, setTemplate] = useState<TicketTemplate | null>(null);

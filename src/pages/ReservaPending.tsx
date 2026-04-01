@@ -3,8 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Clock, Home, MessageCircle } from 'lucide-react';
 import logoImage from "@/assets/logo.png";
+import { useNoIndex } from '@/hooks/useNoIndex';
 
 export default function ReservaPending() {
+  useNoIndex();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const reservaId = searchParams.get('reserva');

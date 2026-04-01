@@ -98,6 +98,88 @@ const Passeio = () => {
       if (error || !data) { navigate("/"); return; }
       setTour(data as unknown as Tour);
 
+      // SEO: atualiza title e meta description com dados do passeio
+      const location = [data.city, data.state?.toUpperCase()].filter(Boolean).join(", ");
+      document.title = `${data.name}${location ? ` – ${location}` : ""} | Camaleão Ecoturismo`;
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        const desc = data.description
+          ? data.description.replace(/<[^>]+>/g, "").slice(0, 155)
+          : `Passeio ${data.name}${location ? ` em ${location}` : ""}. Reserve com a Camaleão Ecoturismo.`;
+        metaDesc.setAttribute("content", desc);
+      }
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.setAttribute("content", `${data.name} | Camaleão Ecoturismo`);
+      const ogDesc = document.querySelector('meta[property="og:description"]');
+      if (ogDesc && data.description) {
+        ogDesc.setAttribute("content", data.description.replace(/<[^>]+>/g, "").slice(0, 155));
+      }
+      if (data.images?.[0]) {
+        const ogImg = document.querySelector('meta[property="og:image"]');
+        if (ogImg) ogImg.setAttribute("content", data.images[0]);
+      }
+
+      // Canonical: aponta para o domínio correto
+      const slug = data.slug || data.id;
+      const canonicalUrl = `https://www.camaleaoecoturismo.com.br/passeio/${slug}`;
+      let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+      if (!canonical) {
+        canonical = document.createElement("link");
+        canonical.rel = "canonical";
+        document.head.appendChild(canonical);
+      }
+      canonical.href = canonicalUrl;
+      const ogUrl = document.querySelector('meta[property="og:url"]');
+      if (ogUrl) ogUrl.setAttribute("content", canonicalUrl);
+
+      // JSON-LD TouristTrip
+      document.getElementById("passeio-jsonld")?.remove();
+      const jsonldScript = document.createElement("script");
+      jsonldScript.type = "application/ld+json";
+      jsonldScript.id = "passeio-jsonld";
+      const plainDesc = data.about ? data.about.replace(/<[^>]+>/g, "").slice(0, 300) : "";
+      const minPrice = data.pricing_options?.length
+        ? Math.min(...data.pricing_options.map((p: any) => p.pix_price))
+        : data.valor_padrao;
+      jsonldScript.text = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "TouristTrip",
+        name: data.name,
+        description: plainDesc || undefined,
+        url: canonicalUrl,
+        image: data.image_url || undefined,
+        touristType: "Ecoturismo",
+        startDate: data.start_date || undefined,
+        endDate: data.end_date || undefined,
+        provider: {
+          "@type": "TouristInformationCenter",
+          name: "Camaleão Ecoturismo",
+          url: "https://www.camaleaoecoturismo.com.br",
+        },
+        itinerary: data.city
+          ? {
+              "@type": "Place",
+              name: [data.city, data.state?.toUpperCase()].filter(Boolean).join(", "),
+              address: {
+                "@type": "PostalAddress",
+                addressLocality: data.city,
+                addressRegion: data.state,
+                addressCountry: "BR",
+              },
+            }
+          : undefined,
+        offers: minPrice
+          ? {
+              "@type": "Offer",
+              price: minPrice,
+              priceCurrency: "BRL",
+              availability: "https://schema.org/InStock",
+              url: canonicalUrl,
+            }
+          : undefined,
+      });
+      document.head.appendChild(jsonldScript);
+
       const today = new Date().toISOString().split("T")[0];
       const { data: related } = await db
         .from("tours")
@@ -164,6 +246,12 @@ const Passeio = () => {
       setLoading(false);
     };
     fetchTour();
+    return () => {
+      document.title = "Camaleão Ecoturismo - Passeios em Alagoas, Cânions do São Francisco e Chapada Diamantina";
+      const canonical = document.querySelector('link[rel="canonical"]');
+      if (canonical) canonical.setAttribute("href", "https://www.camaleaoecoturismo.com.br/");
+      document.getElementById("passeio-jsonld")?.remove();
+    };
   }, [tourId, navigate]);
 
   if (loading) {

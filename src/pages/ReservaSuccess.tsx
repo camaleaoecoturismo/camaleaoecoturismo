@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, Home, Download, Loader2 } from 'lucide-react';
 import logoImage from "@/assets/logo.png";
+import { useNoIndex } from '@/hooks/useNoIndex';
 
 interface ParticipantDetail {
   nome: string;
@@ -24,6 +25,7 @@ interface ReservaDetails {
 }
 
 export default function ReservaSuccess() {
+  useNoIndex();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);

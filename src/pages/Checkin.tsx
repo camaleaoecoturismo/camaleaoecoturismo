@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Download, Plus, RefreshCw, Search, Edit, LogOut, ChevronDown, ChevronUp, Save, X } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
+import { useNoIndex } from '@/hooks/useNoIndex';
 
 interface Trip {
   id: string;
@@ -37,6 +38,7 @@ interface Entry {
 }
 
 const Checkin = () => {
+  useNoIndex();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [user, setUser] = useState<any>(null);

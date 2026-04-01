@@ -27,6 +27,7 @@ import AdminStories from "@/components/admin/AdminStories";
 import AdminTourMoments from "@/components/admin/AdminTourMoments";
 import { useToast } from "@/hooks/use-toast";
 import { Tour } from "@/hooks/useTours";
+import { useNoIndex } from '@/hooks/useNoIndex';
 
 interface CalendarOnlyTour {
   id: string;
@@ -37,6 +38,7 @@ interface CalendarOnlyTour {
 }
 
 const Admin = () => {
+  useNoIndex();
   const [tours, setTours] = useState<Tour[]>([]);
   const [calendarOnlyTours, setCalendarOnlyTours] = useState<CalendarOnlyTour[]>([]);
   const [totalReservas, setTotalReservas] = useState(0);

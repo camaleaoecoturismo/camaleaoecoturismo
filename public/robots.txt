@@ -12,5 +12,18 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /auth
+Disallow: /checkin-scanner
+Disallow: /embarques
+Disallow: /export-tours
+Disallow: /ticket/
+Disallow: /checkin/
+Disallow: /reserva/sucesso
+Disallow: /reserva/falha
+Disallow: /reserva/pendente
+Disallow: /pagamento/
+Disallow: /minha-conta
+Disallow: /cliente
 
-Sitemap: https://agenda.camaleaoecoturismo.com/sitemap.xml
+Sitemap: https://www.camaleaoecoturismo.com.br/sitemap.xml

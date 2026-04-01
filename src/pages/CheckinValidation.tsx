@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useNoIndex } from '@/hooks/useNoIndex';
 
 interface Ticket {
   id: string;
@@ -32,6 +33,7 @@ interface Ticket {
 }
 
 export default function CheckinValidation() {
+  useNoIndex();
   const { qrToken } = useParams<{ qrToken: string }>();
   const navigate = useNavigate();
   const [ticket, setTicket] = useState<Ticket | null>(null);
