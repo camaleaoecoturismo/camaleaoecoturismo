@@ -104,7 +104,7 @@ const navGroups: NavGroup[] = [
         ],
       },
       { id: 'clientes-reservas', label: 'Reservas', icon: <ClipboardList className="h-5 w-5" /> },
-      { id: 'catalogo', label: 'Catálogo', icon: <ClipboardList className="h-5 w-5" /> },
+      { id: 'catalogo', label: 'Catálogo', icon: <BookOpen className="h-5 w-5" /> },
     ],
   },
   {
@@ -629,6 +629,20 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           'hidden md:flex flex-col bg-card border-r border-border h-screen fixed left-0 top-0 z-40 transition-[width] duration-200',
           collapsed ? 'w-[72px]' : 'w-60'
         )}
+        onMouseEnter={() => {
+          if (collapsed) {
+            setCollapsed(false);
+            onCollapsedChange?.(false);
+            const activeParent = navGroups.flatMap((g) => g.items).find((item) => item.subItems?.some((s) => s.id === activeTab));
+            if (activeParent) setOpenAccordions([activeParent.id]);
+          }
+        }}
+        onMouseLeave={() => {
+          if (!collapsed) {
+            setCollapsed(true);
+            onCollapsedChange?.(true);
+          }
+        }}
       >
         {collapsed ? CollapsedContent() : ExpandedContent()}
       </aside>
