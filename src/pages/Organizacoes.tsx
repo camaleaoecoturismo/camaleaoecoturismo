@@ -100,7 +100,7 @@ const SHARED_CASES = [
     summary:
       "Um encontro pensado para reunir o grupo fora da rotina e criar um clima de união, leveza e presença em um cenário natural bonito.",
     result:
-      "Esse case ajuda a vender a Camaleão como experiência de conexão real, não só como passeio. Funciona muito bem como referência para empresas, turmas e grupos privativos.",
+      "Um dia de confraternização com mais identidade, leveza e memória afetiva — fora da rotina, dentro da natureza.",
     image: companyMedia("Quartier Interiores/camaleaoecoturismo_1764452943_3776827493157345936_42300883601_1.jpg"),
     video: companyMedia("Quartier Interiores/camaleaoecoturismo_1764452943_3776824074531160957_42300883601_10.mp4"),
     highlight: "Mostra como um dia de confraternização pode ter mais identidade e memória afetiva.",
@@ -112,7 +112,7 @@ const SHARED_CASES = [
     summary:
       "Uma experiência de desaceleração e presença, com água, natureza e tempo de qualidade compartilhado em grupo.",
     result:
-      "Esse case reforça a proposta de bem-estar e conexão humana, ótima tanto para equipes quanto para grupos escolares e privativos.",
+      "Uma experiência de desaceleração e presença que mostra como o bem-estar e a conexão humana podem ser o foco de um dia em grupo.",
     image: companyMedia("Saneares/camaleaoecoturismo_1752955384_3680378971366991789_42300883601_1.jpg"),
     video: companyMedia("Saneares/camaleaoecoturismo_1752955384_3680378388887264868_42300883601_5.mp4"),
     highlight: "Excelente vitrine para comunicar leveza, cuidado e experiência fora do óbvio.",
@@ -124,7 +124,7 @@ const SHARED_CASES = [
     summary:
       "Uma combinação equilibrada entre movimento, natureza e tranquilidade, perfeita para grupos que querem viver algo especial juntos.",
     result:
-      "Esse material prova a versatilidade da Camaleão para públicos diferentes e ajuda a dar mais verdade visual à página.",
+      "Uma combinação de aventura leve, natureza e convivência que mostra como a experiência pode ser bonita, energizante e acessível a grupos variados.",
     image: companyMedia("EngenhARQ/camaleaoecoturismo_1748734060_3644967940801338755_42300883601_1.jpg"),
     video: companyMedia("EngenhARQ/camaleaoecoturismo_1748734060_3644966648209032440_42300883601_3.mp4"),
     highlight: "Ajuda a mostrar que a experiência pode ser ao mesmo tempo bonita, leve e energizante.",
@@ -165,7 +165,7 @@ const CONTENT: Record<
 > = {
   empresas: {
     color: "#820AD1",
-    tint: "from-[#1e1327]/92 via-[#4c2368]/78 to-[#820AD1]/62",
+    tint: "from-[#1e1327]/80 via-[#4c2368]/55 to-[#820AD1]/30",
     heroEyebrow: "Experiências corporativas sob medida",
     heroTitle: "A natureza como palco para equipes mais conectadas, engajadas e memoráveis.",
     heroSub:
@@ -217,7 +217,7 @@ const CONTENT: Record<
         ],
       },
     ],
-    whyTitle: "O que torna a proposta mais profissional",
+    whyTitle: "O que diferencia a experiência Camaleão",
     whyText:
       "A Camaleão não entrega só um passeio para empresas. Entrega uma experiência desenhada com intencionalidade, contexto e operação para que sua equipe viva algo coerente com o momento da organização.",
     guarantees: [
@@ -228,7 +228,7 @@ const CONTENT: Record<
     ],
     sampleTitle: "Exemplos do que pode nascer daqui",
     sampleText:
-      "Esses são formatos ilustrativos para mostrar o nível de personalização e resultado que a página pode comunicar melhor.",
+      "Cada proposta nasce do contexto da empresa — aqui estão algumas possibilidades para inspirar o que construiremos juntos.",
     examples: [
       {
         title: "Imersão de equipe com trilha e convivência",
@@ -279,7 +279,7 @@ const CONTENT: Record<
   },
   escolas: {
     color: "#820AD1",
-    tint: "from-[#1e1327]/92 via-[#4c2368]/78 to-[#820AD1]/62",
+    tint: "from-[#1e1327]/80 via-[#4c2368]/55 to-[#820AD1]/30",
     heroEyebrow: "Saídas pedagógicas com intenção",
     heroTitle: "Experiências educativas fora da sala de aula, com natureza, segurança e significado.",
     heroSub:
@@ -333,7 +333,7 @@ const CONTENT: Record<
     ],
     whyTitle: "O que gera mais confiança para a escola",
     whyText:
-      "A página precisa mostrar que a Camaleão entende a responsabilidade de conduzir grupos escolares e que a experiência é pensada com organização, intenção e cuidado.",
+      "A Camaleão entende a responsabilidade de conduzir grupos escolares — a experiência é pensada com organização, intenção pedagógica e cuidado com cada etapa.",
     guarantees: [
       "Planejamento alinhado ao perfil da turma e ao objetivo da escola",
       "Linguagem adequada para diferentes faixas etárias",
@@ -342,7 +342,7 @@ const CONTENT: Record<
     ],
     sampleTitle: "Exemplos de experiências possíveis",
     sampleText:
-      "Esses exemplos ajudam a tangibilizar a oferta e a fugir da sensação de página genérica.",
+      "Cada saída é planejada com a escola — veja possibilidades que podem se encaixar no seu contexto pedagógico.",
     examples: [
       {
         title: "Vivência sobre ecossistemas locais",
@@ -393,7 +393,7 @@ const CONTENT: Record<
   },
   grupos: {
     color: "#820AD1",
-    tint: "from-[#1e1327]/92 via-[#4c2368]/78 to-[#820AD1]/62",
+    tint: "from-[#1e1327]/80 via-[#4c2368]/55 to-[#820AD1]/30",
     heroEyebrow: "Passeios privativos e exclusivos",
     heroTitle: "Seu grupo, seu ritmo, sua ocasião: uma experiência desenhada só para vocês.",
     heroSub:
@@ -447,7 +447,7 @@ const CONTENT: Record<
     ],
     whyTitle: "O que deixa a experiência mais premium",
     whyText:
-      "O visitante precisa sentir que o privativo não é apenas uma versão fechada do passeio comum, mas sim uma experiência pensada com exclusividade, cuidado e liberdade.",
+      "O passeio privativo não é uma versão fechada do passeio comum — é uma experiência pensada do zero, com exclusividade, cuidado e liberdade para o seu grupo.",
     guarantees: [
       "Escuta do perfil do grupo antes da montagem do roteiro",
       "Sugestões conforme ocasião, preferências e energia da turma",
@@ -456,7 +456,7 @@ const CONTENT: Record<
     ],
     sampleTitle: "Algumas possibilidades para inspirar",
     sampleText:
-      "Mostrar cenários concretos ajuda o visitante a se imaginar na experiência e aumenta muito a conversão.",
+      "Cada grupo é único — aqui estão formatos que já funcionaram bem para quem buscou exclusividade e personalização.",
     examples: [
       {
         title: "Fim de semana especial com amigos",
@@ -548,7 +548,6 @@ export default function Organizacoes() {
           />
           <div className={`absolute inset-0 bg-gradient-to-br ${d.tint}`} />
           <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.14),transparent_28%)]" />
         </div>
 
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-stone-950 via-stone-950/70 to-transparent" />
@@ -577,7 +576,7 @@ export default function Organizacoes() {
               </a>
               <a
                 href="#formatos"
-                className="inline-flex items-center gap-2 rounded-full border border-white/22 bg-white/8 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/14"
+                className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/14 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20"
               >
                 Ver formatos
                 <ArrowRight className="h-4 w-4" />
@@ -587,14 +586,14 @@ export default function Organizacoes() {
             <div className="mt-10 rounded-[28px] border border-white/12 bg-white/8 p-4 backdrop-blur-md">
               <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/68">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80">
                     1. Escolha o perfil
                   </p>
                   <p className="mt-1 text-lg font-medium text-white">
                     Selecione abaixo para ver a proposta certa para o seu caso
                   </p>
                 </div>
-                <p className="text-sm text-white/70">
+                <p className="text-sm text-white/80">
                   O conteúdo da página muda conforme a sua escolha
                 </p>
               </div>
@@ -658,22 +657,21 @@ export default function Organizacoes() {
 
           <div className="rounded-[28px] border border-white/12 bg-white/10 p-5 shadow-2xl backdrop-blur-md">
             <div className="rounded-[24px] bg-stone-950/35 p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/70">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80">
                 Proposta Camaleão
               </p>
               <p className="mt-3 text-2xl font-semibold leading-tight text-white">
                 {d.badge}
               </p>
-              <p className="mt-4 text-sm leading-6 text-white/76">
-                Uma página mais forte precisa mostrar não só beleza, mas clareza de proposta,
-                segurança de operação e um nível de personalização que justifique a escolha.
+              <p className="mt-4 text-sm leading-6 text-white/85">
+                Clareza de proposta, segurança de operação e personalização que justifica a escolha.
               </p>
 
               <div className="mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-6">
                 {TRUST_NUMBERS.map((item) => (
                   <div key={item.label}>
                     <p className="text-2xl font-semibold text-white">{item.value}</p>
-                    <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-white/62">
+                    <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-white/75">
                       {item.label}
                     </p>
                   </div>
@@ -682,7 +680,7 @@ export default function Organizacoes() {
 
               <div className="mt-6 rounded-2xl border border-white/10 bg-white/6 p-4">
                 <p className="text-sm font-medium text-white">Atendimento mais consultivo</p>
-                <p className="mt-2 text-sm leading-6 text-white/74">
+                <p className="mt-2 text-sm leading-6 text-white/85">
                   Em vez de empurrar um pacote pronto, entendemos primeiro o contexto do
                   grupo para então sugerir o melhor formato.
                 </p>
@@ -694,21 +692,10 @@ export default function Organizacoes() {
 
       <section className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 py-3 md:px-6">
-          <div className="mb-3 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-                Escolha principal
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Clique em um perfil para atualizar todo o conteúdo da página
-              </p>
-            </div>
-            <div className="hidden rounded-full bg-primary/8 px-4 py-2 text-xs font-medium text-primary md:block">
-              {TABS.find((item) => item.id === tab)?.label} ativo
-            </div>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="flex items-center gap-2">
+            <span className="hidden text-xs font-medium text-muted-foreground md:block mr-2">
+              Visualizando:
+            </span>
             {TABS.map((item) => {
               const Icon = item.icon;
               const active = item.id === tab;
@@ -716,30 +703,15 @@ export default function Organizacoes() {
                 <button
                   key={item.id}
                   onClick={() => setTab(item.id)}
-                  className={`rounded-2xl border p-4 text-left transition-all ${
+                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all ${
                     active
-                      ? "border-transparent text-white shadow-lg"
-                      : "border-border bg-card hover:border-foreground/20 hover:bg-muted/60"
+                      ? "border-transparent text-white shadow-md"
+                      : "border-border bg-card text-foreground hover:border-foreground/20 hover:bg-muted/60"
                   }`}
                   style={active ? { backgroundColor: d.color } : undefined}
                 >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-                        active ? "bg-white/14" : "bg-muted"
-                      }`}
-                    >
-                      <Icon className={`h-5 w-5 ${active ? "text-white" : "text-foreground"}`} />
-                    </div>
-                    <div>
-                      <p className={`font-semibold ${active ? "text-white" : "text-foreground"}`}>
-                        {item.label}
-                      </p>
-                      <p className={`mt-1 text-sm leading-6 ${active ? "text-white/82" : "text-muted-foreground"}`}>
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
+                  <Icon className="h-4 w-4" />
+                  {item.label}
                 </button>
               );
             })}
@@ -751,7 +723,7 @@ export default function Organizacoes() {
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 md:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
           <div>
             <p
-              className="text-xs font-semibold uppercase tracking-[0.24em]"
+              className="text-xs font-semibold uppercase tracking-[0.14em]"
               style={{ color: d.color }}
             >
               {d.audienceTitle}
@@ -821,7 +793,7 @@ export default function Organizacoes() {
         <div className="mx-auto max-w-7xl px-4 py-16 md:px-6">
           <div className="max-w-3xl">
             <p
-              className="text-xs font-semibold uppercase tracking-[0.24em]"
+              className="text-xs font-semibold uppercase tracking-[0.14em]"
               style={{ color: d.color }}
             >
               O que entregamos
@@ -885,7 +857,7 @@ export default function Organizacoes() {
           <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr]">
             <div>
               <p
-                className="text-xs font-semibold uppercase tracking-[0.24em]"
+                className="text-xs font-semibold uppercase tracking-[0.14em]"
                 style={{ color: d.color }}
               >
                 Por que escolher a Camaleão
@@ -940,18 +912,16 @@ export default function Organizacoes() {
         <div className="mx-auto max-w-7xl px-4 py-16 md:px-6">
           <div className="max-w-3xl">
             <p
-              className="text-xs font-semibold uppercase tracking-[0.24em]"
+              className="text-xs font-semibold uppercase tracking-[0.14em]"
               style={{ color: d.color }}
             >
               Cases reais
             </p>
             <h2 className="mt-4 font-serif text-3xl font-semibold leading-tight sm:text-4xl">
-              Um carrossel de cases que funciona nas três frentes
+              Grupos que já viveram isso com a Camaleão
             </h2>
             <p className="mt-5 text-base leading-7 text-muted-foreground">
-              Esses cases aparecem em `Empresas`, `Escolas` e `Grupos Privativos` porque comunicam
-              muito bem o coração da proposta: grupos vivendo algo especial na natureza, com
-              integração, presença e memória afetiva.
+              Veja como empresas, escolas e grupos privativos viveram experiências feitas sob medida — na natureza, com integração, presença e memória afetiva.
             </p>
           </div>
 
@@ -999,8 +969,8 @@ export default function Organizacoes() {
                               {item.summary}
                             </p>
                             <div className="mt-6 rounded-2xl bg-muted/45 p-4">
-                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                                O que esse case prova
+                              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                                O que esse grupo viveu
                               </p>
                               <p className="mt-2 text-sm leading-7 text-foreground">{item.result}</p>
                             </div>
@@ -1030,7 +1000,7 @@ export default function Organizacoes() {
         <div className="mx-auto max-w-7xl px-4 py-16 md:px-6">
           <div className="max-w-3xl">
             <p
-              className="text-xs font-semibold uppercase tracking-[0.24em]"
+              className="text-xs font-semibold uppercase tracking-[0.14em]"
               style={{ color: d.color }}
             >
               Exemplos de propostas
@@ -1051,13 +1021,13 @@ export default function Organizacoes() {
                   <img
                     src={d.sampleImages[index] || d.supportImage}
                     alt={item.title}
-                    className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                    className="h-full w-full object-cover"
                     loading="lazy"
                     decoding="async"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/5" />
                   <div className="absolute inset-x-0 bottom-0 p-5">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/72">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/90">
                       {item.meta}
                     </p>
                     <h3 className="mt-2 text-2xl font-semibold leading-tight text-white">
@@ -1079,7 +1049,7 @@ export default function Organizacoes() {
           <div className="mx-auto max-w-7xl px-4 py-16 md:px-6">
             <div className="max-w-3xl">
               <p
-                className="text-xs font-semibold uppercase tracking-[0.24em]"
+                className="text-xs font-semibold uppercase tracking-[0.14em]"
                 style={{ color: d.color }}
               >
                 Prova de confiança
@@ -1088,8 +1058,7 @@ export default function Organizacoes() {
                 Organizações que já confiaram na Camaleão
               </h2>
               <p className="mt-5 text-base leading-7 text-muted-foreground">
-                Em uma página mais profissional, logos não aparecem só como decoração: eles
-                ajudam a reforçar credibilidade, histórico e segurança de escolha.
+                Organizações de diferentes setores já escolheram a Camaleão para seus grupos — e voltaram para contar.
               </p>
             </div>
 
@@ -1122,7 +1091,7 @@ export default function Organizacoes() {
           <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div className="max-w-2xl">
               <p
-                className="text-xs font-semibold uppercase tracking-[0.24em]"
+                className="text-xs font-semibold uppercase tracking-[0.14em]"
                 style={{ color: d.color }}
               >
                 Como funciona
