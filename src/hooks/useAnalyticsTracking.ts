@@ -128,7 +128,19 @@ async function getOrCreateSession(): Promise<SessionData | null> {
     const utmParams = getUTMParams();
     const anonId = generateAnonId();
     const isNewVisitor = !localStorage.getItem('analytics_returning_visitor');
-    
+
+    // Geo lookup via IP (non-critical, best-effort)
+    let geoData: { country: string | null; state: string | null; city: string | null } =
+      { country: null, state: null, city: null };
+    try {
+      const geo = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(3000) }).then(r => r.json());
+      geoData = {
+        country: geo.country_name || null,
+        state: geo.region || null,
+        city: geo.city || null,
+      };
+    } catch {}
+
     const sessionData = {
       user_id_anon: anonId,
       device_type: getDeviceType(),
@@ -141,6 +153,9 @@ async function getOrCreateSession(): Promise<SessionData | null> {
       is_new_visitor: isNewVisitor,
       first_visit_at: new Date().toISOString(),
       last_visit_at: new Date().toISOString(),
+      country: geoData.country,
+      state: geoData.state,
+      city: geoData.city,
     };
     
     const { data, error } = await supabase
