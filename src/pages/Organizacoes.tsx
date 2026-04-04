@@ -9,6 +9,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -20,6 +21,7 @@ import {
   HeartHandshake,
   MapPinned,
   MessageCircle,
+  Play,
   ShieldCheck,
   Sparkles,
   Star,
@@ -517,6 +519,7 @@ export default function Organizacoes() {
   const tab: Tab = raw === "escolas" || raw === "grupos" ? raw : "empresas";
   const setTab = (t: Tab) => setParams({ tipo: t }, { replace: true });
   const [partners, setPartners] = useState<Partner[]>([]);
+  const [openCase, setOpenCase] = useState<(typeof SHARED_CASES)[number] | null>(null);
 
   useEffect(() => {
     supabase
@@ -540,6 +543,7 @@ export default function Organizacoes() {
           src={d.sideImage}
           alt={d.heroTitle}
           className="absolute inset-0 h-full w-full object-cover"
+          fetchPriority="high"
         />
         <div className={`absolute inset-0 bg-gradient-to-br ${d.tint}`} />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.16),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.08),transparent_26%)]" />
@@ -690,6 +694,8 @@ export default function Organizacoes() {
                 src={d.supportImage}
                 alt={d.badge}
                 className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-5">
@@ -881,16 +887,25 @@ export default function Organizacoes() {
                     <article className="overflow-hidden rounded-[30px] border border-border bg-white shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
                       <div className="grid lg:grid-cols-[1.05fr_0.95fr]">
                         <div className="relative min-h-[320px] overflow-hidden bg-stone-950">
-                          <video
-                            src={item.video}
-                            poster={item.image}
+                          <img
+                            src={item.image}
+                            alt={item.title}
                             className="h-full w-full object-cover"
-                            controls
-                            preload="metadata"
+                            loading="lazy"
+                            decoding="async"
                           />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
                           <div className="absolute left-5 top-5 rounded-full bg-black/55 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
                             {item.company}
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => setOpenCase(item)}
+                            className="absolute bottom-5 left-5 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-stone-900 transition-transform hover:-translate-y-0.5"
+                          >
+                            <Play className="h-4 w-4 fill-current" />
+                            Assistir case
+                          </button>
                         </div>
 
                         <div className="flex flex-col justify-between p-6 md:p-8">
@@ -961,6 +976,8 @@ export default function Organizacoes() {
                     src={d.sampleImages[index] || d.supportImage}
                     alt={item.title}
                     className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-5">
@@ -1106,6 +1123,31 @@ export default function Organizacoes() {
           </div>
         </div>
       </section>
+
+      <Dialog open={Boolean(openCase)} onOpenChange={(open) => !open && setOpenCase(null)}>
+        <DialogContent className="max-h-[92vh] max-w-4xl overflow-hidden border-0 bg-black p-0">
+          {openCase && (
+            <div className="bg-black">
+              <video
+                key={openCase.video}
+                src={openCase.video}
+                poster={openCase.image}
+                className="max-h-[78vh] w-full bg-black object-contain"
+                controls
+                autoPlay
+                playsInline
+                preload="metadata"
+              />
+              <div className="border-t border-white/10 px-5 py-4 text-white">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/60">
+                  {openCase.company}
+                </p>
+                <p className="mt-2 text-lg font-semibold">{openCase.title}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>
