@@ -53,9 +53,11 @@ type Tab = 'inicio' | 'viagens' | 'tickets' | 'conquistas' | 'pagamentos' | 'com
 function DashboardSection({
   clientData,
   onNavigate,
+  unreadCount,
 }: {
   clientData: ClientData;
   onNavigate: (tab: Tab) => void;
+  unreadCount: number;
 }) {
   const [stats, setStats] = useState<Stats>({
     totalViagens: 0,
@@ -222,6 +224,24 @@ function DashboardSection({
         </section>
       )}
 
+      {/* Alertas contextuais */}
+      {(unreadCount > 0 || (stats.totalGasto === 0 && !loading)) && (
+        <div className="space-y-2">
+          {unreadCount > 0 && (
+            <button
+              onClick={() => onNavigate('comunicacoes')}
+              className="w-full flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left hover:border-red-300 transition-colors"
+            >
+              <Bell className="h-4 w-4 text-red-500 shrink-0" />
+              <span className="flex-1 text-sm font-medium text-red-700">
+                {unreadCount} mensagem{unreadCount > 1 ? 's' : ''} não lida{unreadCount > 1 ? 's' : ''}
+              </span>
+              <ChevronRight className="h-4 w-4 text-red-400 shrink-0" />
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Quick links */}
       <section className="grid grid-cols-2 gap-3">
         <button
@@ -284,6 +304,7 @@ const ClientPortal = () => {
   const [clientData, setClientData] = useState<ClientData | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('inicio');
   const [loadError, setLoadError] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
   const navigatingRef = useRef(false);
 
@@ -357,6 +378,15 @@ const ClientPortal = () => {
       cliente: clientAccount.clientes as any,
       level,
     });
+
+    // Buscar contagem de mensagens não lidas
+    const { count } = await supabase
+      .from('client_communications')
+      .select('id', { count: 'exact', head: true })
+      .eq('client_account_id', clientAccount.id)
+      .eq('is_read', false);
+    setUnreadCount(count || 0);
+
     setLoading(false);
   };
 
@@ -458,7 +488,12 @@ const ClientPortal = () => {
               }`}
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.id === 'comunicacoes' && unreadCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </button>
           ))}
         </nav>
@@ -506,10 +541,10 @@ const ClientPortal = () => {
           )}
 
           {activeTab === 'inicio' && (
-            <DashboardSection clientData={clientData} onNavigate={setActiveTab} />
+            <DashboardSection clientData={clientData} onNavigate={setActiveTab} unreadCount={unreadCount} />
           )}
           {activeTab === 'viagens' && (
-            <ClientExperiences clienteId={clientData.cliente_id} />
+            <ClientExperiences clienteId={clientData.cliente_id} onNavigate={setActiveTab} />
           )}
           {activeTab === 'tickets' && (
             <ClientTickets cpf={clientData.cliente.cpf} />

@@ -3,12 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Calendar, Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { MapPin, Calendar, Clock, CheckCircle, XCircle, Loader2, Ticket, RefreshCw } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface ClientExperiencesProps {
   clienteId: string;
+  onNavigate?: (tab: 'tickets') => void;
 }
 
 interface Reserva {
@@ -30,13 +31,15 @@ interface Reserva {
   };
 }
 
-const ClientExperiences = ({ clienteId }: ClientExperiencesProps) => {
+const ClientExperiences = ({ clienteId, onNavigate }: ClientExperiencesProps) => {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    const fetchReservas = async () => {
-      const { data, error } = await supabase
+  const fetchReservas = async () => {
+    setLoading(true);
+    setError(false);
+    const { data, error } = await supabase
         .from('reservas')
         .select(`
           id,
@@ -59,18 +62,16 @@ const ClientExperiences = ({ clienteId }: ClientExperiencesProps) => {
         .eq('cliente_id', clienteId)
         .order('created_at', { ascending: false });
 
-      if (!error && data) {
-        setReservas(data.filter(r => r.tours).map(r => ({
-          ...r,
-          tour: r.tours as any,
-          ponto_embarque: r.tour_boarding_points as any
-        })));
-      }
+      if (error) { setError(true); setLoading(false); return; }
+      setReservas((data || []).filter(r => r.tours).map(r => ({
+        ...r,
+        tour: r.tours as any,
+        ponto_embarque: r.tour_boarding_points as any
+      })));
       setLoading(false);
     };
 
-    fetchReservas();
-  }, [clienteId]);
+  useEffect(() => { fetchReservas(); }, [clienteId]);
 
   const upcomingReservas = reservas.filter(r => 
     !isPast(new Date(r.tour.start_date + 'T12:00:00')) && r.status !== 'cancelada'
@@ -92,7 +93,7 @@ const ClientExperiences = ({ clienteId }: ClientExperiencesProps) => {
     return <Badge variant="secondary">Pendente</Badge>;
   };
 
-  const ReservaCard = ({ reserva, isPastEvent }: { reserva: Reserva; isPastEvent?: boolean }) => (
+  const ReservaCard = ({ reserva, isPastEvent, showTicketLink }: { reserva: Reserva; isPastEvent?: boolean; showTicketLink?: boolean }) => (
     <Card className={`overflow-hidden ${isPastEvent ? 'opacity-75' : ''}`}>
       <div className="flex flex-col sm:flex-row">
         {reserva.tour.image_url && (
@@ -130,6 +131,14 @@ const ClientExperiences = ({ clienteId }: ClientExperiencesProps) => {
                   R$ {reserva.valor_pago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
               )}
+              {showTicketLink && onNavigate && (
+                <button
+                  onClick={() => onNavigate('tickets')}
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+                >
+                  <Ticket className="h-3 w-3" /> Ver ingresso
+                </button>
+              )}
             </div>
           </div>
         </CardContent>
@@ -137,13 +146,21 @@ const ClientExperiences = ({ clienteId }: ClientExperiencesProps) => {
     </Card>
   );
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex items-center justify-center py-12">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  );
+
+  if (error) return (
+    <div className="text-center py-12 text-muted-foreground">
+      <MapPin className="h-10 w-10 mx-auto mb-3 opacity-30" />
+      <p className="text-sm font-medium">Não foi possível carregar suas viagens.</p>
+      <button onClick={fetchReservas} className="mt-3 inline-flex items-center gap-1.5 text-sm text-primary hover:underline">
+        <RefreshCw className="h-3.5 w-3.5" /> Tentar novamente
+      </button>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -179,7 +196,7 @@ const ClientExperiences = ({ clienteId }: ClientExperiencesProps) => {
                 </div>
               ) : (
                 upcomingReservas.map(reserva => (
-                  <ReservaCard key={reserva.id} reserva={reserva} />
+                  <ReservaCard key={reserva.id} reserva={reserva} showTicketLink />
                 ))
               )}
             </TabsContent>

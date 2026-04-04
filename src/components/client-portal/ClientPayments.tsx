@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Wallet, Calendar, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { Wallet, Calendar, CheckCircle, Clock, Loader2, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -24,11 +24,13 @@ interface Payment {
 const ClientPayments = ({ clienteId }: ClientPaymentsProps) => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [totals, setTotals] = useState({ paid: 0, pending: 0 });
 
-  useEffect(() => {
-    const fetchPayments = async () => {
-      const { data, error } = await supabase
+  const fetchPayments = async () => {
+    setLoading(true);
+    setError(false);
+    const { data, error } = await supabase
         .from('reservas')
         .select(`
           id,
@@ -47,7 +49,8 @@ const ClientPayments = ({ clienteId }: ClientPaymentsProps) => {
         .neq('status', 'cancelada')
         .order('data_reserva', { ascending: false });
 
-      if (!error && data) {
+      if (error) { setError(true); setLoading(false); return; }
+      if (data) {
         const formattedPayments = data.map(p => ({
           id: p.id,
           tour_name: (p.tours as any)?.name || 'Passeio',
@@ -74,16 +77,23 @@ const ClientPayments = ({ clienteId }: ClientPaymentsProps) => {
       setLoading(false);
     };
 
-    fetchPayments();
-  }, [clienteId]);
+  useEffect(() => { fetchPayments(); }, [clienteId]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex items-center justify-center py-12">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  );
+
+  if (error) return (
+    <div className="text-center py-12 text-muted-foreground">
+      <Wallet className="h-10 w-10 mx-auto mb-3 opacity-30" />
+      <p className="text-sm font-medium">Não foi possível carregar os pagamentos.</p>
+      <button onClick={fetchPayments} className="mt-3 inline-flex items-center gap-1.5 text-sm text-primary hover:underline">
+        <RefreshCw className="h-3.5 w-3.5" /> Tentar novamente
+      </button>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -156,16 +166,29 @@ const ClientPayments = ({ clienteId }: ClientPaymentsProps) => {
                       </Badge>
                     )}
                   </div>
-                  <div className="text-right">
+                  <div className="text-right space-y-0.5">
                     {(() => {
                       const valorTotal = payment.valor_passeio || 0;
                       const valorPago = payment.valor_pago || 0;
                       const saldo = Math.max(0, valorTotal - valorPago);
-
                       return (
-                        <p className={`font-bold ${saldo > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                          R$ {saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
+                        <>
+                          <p className="text-xs text-muted-foreground">
+                            Total: <span className="font-medium text-foreground">
+                              R$ {valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Pago: <span className="font-medium text-emerald-600">
+                              R$ {valorPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </p>
+                          {saldo > 0 && (
+                            <p className="text-xs font-semibold text-amber-600">
+                              Restante: R$ {saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </p>
+                          )}
+                        </>
                       );
                     })()}
                   </div>

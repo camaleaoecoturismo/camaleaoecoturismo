@@ -22,11 +22,11 @@ interface Communication {
   created_at: string;
 }
 
-const typeConfig: Record<string, { icon: React.ComponentType<any>; color: string; label: string }> = {
-  info: { icon: Info, color: 'blue', label: 'Informação' },
-  promo: { icon: Tag, color: 'green', label: 'Promoção' },
-  reminder: { icon: Bell, color: 'amber', label: 'Lembrete' },
-  alert: { icon: AlertCircle, color: 'red', label: 'Alerta' }
+const typeConfig: Record<string, { icon: React.ComponentType<any>; bg: string; text: string; border: string; label: string }> = {
+  info:     { icon: Info,         bg: 'bg-blue-50',   text: 'text-blue-600',   border: '#3b82f6', label: 'Informação' },
+  promo:    { icon: Tag,          bg: 'bg-green-50',  text: 'text-green-600',  border: '#22c55e', label: 'Promoção'   },
+  reminder: { icon: Bell,         bg: 'bg-amber-50',  text: 'text-amber-600',  border: '#f59e0b', label: 'Lembrete'   },
+  alert:    { icon: AlertCircle,  bg: 'bg-red-50',    text: 'text-red-600',    border: '#ef4444', label: 'Alerta'     },
 };
 
 const ClientCommunications = ({ clientAccountId }: ClientCommunicationsProps) => {
@@ -127,15 +127,15 @@ const ClientCommunications = ({ clientAccountId }: ClientCommunicationsProps) =>
                 return (
                   <div 
                     key={comm.id}
-                    className={`p-4 rounded-lg border transition-colors ${
+                    className={`p-4 rounded-lg border transition-colors cursor-pointer ${
                       comm.is_read ? 'bg-muted/30' : 'bg-white border-l-4'
                     }`}
-                    style={!comm.is_read ? { borderLeftColor: `var(--${config.color}-500)` } : {}}
+                    style={!comm.is_read ? { borderLeftColor: config.border } : {}}
                     onClick={() => !comm.is_read && markAsRead(comm.id)}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`p-2 rounded-full bg-${config.color}-100`}>
-                        <IconComponent className={`w-4 h-4 text-${config.color}-600`} />
+                      <div className={`p-2 rounded-full ${config.bg}`}>
+                        <IconComponent className={`w-4 h-4 ${config.text}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
