@@ -471,6 +471,7 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
   // Reset when modal opens and track analytics
   useEffect(() => {
     if (isOpen && tour) {
+      confirmedCloseRef.current = false; // reset close guard whenever modal opens
       setChatMessages([]);
       setCurrentQuestionIndex(0);
       setShowCurrentQuestion(false);
@@ -2853,8 +2854,8 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
   const handleDialogClose = async (open: boolean) => {
     if (!open) {
       // Already confirmed via the confirmation dialog — skip re-checking
+      // (ref is reset only when modal re-opens, not here, to protect against multiple onOpenChange calls)
       if (confirmedCloseRef.current) {
-        confirmedCloseRef.current = false;
         return;
       }
       // If payment is complete, just close
@@ -2913,12 +2914,14 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
                 <p className="text-sm text-muted-foreground">Você tem dados preenchidos no formulário. Se fechar agora, poderá perder as informações inseridas.</p>
                 <div className="flex flex-col gap-2 pt-1">
                   <button
+                    type="button"
                     onClick={confirmClose}
                     className="w-full bg-destructive text-white font-semibold py-2.5 rounded-lg hover:bg-destructive/90 transition-colors"
                   >
                     Sair
                   </button>
                   <button
+                    type="button"
                     onClick={() => setShowCloseConfirmation(false)}
                     className="w-full border border-border font-medium py-2.5 rounded-lg hover:bg-muted transition-colors"
                   >
