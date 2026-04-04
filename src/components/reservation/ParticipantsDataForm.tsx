@@ -623,6 +623,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                           onCountryCodeChange={(code) => updateParticipant(index, 'whatsapp_country_code', code)}
                           placeholder="(00) 00000-0000"
                           className="text-xs"
+                          inputClassName="text-xs"
                         />
                       </div>
                       <div className="space-y-1">
@@ -798,6 +799,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                           onCountryCodeChange={(code) => updateParticipant(index, 'contato_emergencia_country_code', code)}
                           placeholder="Telefone do contato"
                           className="text-xs"
+                          inputClassName="text-xs"
                         />
                       </div>
                     </div>

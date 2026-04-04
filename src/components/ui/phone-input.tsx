@@ -39,6 +39,7 @@ interface PhoneInputProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  inputClassName?: string;
   id?: string;
 }
 
@@ -52,6 +53,7 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
       placeholder = "(00) 00000-0000",
       disabled = false,
       className,
+      inputClassName,
       id,
     },
     ref
@@ -111,7 +113,7 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
           onChange={handlePhoneChange}
           placeholder={placeholder}
           disabled={disabled}
-          className="flex-1"
+          className={cn("flex-1", inputClassName)}
           maxLength={20}
         />
       </div>
