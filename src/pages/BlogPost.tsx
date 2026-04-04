@@ -64,6 +64,7 @@ function parseSegments(html: string): Segment[] {
   const segments: Segment[] = [];
 
   // Returns the single img src if node is image-only, else null
+  // Quill outputs gallery images as: <p><img src="..."><br></p> or <p><img src="..."></p>
   const singleImgSrc = (node: ChildNode): string | null => {
     if (node.nodeType !== Node.ELEMENT_NODE) return null;
     const el = node as Element;
@@ -74,11 +75,13 @@ function parseSegments(html: string): Segment[] {
     // class="blog-gallery" with multiple imgs → handled separately below
     if (el.classList?.contains('blog-gallery')) return null;
 
-    // container (p, div, span…) whose non-whitespace children are all <img>
-    const meaningful = Array.from(el.childNodes).filter(
-      c => !(c.nodeType === Node.TEXT_NODE && c.textContent?.trim() === '') &&
-           !(c.nodeType === Node.ELEMENT_NODE && (c as Element).tagName === 'BR' && el.childNodes.length === 1)
-    );
+    // container (p, div, span…): strip whitespace text nodes and <br> tags,
+    // check if what remains is exactly one <img>
+    const meaningful = Array.from(el.childNodes).filter(c => {
+      if (c.nodeType === Node.TEXT_NODE && c.textContent?.trim() === '') return false;
+      if (c.nodeType === Node.ELEMENT_NODE && (c as Element).tagName === 'BR') return false;
+      return true;
+    });
     if (meaningful.length === 1 && (meaningful[0] as Element).tagName === 'IMG') {
       return (meaningful[0] as Element).getAttribute('src') || null;
     }
