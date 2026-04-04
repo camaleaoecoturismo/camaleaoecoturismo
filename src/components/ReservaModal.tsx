@@ -247,8 +247,6 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
   const [trackingSessionId, setTrackingSessionId] = useState<string>('');
   const trackingIdRef = useRef<string | null>(null);
   const currentStepRef = useRef<number>(1); // Track current step for abandonment
-  const confirmedCloseRef = useRef(false);
-  
   const [formData, setFormData] = useState<FormData>({
     nome_completo: "",
     whatsapp: "",
@@ -471,8 +469,7 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
   // Reset when modal opens and track analytics
   useEffect(() => {
     if (isOpen && tour) {
-      confirmedCloseRef.current = false; // reset close guard whenever modal opens
-      setChatMessages([]);
+setChatMessages([]);
       setCurrentQuestionIndex(0);
       setShowCurrentQuestion(false);
       setInputDisabled(true);
@@ -1959,7 +1956,7 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
       if (!popup) window.location.href = whatsappURL;
     }
   };
-  const resetForm = () => {
+  const resetFormState = () => {
     setFormData({
       nome_completo: "",
       whatsapp: "",
@@ -1997,11 +1994,14 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
     setShowSeatSelection(false);
     setParticipantIds([]);
     setParticipantNames([]);
-    // Reset package selection
     setShowPackageSelection(false);
     setShowParticipantsDataForm(false);
     setFullParticipantsData([]);
     setPackageQuantities({});
+  };
+
+  const resetForm = () => {
+    resetFormState();
     onClose();
   };
 
@@ -2851,43 +2851,35 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
     return false;
   };
 
-  const handleDialogClose = async (open: boolean) => {
-    if (!open) {
-      // Already confirmed via the confirmation dialog — skip re-checking
-      // (ref is reset only when modal re-opens, not here, to protect against multiple onOpenChange calls)
-      if (confirmedCloseRef.current) {
-        return;
-      }
-      // If payment is complete, just close
-      if (paymentComplete) {
-        resetForm();
-        return;
-      }
-      // If user has entered data, show confirmation
-      if (hasFormData()) {
-        setShowCloseConfirmation(true);
-        return;
-      }
-      // No data entered - still register abandonment if tracking exists
-      if (trackingIdRef.current) {
-        console.log('ReservaModal: Registering abandonment (no data), step:', currentStepRef.current);
-        await supabase
-          .from('form_abandonment_tracking')
-          .update({
-            step_reached: currentStepRef.current,
-            last_field: 'modal_closed_no_data',
-            last_activity_at: new Date().toISOString()
-          })
-          .eq('id', trackingIdRef.current);
-      }
-      resetForm();
+  // Called when user explicitly requests to close (X button or Escape)
+  const handleCloseRequest = () => {
+    if (paymentComplete) {
+      resetFormState();
+      onClose();
+      return;
     }
+    if (hasFormData()) {
+      setShowCloseConfirmation(true);
+      return;
+    }
+    // No data — register abandonment and close
+    if (trackingIdRef.current) {
+      supabase
+        .from('form_abandonment_tracking')
+        .update({
+          step_reached: currentStepRef.current,
+          last_field: 'modal_closed_no_data',
+          last_activity_at: new Date().toISOString()
+        })
+        .eq('id', trackingIdRef.current);
+    }
+    resetFormState();
+    onClose();
   };
 
   const confirmClose = () => {
-    // Fire analytics in background without waiting (avoids async timing issues with dialog close)
+    // Fire analytics in background without waiting
     if (trackingIdRef.current && !paymentComplete) {
-      console.log('ReservaModal: Registering abandonment on close, step:', currentStepRef.current);
       supabase
         .from('form_abandonment_tracking')
         .update({
@@ -2897,15 +2889,19 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
         })
         .eq('id', trackingIdRef.current);
     }
-    confirmedCloseRef.current = true;
     setShowCloseConfirmation(false);
-    resetForm();
+    onClose();        // fecha o modal diretamente — sem passar por onOpenChange
+    resetFormState(); // limpa o estado interno
   };
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={handleDialogClose}>
-        <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-0">
+      <Dialog open={isOpen}>
+        <DialogContent
+          className="max-w-2xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-0"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => { e.preventDefault(); handleCloseRequest(); }}
+        >
           {/* Inline close confirmation overlay — avoids portal/event conflicts */}
           {showCloseConfirmation && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 rounded-lg">
@@ -2939,7 +2935,7 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
               </DialogTitle>
               <button
                 type="button"
-                onClick={() => handleDialogClose(false)}
+                onClick={handleCloseRequest}
                 className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                 aria-label="Fechar"
               >
