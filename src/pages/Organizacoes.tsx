@@ -566,12 +566,42 @@ export default function Organizacoes() {
         </div>
       </section>
 
-      {/* ── Conteúdo do hero: abaixo da foto ──────────────────────── */}
+      {/* ── Barra de abas: logo abaixo da foto, sticky ────────────── */}
+      <section className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
+        <div className="mx-auto max-w-7xl px-4 md:px-6">
+          <div className="flex">
+            {TABS.map((item) => {
+              const Icon = item.icon;
+              const active = item.id === tab;
+              return (
+                <button
+                  key={`tab-${item.id}`}
+                  onClick={() => setTab(item.id)}
+                  className={`relative flex items-center gap-2 px-5 py-4 text-sm font-semibold transition-colors ${
+                    active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                  {active && (
+                    <span
+                      className="absolute inset-x-0 bottom-0 h-0.5"
+                      style={{ backgroundColor: d.color }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Conteúdo do hero: abaixo das abas ─────────────────────── */}
       <section className="border-b border-border bg-background">
         <div className="mx-auto max-w-7xl px-4 pb-14 pt-10 md:px-6 lg:pb-20">
           <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="max-w-3xl">
-              <p className="mt-1 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
+              <p className="max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
                 {d.heroSub}
               </p>
 
@@ -595,65 +625,7 @@ export default function Organizacoes() {
                 </a>
               </div>
 
-              <div className="mt-10 rounded-[28px] border border-border bg-muted/40 p-4">
-                <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                      Escolha o perfil
-                    </p>
-                    <p className="mt-1 text-lg font-medium text-foreground">
-                      Selecione abaixo para ver a proposta certa para o seu caso
-                    </p>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    O conteúdo muda conforme sua escolha
-                  </p>
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-3">
-                  {TABS.map((item) => {
-                    const Icon = item.icon;
-                    const active = item.id === tab;
-                    return (
-                      <button
-                        key={`hero-${item.id}`}
-                        onClick={() => setTab(item.id)}
-                        className={`rounded-2xl border p-4 text-left transition-all ${
-                          active
-                            ? "border-transparent text-white shadow-lg"
-                            : "border-border bg-card text-foreground hover:bg-muted/60"
-                        }`}
-                        style={active ? { backgroundColor: d.color } : undefined}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div
-                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-                              active ? "bg-white/15" : "bg-muted"
-                            }`}
-                          >
-                            <Icon className={`h-5 w-5 ${active ? "text-white" : "text-foreground"}`} />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="font-semibold">{item.label}</p>
-                              {active && (
-                                <span className="rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
-                                  Ativo
-                                </span>
-                              )}
-                            </div>
-                            <p className={`mt-1 text-sm leading-6 ${active ? "text-white/80" : "text-muted-foreground"}`}>
-                              {item.description}
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="mt-10 grid gap-3 sm:grid-cols-3">
                 {d.heroHighlights.map((item) => (
                   <div
                     key={item}
@@ -701,35 +673,6 @@ export default function Organizacoes() {
                 </p>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto max-w-7xl px-4 py-3 md:px-6">
-          <div className="flex items-center gap-2">
-            <span className="hidden text-xs font-medium text-muted-foreground md:block mr-2">
-              Visualizando:
-            </span>
-            {TABS.map((item) => {
-              const Icon = item.icon;
-              const active = item.id === tab;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setTab(item.id)}
-                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all ${
-                    active
-                      ? "border-transparent text-white shadow-md"
-                      : "border-border bg-card text-foreground hover:border-foreground/20 hover:bg-muted/60"
-                  }`}
-                  style={active ? { backgroundColor: d.color } : undefined}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </button>
-              );
-            })}
           </div>
         </div>
       </section>
