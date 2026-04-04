@@ -280,7 +280,7 @@ const CONTENT: Record<
     ctaText: "Quero montar uma proposta",
     waMsg:
       "Olá! Quero entender melhor uma proposta da Camaleão para empresas. Podemos conversar sobre o perfil da minha equipe?",
-    sideImage: companyMedia("Saneares/camaleaoecoturismo_1752955384_3680378971366991789_42300883601_1.jpg"),
+    sideImage: companyMedia("Quartier Interiores/camaleaoecoturismo_1764452943_3776827493291544173_42300883601_3.jpg"),
     supportImage: companyMedia("Quartier Interiores/camaleaoecoturismo_1764452943_3776827493165752983_42300883601_5.jpg"),
     sampleImages: [
       companyMedia("Saneares/camaleaoecoturismo_1752955384_3680378971366923405_42300883601_2.jpg"),
