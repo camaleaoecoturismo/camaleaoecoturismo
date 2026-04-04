@@ -1124,7 +1124,7 @@ export default function Organizacoes() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-stone-900 transition-transform hover:-translate-y-0.5"
               >
-                <MessageCircle className="h-4 w-4" />
+                <WhatsAppIcon />
                 {d.ctaText}
               </a>
               <button
