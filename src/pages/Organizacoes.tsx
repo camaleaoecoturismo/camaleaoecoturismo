@@ -539,30 +539,33 @@ export default function Organizacoes() {
       <TopMenu />
 
       {/* ── Hero: foto + gradiente apenas ──────────────────────────── */}
-      <section className="relative overflow-hidden bg-stone-950">
-        <div className="relative aspect-[16/7] min-h-[280px] w-full md:aspect-[16/6] lg:aspect-[16/5]">
+      <section className="relative overflow-hidden">
+        <div className="relative aspect-[16/7] min-h-[260px] w-full md:aspect-[16/6] lg:aspect-[16/5]">
           <img
             src={d.sideImage}
             alt={d.heroTitle}
             className="h-full w-full object-cover object-center"
             fetchPriority="high"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-stone-950" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-white/0" />
         </div>
       </section>
 
       {/* ── Conteúdo do hero: abaixo da foto ──────────────────────── */}
-      <section className="border-b border-border bg-stone-950">
+      <section className="border-b border-border bg-background">
         <div className="mx-auto max-w-7xl px-4 pb-14 pt-10 md:px-6 lg:pb-20">
           <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="max-w-3xl">
-              <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white/85">
+              <span
+                className="inline-flex rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white"
+                style={{ backgroundColor: d.color }}
+              >
                 {d.heroEyebrow}
               </span>
-              <h1 className="mt-5 max-w-3xl font-serif text-4xl font-semibold leading-tight text-white sm:text-5xl lg:text-6xl">
+              <h1 className="mt-5 max-w-3xl font-serif text-4xl font-semibold leading-tight text-foreground sm:text-5xl lg:text-6xl">
                 {d.heroTitle}
               </h1>
-              <p className="mt-5 max-w-2xl text-base leading-7 text-white/82 sm:text-lg">
+              <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
                 {d.heroSub}
               </p>
 
@@ -571,31 +574,32 @@ export default function Organizacoes() {
                   href={waLink(d.waMsg)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-stone-900 transition-transform hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
+                  style={{ backgroundColor: d.color }}
                 >
                   <MessageCircle className="h-4 w-4" />
                   {d.ctaText}
                 </a>
                 <a
                   href="#formatos"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/14 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20"
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
                 >
                   Ver formatos
                   <ArrowRight className="h-4 w-4" />
                 </a>
               </div>
 
-              <div className="mt-10 rounded-[28px] border border-white/12 bg-white/8 p-4">
+              <div className="mt-10 rounded-[28px] border border-border bg-muted/40 p-4">
                 <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                       Escolha o perfil
                     </p>
-                    <p className="mt-1 text-lg font-medium text-white">
+                    <p className="mt-1 text-lg font-medium text-foreground">
                       Selecione abaixo para ver a proposta certa para o seu caso
                     </p>
                   </div>
-                  <p className="text-sm text-white/80">
+                  <p className="text-sm text-muted-foreground">
                     O conteúdo muda conforme sua escolha
                   </p>
                 </div>
@@ -610,28 +614,29 @@ export default function Organizacoes() {
                         onClick={() => setTab(item.id)}
                         className={`rounded-2xl border p-4 text-left transition-all ${
                           active
-                            ? "border-white bg-white text-stone-900 shadow-xl"
-                            : "border-white/14 bg-white/6 text-white hover:bg-white/12"
+                            ? "border-transparent text-white shadow-lg"
+                            : "border-border bg-card text-foreground hover:bg-muted/60"
                         }`}
+                        style={active ? { backgroundColor: d.color } : undefined}
                       >
                         <div className="flex items-start gap-3">
                           <div
                             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-                              active ? "bg-primary/10 text-primary" : "bg-white/10 text-white"
+                              active ? "bg-white/15" : "bg-muted"
                             }`}
                           >
-                            <Icon className="h-5 w-5" />
+                            <Icon className={`h-5 w-5 ${active ? "text-white" : "text-foreground"}`} />
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center justify-between gap-3">
                               <p className="font-semibold">{item.label}</p>
                               {active && (
-                                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
+                                <span className="rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
                                   Ativo
                                 </span>
                               )}
                             </div>
-                            <p className={`mt-1 text-sm leading-6 ${active ? "text-muted-foreground" : "text-white/76"}`}>
+                            <p className={`mt-1 text-sm leading-6 ${active ? "text-white/80" : "text-muted-foreground"}`}>
                               {item.description}
                             </p>
                           </div>
@@ -646,47 +651,48 @@ export default function Organizacoes() {
                 {d.heroHighlights.map((item) => (
                   <div
                     key={item}
-                    className="rounded-2xl border border-white/14 bg-white/8 p-4"
+                    className="rounded-2xl border border-border bg-card p-4"
                   >
-                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/12">
-                      <Check className="h-4 w-4 text-white" />
+                    <div
+                      className="mb-3 flex h-9 w-9 items-center justify-center rounded-full text-white"
+                      style={{ backgroundColor: d.color }}
+                    >
+                      <Check className="h-4 w-4" />
                     </div>
-                    <p className="text-sm leading-6 text-white/88">{item}</p>
+                    <p className="text-sm leading-6 text-foreground">{item}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-white/12 bg-white/8 p-5 shadow-2xl">
-              <div className="rounded-[24px] bg-white/6 p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80">
-                  Proposta Camaleão
-                </p>
-                <p className="mt-3 text-2xl font-semibold leading-tight text-white">
-                  {d.badge}
-                </p>
-                <p className="mt-4 text-sm leading-6 text-white/85">
-                  Clareza de proposta, segurança de operação e personalização que justifica a escolha.
-                </p>
+            <div className="rounded-[28px] border border-border bg-card p-6 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Proposta Camaleão
+              </p>
+              <p className="mt-3 text-2xl font-semibold leading-tight text-foreground">
+                {d.badge}
+              </p>
+              <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                Clareza de proposta, segurança de operação e personalização que justifica a escolha.
+              </p>
 
-                <div className="mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-6">
-                  {TRUST_NUMBERS.map((item) => (
-                    <div key={item.label}>
-                      <p className="text-2xl font-semibold text-white">{item.value}</p>
-                      <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-white/75">
-                        {item.label}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+              <div className="mt-6 grid grid-cols-3 gap-3 border-t border-border pt-6">
+                {TRUST_NUMBERS.map((item) => (
+                  <div key={item.label}>
+                    <p className="text-2xl font-semibold text-foreground">{item.value}</p>
+                    <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                      {item.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
 
-                <div className="mt-6 rounded-2xl border border-white/10 bg-white/6 p-4">
-                  <p className="text-sm font-medium text-white">Atendimento consultivo</p>
-                  <p className="mt-2 text-sm leading-6 text-white/85">
-                    Em vez de empurrar um pacote pronto, entendemos primeiro o contexto do
-                    grupo para então sugerir o melhor formato.
-                  </p>
-                </div>
+              <div className="mt-6 rounded-2xl border border-border bg-muted/40 p-4">
+                <p className="text-sm font-medium text-foreground">Atendimento consultivo</p>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Em vez de empurrar um pacote pronto, entendemos primeiro o contexto do
+                  grupo para então sugerir o melhor formato.
+                </p>
               </div>
             </div>
           </div>
