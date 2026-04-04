@@ -164,7 +164,7 @@ const AnalyticsGeoMap: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <AnalyticsFilters filters={filters} onFiltersChange={setFilters} />
+        <AnalyticsFilters filters={filters} onFiltersChange={setFilters} campaigns={[]} pages={[]} />
         <Button variant="outline" size="sm" onClick={fetchGeoData} disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
           Atualizar
