@@ -154,8 +154,9 @@ export default function Footer() {
 
           {/* Bottom bar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-8">
-            <p className="text-white/30 text-xs">
-              Camaleão Ecoturismo Ltda. © · {new Date().getFullYear()} · Todos os direitos reservados · CNPJ 38.778.474/0001-31
+            <p className="text-white/30 text-xs text-center sm:text-left">
+              Camaleão Ecoturismo Ltda. © · CNPJ 38.778.474/0001-31<br />
+              2020 - {new Date().getFullYear()} · Todos os direitos reservados
             </p>
             <div className="flex gap-5">
               <Link to="/politicas?tipo=termos" className="text-white/30 hover:text-white/60 text-xs transition-colors">Termos de uso</Link>
