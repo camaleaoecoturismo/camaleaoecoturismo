@@ -538,152 +538,155 @@ export default function Organizacoes() {
     <div className="min-h-screen bg-background text-foreground">
       <TopMenu />
 
-      <section className="relative isolate overflow-hidden border-b border-border bg-stone-950">
-        <div className="absolute inset-x-0 top-0 h-[38vh] min-h-[260px] md:h-[46vh] lg:h-[52vh]">
+      {/* ── Hero: foto + gradiente apenas ──────────────────────────── */}
+      <section className="relative overflow-hidden bg-stone-950">
+        <div className="relative aspect-[16/7] min-h-[280px] w-full md:aspect-[16/6] lg:aspect-[16/5]">
           <img
             src={d.sideImage}
             alt={d.heroTitle}
             className="h-full w-full object-cover object-center"
             fetchPriority="high"
           />
-          <div className={`absolute inset-0 bg-gradient-to-br ${d.tint}`} />
-          <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-stone-950" />
         </div>
+      </section>
 
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-stone-950 via-stone-950/70 to-transparent" />
+      {/* ── Conteúdo do hero: abaixo da foto ──────────────────────── */}
+      <section className="border-b border-border bg-stone-950">
+        <div className="mx-auto max-w-7xl px-4 pb-14 pt-10 md:px-6 lg:pb-20">
+          <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="max-w-3xl">
+              <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white/85">
+                {d.heroEyebrow}
+              </span>
+              <h1 className="mt-5 max-w-3xl font-serif text-4xl font-semibold leading-tight text-white sm:text-5xl lg:text-6xl">
+                {d.heroTitle}
+              </h1>
+              <p className="mt-5 max-w-2xl text-base leading-7 text-white/82 sm:text-lg">
+                {d.heroSub}
+              </p>
 
-        <div className="relative mx-auto grid min-h-[760px] max-w-7xl items-end gap-10 px-4 pb-14 pt-24 md:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:pb-20 lg:pt-32">
-          <div className="max-w-3xl">
-            <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-white/85 backdrop-blur-sm">
-              {d.heroEyebrow}
-            </span>
-            <h1 className="mt-5 max-w-3xl font-serif text-4xl font-semibold leading-tight text-white sm:text-5xl lg:text-6xl">
-              {d.heroTitle}
-            </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-white/82 sm:text-lg">
-              {d.heroSub}
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <a
-                href={waLink(d.waMsg)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-stone-900 transition-transform hover:-translate-y-0.5"
-              >
-                <MessageCircle className="h-4 w-4" />
-                {d.ctaText}
-              </a>
-              <a
-                href="#formatos"
-                className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/14 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-              >
-                Ver formatos
-                <ArrowRight className="h-4 w-4" />
-              </a>
-            </div>
-
-            <div className="mt-10 rounded-[28px] border border-white/12 bg-white/8 p-4 backdrop-blur-md">
-              <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80">
-                    1. Escolha o perfil
-                  </p>
-                  <p className="mt-1 text-lg font-medium text-white">
-                    Selecione abaixo para ver a proposta certa para o seu caso
-                  </p>
-                </div>
-                <p className="text-sm text-white/80">
-                  O conteúdo da página muda conforme a sua escolha
-                </p>
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-3">
-                {TABS.map((item) => {
-                  const Icon = item.icon;
-                  const active = item.id === tab;
-                  return (
-                    <button
-                      key={`hero-${item.id}`}
-                      onClick={() => setTab(item.id)}
-                      className={`rounded-2xl border p-4 text-left transition-all ${
-                        active
-                          ? "border-white bg-white text-stone-900 shadow-xl"
-                          : "border-white/14 bg-white/6 text-white hover:bg-white/12"
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div
-                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-                            active ? "bg-primary/10 text-primary" : "bg-white/10 text-white"
-                          }`}
-                        >
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="font-semibold">{item.label}</p>
-                            {active && (
-                              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
-                                Selecionado
-                              </span>
-                            )}
-                          </div>
-                          <p className={`mt-1 text-sm leading-6 ${active ? "text-muted-foreground" : "text-white/76"}`}>
-                            {item.description}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              {d.heroHighlights.map((item) => (
-                <div
-                  key={item}
-                  className="rounded-2xl border border-white/14 bg-white/10 p-4 backdrop-blur-sm"
+              <div className="mt-8 flex flex-wrap gap-3">
+                <a
+                  href={waLink(d.waMsg)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-stone-900 transition-transform hover:-translate-y-0.5"
                 >
-                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/12">
-                    <Check className="h-4 w-4 text-white" />
-                  </div>
-                  <p className="text-sm leading-6 text-white/88">{item}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+                  <MessageCircle className="h-4 w-4" />
+                  {d.ctaText}
+                </a>
+                <a
+                  href="#formatos"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/14 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20"
+                >
+                  Ver formatos
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              </div>
 
-          <div className="rounded-[28px] border border-white/12 bg-white/10 p-5 shadow-2xl backdrop-blur-md">
-            <div className="rounded-[24px] bg-stone-950/35 p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80">
-                Proposta Camaleão
-              </p>
-              <p className="mt-3 text-2xl font-semibold leading-tight text-white">
-                {d.badge}
-              </p>
-              <p className="mt-4 text-sm leading-6 text-white/85">
-                Clareza de proposta, segurança de operação e personalização que justifica a escolha.
-              </p>
-
-              <div className="mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-6">
-                {TRUST_NUMBERS.map((item) => (
-                  <div key={item.label}>
-                    <p className="text-2xl font-semibold text-white">{item.value}</p>
-                    <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-white/75">
-                      {item.label}
+              <div className="mt-10 rounded-[28px] border border-white/12 bg-white/8 p-4">
+                <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80">
+                      Escolha o perfil
                     </p>
+                    <p className="mt-1 text-lg font-medium text-white">
+                      Selecione abaixo para ver a proposta certa para o seu caso
+                    </p>
+                  </div>
+                  <p className="text-sm text-white/80">
+                    O conteúdo muda conforme sua escolha
+                  </p>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3">
+                  {TABS.map((item) => {
+                    const Icon = item.icon;
+                    const active = item.id === tab;
+                    return (
+                      <button
+                        key={`hero-${item.id}`}
+                        onClick={() => setTab(item.id)}
+                        className={`rounded-2xl border p-4 text-left transition-all ${
+                          active
+                            ? "border-white bg-white text-stone-900 shadow-xl"
+                            : "border-white/14 bg-white/6 text-white hover:bg-white/12"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                              active ? "bg-primary/10 text-primary" : "bg-white/10 text-white"
+                            }`}
+                          >
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="font-semibold">{item.label}</p>
+                              {active && (
+                                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
+                                  Ativo
+                                </span>
+                              )}
+                            </div>
+                            <p className={`mt-1 text-sm leading-6 ${active ? "text-muted-foreground" : "text-white/76"}`}>
+                              {item.description}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                {d.heroHighlights.map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-2xl border border-white/14 bg-white/8 p-4"
+                  >
+                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/12">
+                      <Check className="h-4 w-4 text-white" />
+                    </div>
+                    <p className="text-sm leading-6 text-white/88">{item}</p>
                   </div>
                 ))}
               </div>
+            </div>
 
-              <div className="mt-6 rounded-2xl border border-white/10 bg-white/6 p-4">
-                <p className="text-sm font-medium text-white">Atendimento mais consultivo</p>
-                <p className="mt-2 text-sm leading-6 text-white/85">
-                  Em vez de empurrar um pacote pronto, entendemos primeiro o contexto do
-                  grupo para então sugerir o melhor formato.
+            <div className="rounded-[28px] border border-white/12 bg-white/8 p-5 shadow-2xl">
+              <div className="rounded-[24px] bg-white/6 p-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80">
+                  Proposta Camaleão
                 </p>
+                <p className="mt-3 text-2xl font-semibold leading-tight text-white">
+                  {d.badge}
+                </p>
+                <p className="mt-4 text-sm leading-6 text-white/85">
+                  Clareza de proposta, segurança de operação e personalização que justifica a escolha.
+                </p>
+
+                <div className="mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-6">
+                  {TRUST_NUMBERS.map((item) => (
+                    <div key={item.label}>
+                      <p className="text-2xl font-semibold text-white">{item.value}</p>
+                      <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-white/75">
+                        {item.label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 rounded-2xl border border-white/10 bg-white/6 p-4">
+                  <p className="text-sm font-medium text-white">Atendimento consultivo</p>
+                  <p className="mt-2 text-sm leading-6 text-white/85">
+                    Em vez de empurrar um pacote pronto, entendemos primeiro o contexto do
+                    grupo para então sugerir o melhor formato.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
