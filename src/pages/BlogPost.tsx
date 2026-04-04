@@ -298,14 +298,19 @@ export default function BlogPost() {
 
       {/* Hero */}
       {post.cover_image ? (
-        <div className="relative w-full overflow-hidden" style={{ maxHeight: 480 }}>
-          <img src={post.cover_image} alt={post.titulo} className="w-full object-cover" style={{ aspectRatio: "21/9", maxHeight: 480 }} />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 max-w-3xl mx-auto">
-            <Link to="/blog" className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm mb-4 transition-colors">
+        <div className="relative w-full overflow-hidden" style={{ minHeight: 260 }}>
+          <img
+            src={post.cover_image}
+            alt={post.titulo}
+            className="w-full object-cover"
+            style={{ aspectRatio: "4/3", maxHeight: 520 }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 px-5 pb-6 pt-16 md:px-10 md:pb-10 max-w-3xl mx-auto">
+            <Link to="/blog" className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm mb-3 transition-colors">
               <ArrowLeft className="h-4 w-4" /> Blog
             </Link>
-            <h1 className="text-2xl md:text-4xl font-bold text-white leading-tight drop-shadow-md">{post.titulo}</h1>
+            <h1 className="text-2xl md:text-4xl font-bold text-white leading-snug drop-shadow-md">{post.titulo}</h1>
           </div>
         </div>
       ) : (
