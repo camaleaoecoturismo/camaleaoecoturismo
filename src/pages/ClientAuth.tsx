@@ -283,6 +283,9 @@ const ClientAuth = () => {
       return;
     }
     setLoading(true);
+    const loginTimeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 15000)
+    );
     try {
       let loginEmail = email;
       if (loginType === 'cpf') {
@@ -305,10 +308,10 @@ const ClientAuth = () => {
       const {
         data: authData,
         error
-      } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password
-      });
+      } = await Promise.race([
+        supabase.auth.signInWithPassword({ email: loginEmail, password }),
+        loginTimeout,
+      ]);
       if (error) {
         if (error.message?.includes('Email not confirmed')) {
           toast({
@@ -352,10 +355,13 @@ const ClientAuth = () => {
           replace: true
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      const isTimeout = error?.message === 'timeout';
       toast({
-        title: "Erro inesperado",
-        description: "Tente novamente mais tarde.",
+        title: isTimeout ? "Conexão lenta" : "Erro inesperado",
+        description: isTimeout
+          ? "O servidor demorou muito para responder. Verifique sua conexão e tente novamente."
+          : "Tente novamente mais tarde.",
         variant: "destructive"
       });
     } finally {
@@ -640,13 +646,17 @@ const ClientAuth = () => {
     try {
       const redirectUrl = getClientPortalUrl();
 
-      // Call edge function to send password reset email via Resend
-      const response = await supabase.functions.invoke('send-password-reset', {
-        body: {
-          email: resetEmail.trim().toLowerCase(),
-          redirectUrl: redirectUrl
-        }
-      });
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 15000)
+      );
+
+      const response = await Promise.race([
+        supabase.functions.invoke('send-password-reset', {
+          body: { email: resetEmail.trim().toLowerCase(), redirectUrl }
+        }),
+        timeout,
+      ]);
+
       if (response.error) {
         console.error('Password reset error:', response.error);
         toast({
@@ -661,11 +671,14 @@ const ClientAuth = () => {
           description: "Verifique sua caixa de entrada."
         });
       }
-    } catch (error) {
-      console.error('Unexpected error:', error);
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      const isTimeout = error?.message === 'timeout';
       toast({
-        title: "Erro inesperado",
-        description: "Tente novamente mais tarde.",
+        title: isTimeout ? "Serviço indisponível" : "Erro inesperado",
+        description: isTimeout
+          ? "O servidor demorou muito para responder. Tente novamente em alguns segundos."
+          : "Não foi possível enviar o email. Tente novamente.",
         variant: "destructive"
       });
     } finally {
