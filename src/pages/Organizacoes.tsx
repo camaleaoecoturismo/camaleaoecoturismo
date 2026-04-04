@@ -538,16 +538,31 @@ export default function Organizacoes() {
     <div className="min-h-screen bg-background text-foreground">
       <TopMenu />
 
-      {/* ── Hero: foto + gradiente apenas ──────────────────────────── */}
+      {/* ── Hero: foto + etiqueta + título ────────────────────────── */}
       <section className="relative overflow-hidden">
-        <div className="relative aspect-[16/7] min-h-[260px] w-full md:aspect-[16/6] lg:aspect-[16/5]">
+        <div className="relative aspect-[16/7] min-h-[300px] w-full md:aspect-[16/6] lg:aspect-[16/5]">
           <img
             src={d.sideImage}
             alt={d.heroTitle}
             className="h-full w-full object-cover object-center"
             fetchPriority="high"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-white/0" />
+          {/* gradiente suave só na metade inferior da foto */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-transparent" />
+          {/* conteúdo posicionado sobre a foto */}
+          <div className="absolute inset-x-0 bottom-0 px-6 pb-8 md:px-10 md:pb-12">
+            <div className="mx-auto max-w-7xl">
+              <span
+                className="inline-flex rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white"
+                style={{ backgroundColor: d.color }}
+              >
+                {d.heroEyebrow}
+              </span>
+              <h1 className="mt-4 max-w-3xl font-serif text-4xl font-semibold leading-tight text-white sm:text-5xl lg:text-6xl">
+                {d.heroTitle}
+              </h1>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -556,16 +571,7 @@ export default function Organizacoes() {
         <div className="mx-auto max-w-7xl px-4 pb-14 pt-10 md:px-6 lg:pb-20">
           <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="max-w-3xl">
-              <span
-                className="inline-flex rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-white"
-                style={{ backgroundColor: d.color }}
-              >
-                {d.heroEyebrow}
-              </span>
-              <h1 className="mt-5 max-w-3xl font-serif text-4xl font-semibold leading-tight text-foreground sm:text-5xl lg:text-6xl">
-                {d.heroTitle}
-              </h1>
-              <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
+              <p className="mt-1 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
                 {d.heroSub}
               </p>
 
