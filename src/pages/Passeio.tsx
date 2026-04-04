@@ -514,7 +514,7 @@ const Passeio = () => {
         {tour.about && (
           <section id="sobre" className="mb-8 scroll-mt-4">
             <h2 className="font-semibold text-base text-primary mb-3">Sobre o passeio</h2>
-            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-xs"
+            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-sm"
               dangerouslySetInnerHTML={{ __html: sanitize(tour.about) }} />
           </section>
         )}
@@ -523,7 +523,7 @@ const Passeio = () => {
         {tour.itinerary && (
           <section id="roteiro" className="mb-8 scroll-mt-4">
             <h2 className="font-semibold text-base text-primary mb-3">Roteiro</h2>
-            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-xs"
+            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-sm"
               dangerouslySetInnerHTML={{ __html: sanitize(tour.itinerary) }} />
           </section>
         )}
@@ -539,7 +539,7 @@ const Passeio = () => {
                     <span className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0">✓</span>
                     <span className="text-xs font-semibold text-green-800 uppercase tracking-wide">Incluso no pacote</span>
                   </div>
-                  <div className="px-4 py-3 prose prose-sm max-w-none text-green-900 leading-relaxed text-xs"
+                  <div className="px-4 py-3 prose prose-sm max-w-none text-green-900 leading-relaxed text-sm"
                     dangerouslySetInnerHTML={{ __html: sanitize(tour.includes) }} />
                 </div>
               )}
@@ -549,7 +549,7 @@ const Passeio = () => {
                     <span className="w-4 h-4 rounded-full bg-red-400 flex items-center justify-center text-white text-[10px] font-bold shrink-0">✕</span>
                     <span className="text-xs font-semibold text-red-800 uppercase tracking-wide">Não incluso</span>
                   </div>
-                  <div className="px-4 py-3 prose prose-sm max-w-none text-red-900 leading-relaxed text-xs"
+                  <div className="px-4 py-3 prose prose-sm max-w-none text-red-900 leading-relaxed text-sm"
                     dangerouslySetInnerHTML={{ __html: sanitize(tour.not_includes) }} />
                 </div>
               )}
