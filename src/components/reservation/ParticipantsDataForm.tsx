@@ -551,7 +551,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                             onBlur={() => lookupClientByCpf(index, participant.cpf)}
                             placeholder="000.000.000-00"
                             maxLength={14}
-                            className="text-sm"
+                            className="text-xs"
                           />
                           {lookingUpCpf === index && (
                             <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
@@ -564,7 +564,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                           value={participant.nome_completo}
                           onChange={(e) => updateParticipant(index, 'nome_completo', e.target.value)}
                           placeholder="Nome completo"
-                          className="text-sm"
+                          className="text-xs"
                         />
                       </div>
                     </div>
@@ -577,7 +577,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                           <select
                             value={participant.data_nascimento_dia}
                             onChange={(e) => updateParticipant(index, 'data_nascimento_dia', e.target.value)}
-                            className="w-full h-10 px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                            className="w-full h-10 px-3 py-2 text-xs border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                           >
                             <option value="">Dia</option>
                             {DAY_OPTIONS.map(day => (
@@ -589,7 +589,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                           <select
                             value={participant.data_nascimento_mes}
                             onChange={(e) => updateParticipant(index, 'data_nascimento_mes', e.target.value)}
-                            className="w-full h-10 px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                            className="w-full h-10 px-3 py-2 text-xs border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                           >
                             <option value="">Mês</option>
                             {MONTH_OPTIONS.map(month => (
@@ -601,7 +601,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                           <select
                             value={participant.data_nascimento_ano}
                             onChange={(e) => updateParticipant(index, 'data_nascimento_ano', e.target.value)}
-                            className="w-full h-10 px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                            className="w-full h-10 px-3 py-2 text-xs border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                           >
                             <option value="">Ano</option>
                             {YEAR_OPTIONS.map(year => (
@@ -622,7 +622,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                           countryCode={participant.whatsapp_country_code || '+55'}
                           onCountryCodeChange={(code) => updateParticipant(index, 'whatsapp_country_code', code)}
                           placeholder="(00) 00000-0000"
-                          className="text-sm"
+                          className="text-xs"
                         />
                       </div>
                       <div className="space-y-1">
@@ -632,7 +632,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                           value={participant.email}
                           onChange={(e) => updateParticipant(index, 'email', e.target.value)}
                           placeholder="email@exemplo.com"
-                          className="text-sm"
+                          className="text-xs"
                         />
                       </div>
                     </div>
@@ -645,7 +645,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                         value={participant.instagram}
                         onChange={(e) => updateParticipant(index, 'instagram', e.target.value.replace(/\s/g, ''))}
                         placeholder="@seuinstagram"
-                        className="text-sm"
+                        className="text-xs"
                       />
                     </div>
 
@@ -655,7 +655,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                       <select
                         value={participant.ponto_embarque_id}
                         onChange={(e) => setBoardingPoint(index, e.target.value)}
-                        className="w-full h-10 px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full h-10 px-3 py-2 text-xs border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                       >
                         <option value="">Selecione o ponto de embarque...</option>
                         {boardingPoints.map((point) => (
@@ -704,7 +704,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                       <select
                         value={participant.nivel_condicionamento}
                         onChange={(e) => updateParticipant(index, 'nivel_condicionamento', e.target.value)}
-                        className="w-full h-10 px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-full h-10 px-3 py-2 text-xs border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                       >
                         <option value="">Selecione seu nível...</option>
                         {NIVEL_CONDICIONAMENTO_OPTIONS.map((opt) => (
@@ -775,7 +775,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                             value={participant.nome_plano_saude}
                             onChange={(e) => updateParticipant(index, 'nome_plano_saude', e.target.value)}
                             placeholder="Nome do plano de saúde"
-                            className="text-sm"
+                            className="text-xs"
                           />
                         </div>
                       )}
@@ -789,7 +789,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                           value={participant.contato_emergencia_nome}
                           onChange={(e) => updateParticipant(index, 'contato_emergencia_nome', e.target.value)}
                           placeholder="Nome do contato"
-                          className="text-sm"
+                          className="text-xs"
                         />
                         <PhoneInput
                           value={participant.contato_emergencia_telefone}
@@ -797,7 +797,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                           countryCode={participant.contato_emergencia_country_code || '+55'}
                           onCountryCodeChange={(code) => updateParticipant(index, 'contato_emergencia_country_code', code)}
                           placeholder="Telefone do contato"
-                          className="text-sm"
+                          className="text-xs"
                         />
                       </div>
                     </div>
