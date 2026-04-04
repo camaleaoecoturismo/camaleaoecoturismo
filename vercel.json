@@ -9,6 +9,33 @@
   ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+
+    { "source": "/api/og", "destination": "/api/og" },
+
+    {
+      "source": "/passeio/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(bot|Bot|crawler|spider|facebookexternalhit|WhatsApp|Twitterbot|LinkedInBot|TelegramBot|Slackbot|DiscordBot|Applebot|Bingbot|Googlebot|DuckDuckBot|YandexBot|Pinterest|Snapchat|vkShare|W3C_Validator).*"
+        }
+      ],
+      "destination": "/api/og?type=passeio&slug=:slug"
+    },
+
+    {
+      "source": "/blog/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(bot|Bot|crawler|spider|facebookexternalhit|WhatsApp|Twitterbot|LinkedInBot|TelegramBot|Slackbot|DiscordBot|Applebot|Bingbot|Googlebot|DuckDuckBot|YandexBot|Pinterest|Snapchat|vkShare|W3C_Validator).*"
+        }
+      ],
+      "destination": "/api/og?type=blog&slug=:slug"
+    },
+
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
