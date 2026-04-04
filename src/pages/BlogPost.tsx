@@ -52,24 +52,86 @@ type Segment =
   | { type: 'html'; html: string }
   | { type: 'gallery'; images: string[] };
 
+// Quill converts gallery HTML into individual <p><img></p> blocks (one per image).
+// Strategy: scan top-level nodes and collect runs of "image-only" elements
+// (p/div/span that contain a single <img>, OR a bare <img>).
+// A run of 2+ consecutive image-only elements becomes a gallery slider.
+// A run of exactly 1 stays as regular HTML.
 function parseSegments(html: string): Segment[] {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   const body = doc.body;
   const segments: Segment[] = [];
-  let buffer = '';
 
-  for (const child of Array.from(body.childNodes)) {
-    const el = child as Element;
-    if (el.nodeType === Node.ELEMENT_NODE && el.classList?.contains('blog-gallery')) {
-      if (buffer) { segments.push({ type: 'html', html: buffer }); buffer = ''; }
-      const imgs = Array.from(el.querySelectorAll('img')).map(img => img.getAttribute('src') || '').filter(Boolean);
-      if (imgs.length) segments.push({ type: 'gallery', images: imgs });
-    } else {
-      buffer += (child as Element).outerHTML || child.textContent || '';
+  // Returns the single img src if node is image-only, else null
+  const singleImgSrc = (node: ChildNode): string | null => {
+    if (node.nodeType !== Node.ELEMENT_NODE) return null;
+    const el = node as Element;
+
+    // bare <img>
+    if (el.tagName === 'IMG') return el.getAttribute('src') || null;
+
+    // class="blog-gallery" with multiple imgs → handled separately below
+    if (el.classList?.contains('blog-gallery')) return null;
+
+    // container (p, div, span…) whose non-whitespace children are all <img>
+    const meaningful = Array.from(el.childNodes).filter(
+      c => !(c.nodeType === Node.TEXT_NODE && c.textContent?.trim() === '') &&
+           !(c.nodeType === Node.ELEMENT_NODE && (c as Element).tagName === 'BR' && el.childNodes.length === 1)
+    );
+    if (meaningful.length === 1 && (meaningful[0] as Element).tagName === 'IMG') {
+      return (meaningful[0] as Element).getAttribute('src') || null;
     }
+    return null;
+  };
+
+  const nodes = Array.from(body.childNodes);
+  let i = 0;
+
+  while (i < nodes.length) {
+    const node = nodes[i];
+    const el = node as Element;
+
+    // Explicit blog-gallery div (if Quill ever preserves it)
+    if (node.nodeType === Node.ELEMENT_NODE && el.classList?.contains('blog-gallery')) {
+      const imgs = Array.from(el.querySelectorAll('img'))
+        .map(img => img.getAttribute('src') || '').filter(Boolean);
+      if (imgs.length >= 2) {
+        segments.push({ type: 'gallery', images: imgs });
+        i++; continue;
+      }
+    }
+
+    // Try to start an image run
+    const src = singleImgSrc(node);
+    if (src) {
+      const run: string[] = [src];
+      let j = i + 1;
+      while (j < nodes.length) {
+        const nextSrc = singleImgSrc(nodes[j]);
+        if (nextSrc) { run.push(nextSrc); j++; }
+        else break;
+      }
+
+      if (run.length >= 2) {
+        // It's a gallery
+        segments.push({ type: 'gallery', images: run });
+        i = j; continue;
+      }
+      // Single image — falls through to html buffer
+    }
+
+    // Regular HTML node
+    const outerHtml = (node as Element).outerHTML ?? node.textContent ?? '';
+    // Merge into previous html segment or create new one
+    if (segments.length > 0 && segments[segments.length - 1].type === 'html') {
+      (segments[segments.length - 1] as { type: 'html'; html: string }).html += outerHtml;
+    } else {
+      segments.push({ type: 'html', html: outerHtml });
+    }
+    i++;
   }
-  if (buffer) segments.push({ type: 'html', html: buffer });
+
   return segments;
 }
 
