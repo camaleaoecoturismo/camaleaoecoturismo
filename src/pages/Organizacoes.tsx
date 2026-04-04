@@ -779,7 +779,7 @@ export default function Organizacoes() {
               const Icon = icons[index];
               return (
                 <AccordionItem key={format.title} value={`formato-${index}`} className="border-0">
-                  <AccordionTrigger className="px-6 py-5 hover:no-underline hover:bg-muted/30 transition-colors [&[data-state=open]]:bg-muted/30">
+                  <AccordionTrigger className="px-6 py-5 hover:no-underline hover:bg-muted/40 transition-colors [&[data-state=open]]:bg-muted/50 [&[data-state=open]]:border-l-[3px] [&[data-state=open]]:pl-[21px]" style={{ borderLeftColor: d.color } as React.CSSProperties}>
                     <div className="flex items-center gap-4 text-left">
                       <div
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
@@ -1094,47 +1094,26 @@ export default function Organizacoes() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden">
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `linear-gradient(135deg, ${d.color} 0%, ${d.color}dd 45%, #1f1a17 100%)`,
-          }}
-        />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.16),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.08),transparent_26%)]" />
-        <div className="relative mx-auto max-w-5xl px-4 py-20 text-center md:px-6">
-          <div className="mx-auto max-w-3xl">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/12 text-white backdrop-blur-sm">
-              {tab === "empresas" ? (
-                <Building2 className="h-6 w-6" />
-              ) : tab === "escolas" ? (
-                <Bus className="h-6 w-6" />
-              ) : (
-                <Users className="h-6 w-6" />
-              )}
-            </div>
-            <h2 className="mt-6 font-serif text-3xl font-semibold leading-tight text-white sm:text-4xl">
+      <section className="bg-[#820AD1] px-4 py-14 md:px-6">
+        <div className="mx-auto max-w-7xl flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/70">
+              {tab === "empresas" ? "Para empresas" : tab === "escolas" ? "Para escolas" : "Para grupos privativos"}
+            </p>
+            <h2 className="mt-2 font-serif text-2xl font-semibold leading-snug text-white sm:text-3xl">
               {d.finalTitle}
             </h2>
-            <p className="mt-5 text-base leading-7 text-white/82">{d.finalText}</p>
-            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              <a
-                href={waLink(d.waMsg)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-stone-900 transition-transform hover:-translate-y-0.5"
-              >
-                <WhatsAppIcon />
-                {d.ctaText}
-              </a>
-              <button
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/18 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/16"
-              >
-                Voltar ao topo
-              </button>
-            </div>
+            <p className="mt-2 text-sm leading-6 text-white/80">{d.finalText}</p>
           </div>
+          <a
+            href={waLink(d.waMsg)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex shrink-0 items-center gap-2.5 rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-[#820AD1] shadow-lg transition-colors hover:bg-white/90"
+          >
+            <WhatsAppIcon />
+            {d.ctaText}
+          </a>
         </div>
       </section>
 
