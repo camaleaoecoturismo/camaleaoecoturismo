@@ -90,6 +90,7 @@ interface AdditionalParticipant {
   pricing_option_id?: string | null;
   pricing_option_name?: string | null;
   selected_optionals?: unknown;
+  instagram?: string | null;
 }
 
 interface TourCustomQuestion {
@@ -145,7 +146,7 @@ interface ParticipantRow {
   isStaff?: boolean;
 }
 
-// Default column configuration - VERSION 6 (with como_conheceu column)
+// Default column configuration - VERSION 7 (with instagram column)
 const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'index', label: '#', visible: true, order: 0 },
   { id: 'ticket', label: 'Ticket', visible: true, order: 1 },
@@ -175,11 +176,12 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'plano_saude', label: 'Plano Saúde', visible: false, order: 25 },
   { id: 'assistencia_diferenciada', label: 'Assist. Diferenciada', visible: false, order: 26 },
   { id: 'como_conheceu', label: 'Como Conheceu', visible: false, order: 27 },
-  { id: 'observacoes', label: 'Observações', visible: false, order: 28 },
-  { id: 'acoes', label: 'Ações', visible: true, order: 29 },
+  { id: 'instagram', label: 'Instagram', visible: false, order: 28 },
+  { id: 'observacoes', label: 'Observações', visible: false, order: 29 },
+  { id: 'acoes', label: 'Ações', visible: true, order: 30 },
 ];
 
-const STORAGE_KEY = 'participants_table_columns_v10';
+const STORAGE_KEY = 'participants_table_columns_v11';
 
 const mergeColumnsWithDefaults = (incoming: ColumnConfig[]): ColumnConfig[] => {
   const incomingMap = new Map(incoming.map(c => [c.id, c]));
@@ -1173,14 +1175,28 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
     switch (status) {
       case 'pago':
       case 'approved':
-        return { color: 'bg-green-100 text-green-800', label: 'Pago' };
+        return { color: 'bg-emerald-100 text-emerald-700 border border-emerald-200', label: 'Pago' };
       case 'rejeitado':
       case 'rejected':
-        return { color: 'bg-red-100 text-red-800', label: 'Rejeitado' };
+        return { color: 'bg-red-100 text-red-700 border border-red-200', label: 'Rejeitado' };
       case 'pendente':
-        return { color: 'bg-amber-100 text-amber-800', label: 'Pendente' };
+        return { color: 'bg-amber-100 text-amber-700 border border-amber-200', label: 'Pendente' };
+      case 'parcial':
+        return { color: 'bg-sky-100 text-sky-700 border border-sky-200', label: 'Parcial' };
       default:
-        return { color: 'bg-gray-100 text-gray-800', label: status };
+        return { color: 'bg-gray-100 text-gray-600 border border-gray-200', label: status };
+    }
+  };
+
+  const getPaymentMethodBadgeColor = (method?: string): string => {
+    switch (method) {
+      case 'pix': return 'bg-violet-100 text-violet-700 border border-violet-200';
+      case 'cartao':
+      case 'credit_card': return 'bg-blue-100 text-blue-700 border border-blue-200';
+      case 'dinheiro': return 'bg-green-100 text-green-700 border border-green-200';
+      case 'whatsapp':
+      case 'transferencia': return 'bg-orange-100 text-orange-700 border border-orange-200';
+      default: return 'bg-gray-100 text-gray-600 border border-gray-200';
     }
   };
 
@@ -2140,9 +2156,27 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
           </span>
         );
 
-      case 'metodo':
-        // Show payment method for all participants (same as titular's reservation)
-        return getAllPaymentMethods(reserva);
+      case 'metodo': {
+        // Show payment method badges for all participants (same as titular's reservation)
+        const methodSet: Set<string> = new Set();
+        const primary = normalizePrimaryPaymentMethod(reserva);
+        if (primary) methodSet.add(primary);
+        (reservaPaymentMethods[reserva.id] || []).forEach(m => methodSet.add(m));
+        if (methodSet.size === 0) return <span className="text-muted-foreground">-</span>;
+        return (
+          <div className="flex flex-wrap gap-1">
+            {Array.from(methodSet).map(m => {
+              const label = getPaymentMethodLabel(m);
+              if (!label) return null;
+              return (
+                <span key={m} className={`px-1.5 py-0.5 rounded text-xs ${getPaymentMethodBadgeColor(m)}`}>
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+        );
+      }
 
       case 'parcelas':
         if (!isTitular) return <span className="text-muted-foreground">-</span>;
@@ -2214,6 +2248,11 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
           'outro': 'Outro'
         }[comoConheceu] || comoConheceu;
         return <span className="text-sm">{comoConheceuLabel}</span>;
+
+      case 'instagram':
+        const instagramVal = additionalData?.instagram;
+        if (!instagramVal) return <span className="text-muted-foreground">-</span>;
+        return <span className="text-sm text-muted-foreground">{instagramVal}</span>;
 
       case 'observacoes':
         const obs = isTitular ? reserva.observacoes : additionalData?.observacoes;

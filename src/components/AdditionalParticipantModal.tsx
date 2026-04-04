@@ -33,6 +33,7 @@ interface AdditionalParticipant {
   ponto_embarque_id: string | null;
   plano_saude?: boolean;
   nome_plano_saude?: string;
+  instagram?: string | null;
 }
 
 interface BoardingPoint {
@@ -89,6 +90,7 @@ const STANDARD_FIELD_MAP: Record<string, string> = {
   'contato_emergencia_nome': 'contato_emergencia_nome',
   'contato_emergencia_telefone': 'contato_emergencia_telefone',
   'observacoes': 'observacoes',
+  'instagram': 'instagram',
 };
 
 // Fields to skip in dynamic rendering (handled internally)
@@ -134,6 +136,7 @@ const AdditionalParticipantModal: React.FC<AdditionalParticipantModalProps> = ({
     como_conheceu: '',
     como_conheceu_outro: '',
     observacoes: '',
+    instagram: '',
     valor_passeio: '',
     pricing_option_id: '',
     pricing_option_name: ''
@@ -227,6 +230,7 @@ const AdditionalParticipantModal: React.FC<AdditionalParticipantModalProps> = ({
         como_conheceu: (participant as any).como_conheceu || '',
         como_conheceu_outro: (participant as any).como_conheceu_outro || '',
         observacoes: participant.observacoes || '',
+        instagram: participant.instagram || '',
         valor_passeio: '',
         pricing_option_id: (participant as any).pricing_option_id || '',
         pricing_option_name: (participant as any).pricing_option_name || ''
@@ -451,10 +455,11 @@ const AdditionalParticipantModal: React.FC<AdditionalParticipantModalProps> = ({
         descricao_assistencia_diferenciada: formData.descricao_assistencia_diferenciada || null,
         contato_emergencia_nome: formData.contato_emergencia_nome || null,
         contato_emergencia_telefone: formData.contato_emergencia_telefone || null,
-        como_conheceu: formData.como_conheceu === 'outro' 
-          ? `Outro: ${formData.como_conheceu_outro || ''}`.trim() 
+        como_conheceu: formData.como_conheceu === 'outro'
+          ? `Outro: ${formData.como_conheceu_outro || ''}`.trim()
           : (formData.como_conheceu || null),
         observacoes: formData.observacoes || null,
+        instagram: formData.instagram?.trim() || null,
         pricing_option_id: formData.pricing_option_id || null,
         pricing_option_name: formData.pricing_option_name || null,
         updated_at: new Date().toISOString()

@@ -150,29 +150,45 @@ const ParticipantDetailsModal: React.FC<ParticipantDetailsModalProps> = ({
     }
   };
 
-  const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+  const getStatusBadgeClasses = (status: string): string => {
     switch (status) {
       case 'confirmado':
       case 'confirmada':
-        return 'default';
+        return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
       case 'cancelado':
       case 'cancelada':
-        return 'destructive';
+        return 'bg-red-100 text-red-700 border border-red-200';
       default:
-        return 'secondary';
+        return 'bg-gray-100 text-gray-600 border border-gray-200';
     }
   };
 
-  const getPaymentStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+  const getPaymentStatusBadgeClasses = (status: string): string => {
     switch (status) {
       case 'pago':
       case 'approved':
-        return 'default';
+        return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
       case 'rejeitado':
       case 'rejected':
-        return 'destructive';
+        return 'bg-red-100 text-red-700 border border-red-200';
+      case 'pendente':
+        return 'bg-amber-100 text-amber-700 border border-amber-200';
+      case 'parcial':
+        return 'bg-sky-100 text-sky-700 border border-sky-200';
       default:
-        return 'secondary';
+        return 'bg-gray-100 text-gray-600 border border-gray-200';
+    }
+  };
+
+  const getPaymentMethodBadgeClasses = (method?: string): string => {
+    switch (method) {
+      case 'pix': return 'bg-violet-100 text-violet-700 border border-violet-200';
+      case 'cartao':
+      case 'credit_card': return 'bg-blue-100 text-blue-700 border border-blue-200';
+      case 'dinheiro': return 'bg-green-100 text-green-700 border border-green-200';
+      case 'whatsapp':
+      case 'transferencia': return 'bg-orange-100 text-orange-700 border border-orange-200';
+      default: return 'bg-gray-100 text-gray-600 border border-gray-200';
     }
   };
 
@@ -233,16 +249,21 @@ const ParticipantDetailsModal: React.FC<ParticipantDetailsModalProps> = ({
         <div className="space-y-6">
           {/* Status Cards */}
           <div className="flex gap-2 flex-wrap">
-            <Badge variant={getStatusBadgeVariant(reserva.status)} className="capitalize">
+            <span className={`px-2 py-0.5 rounded text-xs capitalize ${getStatusBadgeClasses(reserva.status)}`}>
               {reserva.status}
-            </Badge>
-            <Badge variant={getPaymentStatusBadgeVariant(reserva.payment_status)} className="capitalize">
-              {reserva.payment_status}
-            </Badge>
+            </span>
+            <span className={`px-2 py-0.5 rounded text-xs capitalize ${getPaymentStatusBadgeClasses(reserva.payment_status)}`}>
+              {reserva.payment_status === 'pago' ? 'Pago' : reserva.payment_status === 'pendente' ? 'Pendente' : reserva.payment_status}
+            </span>
+            {reserva.payment_method && (
+              <span className={`px-2 py-0.5 rounded text-xs ${getPaymentMethodBadgeClasses(reserva.capture_method === 'credit_card' ? 'cartao' : reserva.capture_method === 'pix' ? 'pix' : reserva.payment_method)}`}>
+                {getPaymentMethodLabel(reserva.payment_method)}
+              </span>
+            )}
             {reserva.ticket_enviado && (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <span className="px-2 py-0.5 rounded text-xs bg-green-50 text-green-700 border border-green-200">
                 Ticket Enviado
-              </Badge>
+              </span>
             )}
           </div>
 
@@ -344,8 +365,12 @@ const ParticipantDetailsModal: React.FC<ParticipantDetailsModalProps> = ({
 
               <div className="grid gap-2 md:grid-cols-3 pt-2">
                 <div className="p-2 bg-muted/50 rounded-lg text-center">
-                  <span className="text-xs text-muted-foreground">Método</span>
-                  <div className="text-sm font-medium">{getPaymentMethodLabel(reserva.payment_method)}</div>
+                  <span className="text-xs text-muted-foreground block mb-1">Método</span>
+                  {reserva.payment_method ? (
+                    <span className={`px-2 py-0.5 rounded text-xs ${getPaymentMethodBadgeClasses(reserva.capture_method === 'credit_card' ? 'cartao' : reserva.capture_method === 'pix' ? 'pix' : reserva.payment_method)}`}>
+                      {getPaymentMethodLabel(reserva.payment_method)}
+                    </span>
+                  ) : <span className="text-sm text-muted-foreground">-</span>}
                 </div>
                 {reserva.installments && reserva.installments > 1 && (
                   <div className="p-2 bg-muted/50 rounded-lg text-center">

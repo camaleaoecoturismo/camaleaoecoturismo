@@ -656,29 +656,30 @@ const TourManagement: React.FC<TourManagementProps> = ({
         // If no parcelas in DB but has valor_pago, create one entry as legacy data
         const reserva = reservas.find(r => r.id === reservaId);
         if (reserva?.valor_pago && reserva.valor_pago > 0) {
-          // IMPORTANTE: usar o valor gravado no momento do pagamento (estático),
-          // NÃO recalcular dinamicamente, para que opcionais adicionados depois não afetem o valor pago.
-          const valorSalvoNoPagamento = reserva.valor_total_com_opcionais || reserva.valor_passeio || 0;
-          const isCartao = reserva.payment_method?.toLowerCase().includes('cartao') || 
-                          reserva.payment_method?.toLowerCase().includes('cartão') ||
-                          reserva.payment_method?.toLowerCase().includes('card') ||
-                          reserva.payment_method?.toLowerCase() === 'credit_card';
-          
-          // Para cartão, usar o valor gravado no pagamento (sem juros). Para outros, usar valor_pago direto.
-          const valorParcela = isCartao ? valorSalvoNoPagamento : reserva.valor_pago;
-          
+          // valor_pago já é o valor base (sem juros) — o webhook salva valor_total_com_opcionais aqui
+          const valorParcela = reserva.valor_pago;
+
+          // Determinar forma de pagamento: capture_method tem precedência sobre payment_method
+          const formaLegacy = (() => {
+            if (reserva.capture_method === 'credit_card') return 'cartao';
+            if (reserva.capture_method === 'pix') return 'pix';
+            const pm = reserva.payment_method?.toLowerCase() || '';
+            if (pm.includes('cartao') || pm.includes('cartão') || pm.includes('card') || pm === 'credit_card') return 'cartao';
+            return reserva.payment_method || 'pix';
+          })();
+
           // Usar a data de pagamento real se existir, senão a data atual
-          const dataPagamento = reserva.data_pagamento 
+          const dataPagamento = reserva.data_pagamento
             ? new Date(reserva.data_pagamento).toISOString().split('T')[0]
             : new Date().toISOString().split('T')[0];
-          
+
           setPagamentos(prev => ({
             ...prev,
             [reservaId]: [{
               id: `legacy-${Date.now()}`,
               valor: valorParcela,
               data: dataPagamento,
-              forma: reserva.payment_method || 'pix',
+              forma: formaLegacy,
               isNew: true // Mark as new so it gets saved to the new table
             }]
           }));
@@ -2112,25 +2113,26 @@ const TourManagement: React.FC<TourManagementProps> = ({
 
               {/* Lista de Pagamentos */}
               <div className="space-y-3">
-                {(pagamentos[showPaymentModal] || []).map((pagamento, index) => <div key={pagamento.id} className="grid grid-cols-5 gap-3 items-center p-3 border rounded-lg">
+                {(pagamentos[showPaymentModal] || []).map((pagamento, index) => <div key={pagamento.id} className="grid grid-cols-5 gap-3 items-center p-3 border rounded-lg bg-muted/30">
                     <div>
-                      <label className="text-sm font-medium">Parcela {index + 1}</label>
+                      <label className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Parcela</label>
+                      <div className="text-sm font-semibold mt-0.5">{index + 1}</div>
                     </div>
-                    
+
                     <div>
-                      <label className="text-sm text-muted-foreground">Valor</label>
-                      <Input type="number" step="0.01" value={pagamento.valor} onChange={e => atualizarPagamento(showPaymentModal, pagamento.id, 'valor', parseFloat(e.target.value) || 0)} placeholder="R$ 0,00" />
+                      <label className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Valor</label>
+                      <Input type="number" step="0.01" value={pagamento.valor} onChange={e => atualizarPagamento(showPaymentModal, pagamento.id, 'valor', parseFloat(e.target.value) || 0)} placeholder="R$ 0,00" className="mt-0.5" />
                     </div>
-                    
+
                     <div>
-                      <label className="text-sm text-muted-foreground">Data</label>
-                      <Input type="date" value={pagamento.data} onChange={e => atualizarPagamento(showPaymentModal, pagamento.id, 'data', e.target.value)} />
+                      <label className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Data</label>
+                      <Input type="date" value={pagamento.data} onChange={e => atualizarPagamento(showPaymentModal, pagamento.id, 'data', e.target.value)} className="mt-0.5" />
                     </div>
-                    
+
                     <div>
-                      <label className="text-sm text-muted-foreground">Forma</label>
+                      <label className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Forma</label>
                       <Select value={pagamento.forma} onValueChange={value => atualizarPagamento(showPaymentModal, pagamento.id, 'forma', value)}>
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-0.5">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -2142,7 +2144,7 @@ const TourManagement: React.FC<TourManagementProps> = ({
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="flex justify-end">
                       <Button variant="destructive" size="sm" onClick={() => removerPagamento(showPaymentModal, pagamento.id)}>
                         <Trash2 className="h-4 w-4" />
@@ -2152,27 +2154,27 @@ const TourManagement: React.FC<TourManagementProps> = ({
 
                 {/* Resumo dos Pagamentos */}
                 <div className="border-t pt-4 space-y-2">
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div className="p-3 bg-green-50 rounded-lg">
-                      <span className="text-green-700 font-medium">Total Pago</span>
-                      <div className="text-lg font-bold text-green-800">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                      <span className="text-xs text-emerald-700 font-medium uppercase tracking-wide">Total Pago</span>
+                      <div className="text-base font-bold text-emerald-800 mt-0.5">
                         {formatarValor(calcularTotalPago(showPaymentModal))}
                       </div>
-                      <div className="text-xs text-green-600">
+                      <div className="text-xs text-emerald-600">
                         {(pagamentos[showPaymentModal] || []).length} parcela(s)
                       </div>
                     </div>
-                    
-                    <div className="p-3 bg-blue-50 rounded-lg">
-                      <span className="text-blue-700 font-medium">Valor Total</span>
-                      <div className="text-lg font-bold text-blue-800">
+
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <span className="text-xs text-blue-700 font-medium uppercase tracking-wide">Valor Total</span>
+                      <div className="text-base font-bold text-blue-800 mt-0.5">
                         {formatarValor(calcularValorTotal(filteredReservas.find(r => r.id === showPaymentModal)!))}
                       </div>
                     </div>
                     
-                    <div className="p-3 bg-red-50 rounded-lg">
-                      <span className="text-red-700 font-medium">Saldo Restante</span>
-                      <div className="text-lg font-bold text-red-800">
+                    <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                      <span className="text-xs text-red-700 font-medium uppercase tracking-wide">Saldo Restante</span>
+                      <div className="text-base font-bold text-red-800 mt-0.5">
                         {formatarValor(calcularValorTotal(filteredReservas.find(r => r.id === showPaymentModal)!) - calcularTotalPago(showPaymentModal))}
                       </div>
                     </div>

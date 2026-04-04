@@ -51,6 +51,7 @@ interface Payment {
   valor_pago: number;
   payment_status: string;
   payment_method: string;
+  capture_method: string;
   installments: number;
   mp_payment_id: string;
   data_pagamento: string;
@@ -244,6 +245,7 @@ export default function PaymentsManagement() {
           valor_total_com_opcionais,
           payment_status,
           payment_method,
+          capture_method,
           installments,
           mp_payment_id,
           data_pagamento,
@@ -274,7 +276,12 @@ export default function PaymentsManagement() {
         valor_total: r.valor_total_com_opcionais || r.valor_passeio || 0,
         valor_pago: r.valor_pago || 0,
         payment_status: r.payment_status || 'pendente',
-        payment_method: r.payment_method || 'pix',
+        capture_method: r.capture_method || '',
+        payment_method: (() => {
+          if (r.capture_method === 'credit_card') return 'cartao';
+          if (r.capture_method === 'pix') return 'pix';
+          return r.payment_method || 'pix';
+        })(),
         installments: r.installments || 1,
         mp_payment_id: r.mp_payment_id || '',
         data_pagamento: r.data_pagamento || '',

@@ -1311,7 +1311,6 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
           descricao_problema_saude: buyerProblemaSaude ? buyerDescProblemaSaude : null,
           contato_emergencia_nome: buyerContatoNome || null,
           contato_emergencia_telefone: buyerContatoTel?.replace(/\D/g, "") || null,
-          instagram: formData.instagram?.trim() || null,
           capture_method: "website_modal",
         });
 
