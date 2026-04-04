@@ -151,6 +151,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
   const participantRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
   const [fotoPopup, setFotoPopup] = useState<{ url: string; nome: string } | null>(null);
+  const [mapsPopup, setMapsPopup] = useState<{ embedUrl: string; nome: string; mapsLink: string } | null>(null);
 
   // Scroll to participant when expanded
   useEffect(() => {
@@ -164,6 +165,34 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
       }, 50);
     }
   }, [scrollToIndex]);
+
+  const getMapsEmbedUrl = (mapsLink: string, endereco?: string): string => {
+    try {
+      const url = new URL(mapsLink);
+      // Already an embed URL
+      if (mapsLink.includes('/embed') || mapsLink.includes('output=embed')) return mapsLink;
+      // Try to extract coordinates from Google Maps URL (@lat,lng)
+      const coordMatch = mapsLink.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (coordMatch) {
+        return `https://www.google.com/maps/embed?pb=!1m0!4v0!5m2!1spt!2sbr!1m0!3m2!1d${coordMatch[1]}!2d${coordMatch[2]}!4m5!3e6!4m0!4m2!3d${coordMatch[1]}!4d${coordMatch[2]}`;
+      }
+      // For Google Maps: use address as query
+      const query = endereco || url.searchParams.get('q') || url.pathname.replace('/maps/place/', '').split('/')[0];
+      return `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyf4Xj6yUmX8mSmMQBQr1pXEoXCA&q=${encodeURIComponent(query)}`;
+    } catch {
+      // Fallback: use address
+      const query = endereco || mapsLink;
+      return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&output=embed&hl=pt-BR`;
+    }
+  };
+
+  const openMapsPopup = (point: BoardingPoint) => {
+    const mapsLink = point.maps_link!;
+    // Use address-based embed as most reliable approach
+    const query = point.endereco || point.nome;
+    const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&output=embed&hl=pt-BR`;
+    setMapsPopup({ embedUrl, nome: point.nome, mapsLink });
+  };
 
   const isParticipantValid = (p: ParticipantFormData): boolean => {
     if (!p.nome_completo.trim() || p.nome_completo.trim().length < 3) return false;
@@ -697,16 +726,17 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                                 </div>
                                 <div className="flex items-center gap-1 flex-shrink-0">
                                   {point.maps_link && (
-                                    <a
-                                      href={point.maps_link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      onClick={(e) => e.stopPropagation()}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openMapsPopup(point);
+                                      }}
                                       className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-1.5 py-1 rounded border border-blue-200 transition-colors"
                                     >
                                       <Map className="h-2.5 w-2.5" />
                                       Maps
-                                    </a>
+                                    </button>
                                   )}
                                   {point.foto_url && (
                                     <button
@@ -1063,6 +1093,48 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                   {fotoPopup.nome}
                 </p>
               </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Maps popup */}
+    <Dialog open={!!mapsPopup} onOpenChange={(open) => { if (!open) setMapsPopup(null); }}>
+      <DialogContent className="max-w-lg p-0 overflow-hidden">
+        <div className="relative">
+          <button
+            onClick={() => setMapsPopup(null)}
+            className="absolute top-2 right-2 z-10 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          {mapsPopup && (
+            <>
+              <div className="px-4 py-3 border-b bg-white flex items-center justify-between">
+                <p className="text-sm font-medium text-slate-800 flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                  {mapsPopup.nome}
+                </p>
+                <a
+                  href={mapsPopup.mapsLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  Abrir no Maps
+                </a>
+              </div>
+              <iframe
+                src={mapsPopup.embedUrl}
+                width="100%"
+                height="300"
+                style={{ border: 0 }}
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+                title={mapsPopup.nome}
+              />
             </>
           )}
         </div>
