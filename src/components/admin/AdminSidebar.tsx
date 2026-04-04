@@ -178,6 +178,7 @@ const navGroups: NavGroup[] = [
       { id: 'tour-moments', label: 'Momentos', icon: <Film className="h-5 w-5" /> },
       { id: 'depoimentos', label: 'Depoimentos', icon: <Star className="h-5 w-5" /> },
       { id: 'formularios', label: 'Formulários', icon: <FileQuestion className="h-5 w-5" /> },
+      { id: 'categorias', label: 'Categorias', icon: <Tag className="h-5 w-5" /> },
     ],
   },
   {

@@ -23,6 +23,7 @@ import AdminGuias from "@/components/admin/AdminGuias";
 import AdminPaginasInstitucional from "@/components/admin/AdminPaginasInstitucional";
 import AdminDepoimentos from "@/components/admin/AdminDepoimentos";
 import AdminHomeSections from "@/components/admin/AdminHomeSections";
+import AdminCategorias from "@/components/admin/AdminCategorias";
 import AdminStories from "@/components/admin/AdminStories";
 import AdminTourMoments from "@/components/admin/AdminTourMoments";
 import { useToast } from "@/hooks/use-toast";
@@ -331,6 +332,8 @@ const Admin = () => {
         return <ExportToursModule />;
       case 'guias':
         return <AdminGuias />;
+      case 'categorias':
+        return <AdminCategorias />;
       default:
         return <TourManagementTab tours={allToursForManagement} onRefresh={fetchTours} viewMode="dashboard" />;
     }

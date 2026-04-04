@@ -148,6 +148,11 @@ const moreMenuItems: MenuItem[] = [
     icon: <FileQuestion className="h-5 w-5" />,
   },
   {
+    id: 'categorias',
+    label: 'Categorias',
+    icon: <Tag className="h-5 w-5" />,
+  },
+  {
     id: 'analytics',
     label: 'Analytics',
     icon: <Activity className="h-5 w-5" />,

@@ -1,20 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, Plus, Trash2, Edit, X, Check, Clock } from "lucide-react";
+import { MapPin, Plus, Trash2, Edit, X, Check, Clock, Upload, Loader2, ExternalLink } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-interface TourBoardingPoint {
+interface PontoEmbarque {
   id: string;
   nome: string;
   endereco: string | null;
-  horario: string | null;
   maps_link: string | null;
   foto_url: string | null;
-  order_index: number;
+  ativo: boolean;
+  ordem: number;
+}
+
+interface TourPontoLink {
+  id: string;
+  ponto_embarque_id: string;
+  horario: string | null;
 }
 
 interface TourBoardingPointsManagerProps {
@@ -22,488 +29,395 @@ interface TourBoardingPointsManagerProps {
   tourName: string;
 }
 
-export function TourBoardingPointsManager({
-  tourId,
-  tourName
-}: TourBoardingPointsManagerProps) {
-  const [boardingPoints, setBoardingPoints] = useState<TourBoardingPoint[]>([]);
-  const [loading, setLoading] = useState(false);
+const EMPTY_PONTO = { nome: '', endereco: '', maps_link: '', foto_url: '' };
+
+export function TourBoardingPointsManager({ tourId, tourName }: TourBoardingPointsManagerProps) {
+  const [allPontos, setAllPontos] = useState<PontoEmbarque[]>([]);
+  const [links, setLinks] = useState<TourPontoLink[]>([]); // which pontos this tour has selected
+  const [horarios, setHorarios] = useState<Record<string, string>>({}); // ponto_id → horario
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [newPoint, setNewPoint] = useState({
-    nome: '',
-    endereco: '',
-    horario: '',
-    maps_link: '',
-    foto_url: '',
-  });
-  const [editingPoint, setEditingPoint] = useState({
-    nome: '',
-    endereco: '',
-    horario: '',
-    maps_link: '',
-    foto_url: '',
-  });
+
+  // Dialog for creating/editing a global ponto
+  const [showPontoDialog, setShowPontoDialog] = useState(false);
+  const [editingPonto, setEditingPonto] = useState<PontoEmbarque | null>(null);
+  const [pontoForm, setPontoForm] = useState(EMPTY_PONTO);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const { toast } = useToast();
 
   useEffect(() => {
-    if (tourId) {
-      fetchBoardingPoints();
-    }
+    fetchData();
   }, [tourId]);
 
-  const fetchBoardingPoints = async () => {
+  const fetchData = async () => {
     setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('tour_boarding_points')
-        .select('*')
-        .eq('tour_id', tourId)
-        .order('order_index');
+    const [{ data: pontos }, { data: tourLinks }] = await Promise.all([
+      supabase.from('pontos_embarque').select('*').eq('ativo', true).order('ordem').order('nome'),
+      supabase.from('tour_pontos_embarque').select('id, ponto_embarque_id, horario').eq('tour_id', tourId),
+    ]);
 
-      if (error) throw error;
-      setBoardingPoints((data || []) as unknown as TourBoardingPoint[]);
-    } catch (error: any) {
-      toast({
-        title: "Erro ao carregar pontos de embarque",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+    setAllPontos((pontos || []) as unknown as PontoEmbarque[]);
+    setLinks((tourLinks || []) as unknown as TourPontoLink[]);
+
+    // Build horarios map
+    const h: Record<string, string> = {};
+    (tourLinks || []).forEach((l: any) => { h[l.ponto_embarque_id] = l.horario || ''; });
+    setHorarios(h);
+    setLoading(false);
   };
 
-  const addBoardingPoint = async () => {
-    if (!newPoint.nome.trim()) {
-      toast({
-        title: "Nome obrigatório",
-        description: "Por favor, insira um nome para o ponto de embarque.",
-        variant: "destructive"
-      });
-      return;
-    }
+  const isSelected = (pontoId: string) => links.some(l => l.ponto_embarque_id === pontoId);
 
-    setSaving(true);
-    try {
-      const maxOrder = Math.max(...boardingPoints.map(p => p.order_index), -1);
-      
+  const togglePonto = async (pontoId: string) => {
+    if (isSelected(pontoId)) {
+      // Remove
+      const link = links.find(l => l.ponto_embarque_id === pontoId);
+      if (!link) return;
+      await supabase.from('tour_pontos_embarque').delete().eq('id', link.id);
+      setLinks(prev => prev.filter(l => l.ponto_embarque_id !== pontoId));
+      setHorarios(prev => { const n = { ...prev }; delete n[pontoId]; return n; });
+    } else {
+      // Add (without horario yet)
       const { data, error } = await supabase
-        .from('tour_boarding_points')
-        .insert({
-          tour_id: tourId,
-          nome: newPoint.nome.trim(),
-          endereco: newPoint.endereco.trim() || null,
-          horario: newPoint.horario.trim() || null,
-          maps_link: newPoint.maps_link.trim() || null,
-          foto_url: newPoint.foto_url.trim() || null,
-          order_index: maxOrder + 1
-        })
+        .from('tour_pontos_embarque')
+        .insert({ tour_id: tourId, ponto_embarque_id: pontoId, horario: null })
         .select()
         .single();
-
-      if (error) throw error;
-
-      setBoardingPoints(prev => [...prev, data as unknown as TourBoardingPoint]);
-      setNewPoint({ nome: '', endereco: '', horario: '', maps_link: '', foto_url: '' });
-      
-      toast({
-        title: "Ponto de embarque adicionado!",
-        description: `${data.nome} foi adicionado com sucesso.`
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao adicionar ponto de embarque",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setSaving(false);
+      if (error) { toast({ title: 'Erro', description: error.message, variant: 'destructive' }); return; }
+      setLinks(prev => [...prev, data as unknown as TourPontoLink]);
+      setHorarios(prev => ({ ...prev, [pontoId]: '' }));
     }
   };
 
-  const updateBoardingPoint = async (pointId: string) => {
-    if (!editingPoint.nome.trim()) {
-      toast({
-        title: "Nome obrigatório",
-        description: "Por favor, insira um nome para o ponto de embarque.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const { data, error } = await supabase
-        .from('tour_boarding_points')
-        .update({
-          nome: editingPoint.nome.trim(),
-          endereco: editingPoint.endereco.trim() || null,
-          horario: editingPoint.horario.trim() || null,
-          maps_link: editingPoint.maps_link.trim() || null,
-          foto_url: editingPoint.foto_url.trim() || null,
-        })
-        .eq('id', pointId)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setBoardingPoints(prev =>
-        prev.map(point => point.id === pointId ? (data as unknown as TourBoardingPoint) : point)
-      );
-      setEditingId(null);
-      
-      toast({
-        title: "Ponto de embarque atualizado!",
-        description: `${data.nome} foi atualizado com sucesso.`
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao atualizar ponto de embarque",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setSaving(false);
-    }
+  const saveHorario = async (pontoId: string) => {
+    const link = links.find(l => l.ponto_embarque_id === pontoId);
+    if (!link) return;
+    const { error } = await supabase
+      .from('tour_pontos_embarque')
+      .update({ horario: horarios[pontoId] || null })
+      .eq('id', link.id);
+    if (error) { toast({ title: 'Erro ao salvar horário', description: error.message, variant: 'destructive' }); }
+    else { toast({ title: 'Horário salvo!' }); }
   };
 
-  const deleteBoardingPoint = async (pointId: string) => {
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from('tour_boarding_points')
-        .delete()
-        .eq('id', pointId);
-
-      if (error) throw error;
-
-      setBoardingPoints(prev => prev.filter(point => point.id !== pointId));
-      
-      toast({
-        title: "Ponto de embarque removido!",
-        description: "O ponto foi removido com sucesso."
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao remover ponto de embarque",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setSaving(false);
-    }
+  // --- Global ponto management ---
+  const openCreateDialog = () => {
+    setEditingPonto(null);
+    setPontoForm(EMPTY_PONTO);
+    setShowPontoDialog(true);
   };
 
-  const startEditing = (point: TourBoardingPoint) => {
-    setEditingId(point.id);
-    setEditingPoint({
-      nome: point.nome,
-      endereco: point.endereco || '',
-      horario: point.horario || '',
-      maps_link: point.maps_link || '',
-      foto_url: point.foto_url || '',
+  const openEditDialog = (ponto: PontoEmbarque) => {
+    setEditingPonto(ponto);
+    setPontoForm({
+      nome: ponto.nome,
+      endereco: ponto.endereco || '',
+      maps_link: ponto.maps_link || '',
+      foto_url: ponto.foto_url || '',
     });
+    setShowPontoDialog(true);
   };
 
-  const cancelEditing = () => {
-    setEditingId(null);
-    setEditingPoint({ nome: '', endereco: '', horario: '', maps_link: '', foto_url: '' });
-  };
-
-  // Extract time from name pattern like "06h00 - Nome" or "06H00 - Nome"
-  const extractTimeFromName = (name: string): string | null => {
-    const timePatterns = [
-      /^(\d{2}[hH]\d{2})/,           // "06h00" or "06H00" at start
-      /^(\d{2}:\d{2})/,              // "06:00" at start
-      /^(\d{1,2}[hH]\d{2})/,         // "6h00" at start
-    ];
-    
-    for (const pattern of timePatterns) {
-      const match = name.match(pattern);
-      if (match) {
-        return match[1];
-      }
+  const uploadFoto = async (file: File): Promise<string | null> => {
+    setUploadingFoto(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `pontos-embarque/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('tour-images').upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from('tour-images').getPublicUrl(path);
+      return data.publicUrl;
+    } catch (e: any) {
+      toast({ title: 'Erro ao subir foto', description: e.message, variant: 'destructive' });
+      return null;
+    } finally {
+      setUploadingFoto(false);
     }
-    return null;
   };
 
-  // Auto-extract times from all points that don't have horario set
-  const autoExtractTimes = async () => {
-    const pointsToUpdate = boardingPoints.filter(p => !p.horario);
-    if (pointsToUpdate.length === 0) {
-      toast({
-        title: "Nenhum ponto para atualizar",
-        description: "Todos os pontos já têm horário definido."
-      });
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = await uploadFoto(file);
+    if (url) setPontoForm(prev => ({ ...prev, foto_url: url }));
+  };
+
+  const savePontoGlobal = async () => {
+    if (!pontoForm.nome.trim()) {
+      toast({ title: 'Nome obrigatório', variant: 'destructive' });
       return;
     }
-
     setSaving(true);
-    let updated = 0;
-    
     try {
-      for (const point of pointsToUpdate) {
-        const extractedTime = extractTimeFromName(point.nome);
-        if (extractedTime) {
-          const { error } = await supabase
-            .from('tour_boarding_points')
-            .update({ horario: extractedTime })
-            .eq('id', point.id);
-          
-          if (!error) {
-            updated++;
-          }
-        }
-      }
-      
-      if (updated > 0) {
-        await fetchBoardingPoints();
-        toast({
-          title: `${updated} horário(s) extraído(s)!`,
-          description: "Os horários foram preenchidos automaticamente."
-        });
+      if (editingPonto) {
+        const { data, error } = await supabase
+          .from('pontos_embarque')
+          .update({
+            nome: pontoForm.nome.trim(),
+            endereco: pontoForm.endereco.trim() || null,
+            maps_link: pontoForm.maps_link.trim() || null,
+            foto_url: pontoForm.foto_url.trim() || null,
+          })
+          .eq('id', editingPonto.id)
+          .select()
+          .single();
+        if (error) throw error;
+        setAllPontos(prev => prev.map(p => p.id === editingPonto.id ? (data as unknown as PontoEmbarque) : p));
+        toast({ title: 'Ponto atualizado!' });
       } else {
-        toast({
-          title: "Nenhum horário encontrado",
-          description: "Não foi possível extrair horários dos nomes dos pontos.",
-          variant: "destructive"
-        });
+        const maxOrdem = Math.max(...allPontos.map(p => p.ordem), -1);
+        const { data, error } = await supabase
+          .from('pontos_embarque')
+          .insert({
+            nome: pontoForm.nome.trim(),
+            endereco: pontoForm.endereco.trim() || null,
+            maps_link: pontoForm.maps_link.trim() || null,
+            foto_url: pontoForm.foto_url.trim() || null,
+            ativo: true,
+            ordem: maxOrdem + 1,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+        setAllPontos(prev => [...prev, data as unknown as PontoEmbarque]);
+        toast({ title: 'Ponto criado!' });
       }
-    } catch (error: any) {
-      toast({
-        title: "Erro ao extrair horários",
-        description: error.message,
-        variant: "destructive"
-      });
+      setShowPontoDialog(false);
+    } catch (e: any) {
+      toast({ title: 'Erro ao salvar', description: e.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
+  };
+
+  const deletePontoGlobal = async (ponto: PontoEmbarque) => {
+    if (!confirm(`Excluir "${ponto.nome}" do cadastro global? Viagens que o usam perderão a associação.`)) return;
+    const { error } = await supabase.from('pontos_embarque').update({ ativo: false }).eq('id', ponto.id);
+    if (error) { toast({ title: 'Erro', description: error.message, variant: 'destructive' }); return; }
+    setAllPontos(prev => prev.filter(p => p.id !== ponto.id));
+    setLinks(prev => prev.filter(l => l.ponto_embarque_id !== ponto.id));
+    toast({ title: 'Ponto removido.' });
   };
 
   if (loading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center p-8">
-          <div className="text-muted-foreground">Carregando pontos de embarque...</div>
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </CardContent>
       </Card>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
-            Pontos de Embarque - {tourName}
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Gerencie os pontos de embarque específicos deste tour. Cada tour tem seus próprios pontos independentes.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Add new point form */}
-          <div className="p-4 border rounded-lg bg-muted/50">
-            <h4 className="font-medium mb-3">Adicionar Novo Ponto</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <Label htmlFor="new-nome">Nome do Ponto *</Label>
-                <Input
-                  id="new-nome"
-                  placeholder="ex: Centro de Maceió, Shopping..."
-                  value={newPoint.nome}
-                  onChange={e => setNewPoint(prev => ({ ...prev, nome: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="new-endereco">Endereço (opcional)</Label>
-                <Input
-                  id="new-endereco"
-                  placeholder="Endereço completo"
-                  value={newPoint.endereco}
-                  onChange={e => setNewPoint(prev => ({ ...prev, endereco: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="new-horario">Horário (opcional)</Label>
-                <Input
-                  id="new-horario"
-                  placeholder="ex: 05h00"
-                  value={newPoint.horario}
-                  onChange={e => setNewPoint(prev => ({ ...prev, horario: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="new-maps">Link Google Maps (opcional)</Label>
-                <Input
-                  id="new-maps"
-                  placeholder="https://maps.google.com/..."
-                  value={newPoint.maps_link}
-                  onChange={e => setNewPoint(prev => ({ ...prev, maps_link: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="new-foto">URL da Foto do Local (opcional)</Label>
-                <Input
-                  id="new-foto"
-                  placeholder="https://..."
-                  value={newPoint.foto_url}
-                  onChange={e => setNewPoint(prev => ({ ...prev, foto_url: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end mt-3">
-              <Button onClick={addBoardingPoint} disabled={saving} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                {saving ? 'Adicionando...' : 'Adicionar'}
-              </Button>
-            </div>
-          </div>
+  const selectedLinks = links;
+  const selectedPontos = allPontos.filter(p => isSelected(p.id));
+  const unselectedPontos = allPontos.filter(p => !isSelected(p.id));
 
-          {/* Existing points list */}
-          {boardingPoints.length === 0 ? (
-            <div className="text-center py-8">
-              <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">
-                Nenhum ponto de embarque configurado para este tour.
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <MapPin className="h-4 w-4" />
+                Pontos de Embarque — {tourName}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Selecione os pontos disponíveis para esta viagem e defina o horário de cada um.
               </p>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="font-medium">Pontos Configurados ({boardingPoints.length})</h4>
-                {boardingPoints.some(p => !p.horario) && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={autoExtractTimes}
-                    disabled={saving}
+            <Button size="sm" variant="outline" onClick={openCreateDialog}>
+              <Plus className="h-4 w-4 mr-1" />
+              Novo Ponto
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {/* Selected pontos with horario */}
+          {selectedPontos.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Selecionados para esta viagem</p>
+              {selectedPontos.map(ponto => (
+                <div key={ponto.id} className="flex items-center gap-3 p-3 border border-emerald-200 bg-emerald-50/50 rounded-lg">
+                  <button
+                    onClick={() => togglePonto(ponto.id)}
+                    className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center hover:bg-red-400 transition-colors group"
+                    title="Remover desta viagem"
                   >
-                    <Clock className="h-4 w-4 mr-2" />
-                    Extrair Horários dos Nomes
+                    <Check className="h-3 w-3 text-white group-hover:hidden" />
+                    <X className="h-3 w-3 text-white hidden group-hover:block" />
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium">{ponto.nome}</span>
+                      {ponto.endereco && (
+                        <span className="text-xs text-muted-foreground truncate">{ponto.endereco}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      {ponto.maps_link && (
+                        <a href={ponto.maps_link} target="_blank" rel="noopener noreferrer"
+                          className="text-[10px] text-blue-600 hover:underline flex items-center gap-0.5">
+                          <ExternalLink className="h-2.5 w-2.5" />Maps
+                        </a>
+                      )}
+                      {ponto.foto_url && (
+                        <a href={ponto.foto_url} target="_blank" rel="noopener noreferrer"
+                          className="text-[10px] text-emerald-600 hover:underline">📷 foto</a>
+                      )}
+                    </div>
+                  </div>
+                  {/* Horario input */}
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      className="h-7 w-20 text-xs"
+                      placeholder="05h00"
+                      value={horarios[ponto.id] || ''}
+                      onChange={e => setHorarios(prev => ({ ...prev, [ponto.id]: e.target.value }))}
+                      onBlur={() => saveHorario(ponto.id)}
+                      onKeyDown={e => { if (e.key === 'Enter') saveHorario(ponto.id); }}
+                    />
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 flex-shrink-0"
+                    onClick={() => openEditDialog(ponto)}>
+                    <Edit className="h-3.5 w-3.5" />
                   </Button>
-                )}
-              </div>
-              {boardingPoints.map((point, index) => (
-                <div key={point.id} className="p-4 border rounded-lg">
-                  {editingId === point.id ? (
-                    // Editing mode
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div>
-                          <Label>Nome do Ponto *</Label>
-                          <Input
-                            value={editingPoint.nome}
-                            onChange={e => setEditingPoint(prev => ({ ...prev, nome: e.target.value }))}
-                          />
-                        </div>
-                        <div>
-                          <Label>Endereço (opcional)</Label>
-                          <Input
-                            value={editingPoint.endereco}
-                            onChange={e => setEditingPoint(prev => ({ ...prev, endereco: e.target.value }))}
-                          />
-                        </div>
-                        <div>
-                          <Label>Horário (opcional)</Label>
-                          <Input
-                            value={editingPoint.horario}
-                            placeholder="ex: 05h00"
-                            onChange={e => setEditingPoint(prev => ({ ...prev, horario: e.target.value }))}
-                          />
-                        </div>
-                        <div>
-                          <Label>Link Google Maps (opcional)</Label>
-                          <Input
-                            value={editingPoint.maps_link}
-                            placeholder="https://maps.google.com/..."
-                            onChange={e => setEditingPoint(prev => ({ ...prev, maps_link: e.target.value }))}
-                          />
-                        </div>
-                        <div>
-                          <Label>URL da Foto do Local (opcional)</Label>
-                          <Input
-                            value={editingPoint.foto_url}
-                            placeholder="https://..."
-                            onChange={e => setEditingPoint(prev => ({ ...prev, foto_url: e.target.value }))}
-                          />
-                        </div>
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={cancelEditing}>
-                          <X className="h-4 w-4 mr-1" />
-                          Cancelar
-                        </Button>
-                        <Button size="sm" onClick={() => updateBoardingPoint(point.id)} disabled={saving}>
-                          <Check className="h-4 w-4 mr-1" />
-                          {saving ? 'Salvando...' : 'Salvar'}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    // View mode
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                            #{index + 1}
-                          </span>
-                          <h5 className="font-medium">{point.nome}</h5>
-                          {point.horario && (
-                            <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {point.horario}
-                            </span>
-                          )}
-                        </div>
-                        {point.endereco && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {point.endereco}
-                          </p>
-                        )}
-                        <div className="flex gap-2 mt-1">
-                          {point.maps_link && (
-                            <a href={point.maps_link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 underline">
-                              🗺️ Maps
-                            </a>
-                          )}
-                          {point.foto_url && (
-                            <a href={point.foto_url} target="_blank" rel="noopener noreferrer" className="text-xs text-green-600 underline">
-                              📷 Foto
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => startEditing(point)}
-                          disabled={saving}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteBoardingPoint(point.id)}
-                          disabled={saving}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
           )}
+
+          {/* Available (unselected) pontos */}
+          {unselectedPontos.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Disponíveis no cadastro</p>
+              {unselectedPontos.map(ponto => (
+                <div key={ponto.id} className="flex items-center gap-3 p-3 border border-dashed border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-colors">
+                  <button
+                    onClick={() => togglePonto(ponto.id)}
+                    className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-slate-300 hover:border-emerald-400 hover:bg-emerald-50 transition-colors"
+                    title="Adicionar a esta viagem"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-slate-600">{ponto.nome}</span>
+                    {ponto.endereco && (
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">{ponto.endereco}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {ponto.foto_url && <span className="text-[10px] text-muted-foreground">📷</span>}
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0"
+                      onClick={() => openEditDialog(ponto)}>
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      onClick={() => deletePontoGlobal(ponto)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {allPontos.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              Nenhum ponto de embarque cadastrado ainda.{' '}
+              <button onClick={openCreateDialog} className="underline text-primary">Criar o primeiro</button>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Dialog: create/edit global ponto */}
+      <Dialog open={showPontoDialog} onOpenChange={setShowPontoDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingPonto ? 'Editar Ponto de Embarque' : 'Novo Ponto de Embarque'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <Label className="text-xs">Nome do Ponto *</Label>
+              <Input
+                value={pontoForm.nome}
+                onChange={e => setPontoForm(p => ({ ...p, nome: e.target.value }))}
+                placeholder="ex: Posto Shell (Veloz)"
+                className="mt-1"
+                autoFocus
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Endereço (opcional)</Label>
+              <Input
+                value={pontoForm.endereco}
+                onChange={e => setPontoForm(p => ({ ...p, endereco: e.target.value }))}
+                placeholder="Av. Menino Marcelo, 3800 - Antares"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Link Google Maps (opcional)</Label>
+              <Input
+                value={pontoForm.maps_link}
+                onChange={e => setPontoForm(p => ({ ...p, maps_link: e.target.value }))}
+                placeholder="https://maps.google.com/..."
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Foto do Local</Label>
+              {pontoForm.foto_url ? (
+                <div className="mt-1 relative">
+                  <img src={pontoForm.foto_url} alt="Foto" className="w-full h-32 object-cover rounded-lg border" />
+                  <button
+                    onClick={() => setPontoForm(p => ({ ...p, foto_url: '' }))}
+                    className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full p-1"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingFoto}
+                  className="mt-1 w-full h-24 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1.5 hover:border-primary/40 hover:bg-primary/5 transition-colors text-muted-foreground"
+                >
+                  {uploadingFoto ? (
+                    <><Loader2 className="h-5 w-5 animate-spin" /><span className="text-xs">Enviando...</span></>
+                  ) : (
+                    <><Upload className="h-5 w-5" /><span className="text-xs">Clique para subir uma foto</span></>
+                  )}
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Esta foto aparece para o participante ao clicar em "Ver foto" no formulário de inscrição.
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" size="sm" onClick={() => setShowPontoDialog(false)}>
+              Cancelar
+            </Button>
+            <Button size="sm" onClick={savePontoGlobal} disabled={saving || uploadingFoto}>
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
+              {editingPonto ? 'Salvar' : 'Criar'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -296,13 +296,33 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
       }));
       setQuestions(mappedQuestions);
 
-      // Fetch boarding points
-      const { data: pontosData } = await supabase
-        .from("tour_boarding_points")
-        .select("id, nome, endereco, horario, maps_link, foto_url")
-        .eq("tour_id", tour.id)
-        .order("order_index");
-      setPontosEmbarque(pontosData || []);
+      // Fetch boarding points — try new global system first, fall back to per-tour table
+      const { data: tpeData } = await supabase
+        .from("tour_pontos_embarque")
+        .select("horario, pontos_embarque(id, nome, endereco, maps_link, foto_url)")
+        .eq("tour_id", tour.id);
+
+      if (tpeData && tpeData.length > 0) {
+        const mappedPontos = tpeData
+          .filter((r: any) => r.pontos_embarque)
+          .map((r: any) => ({
+            id: r.pontos_embarque.id,
+            nome: r.pontos_embarque.nome,
+            endereco: r.pontos_embarque.endereco || '',
+            horario: r.horario || null,
+            maps_link: r.pontos_embarque.maps_link || null,
+            foto_url: r.pontos_embarque.foto_url || null,
+          }));
+        setPontosEmbarque(mappedPontos);
+      } else {
+        // Fallback: legacy per-tour boarding points
+        const { data: pontosData } = await supabase
+          .from("tour_boarding_points")
+          .select("id, nome, endereco, horario, maps_link, foto_url")
+          .eq("tour_id", tour.id)
+          .order("order_index");
+        setPontosEmbarque(pontosData || []);
+      }
 
       // Fetch policy settings (text, image, pdf and display modes)
       const { data: policySettings } = await supabase
