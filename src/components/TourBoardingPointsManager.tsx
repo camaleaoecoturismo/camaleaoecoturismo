@@ -99,7 +99,24 @@ export function TourBoardingPointsManager({ tourId, tourName }: TourBoardingPoin
       .update({ horario: horarios[pontoId] || null })
       .eq('id', link.id);
     if (error) { toast({ title: 'Erro ao salvar horário', description: error.message, variant: 'destructive' }); }
-    else { toast({ title: 'Horário salvo!' }); }
+  };
+
+  const handleHorarioChange = (pontoId: string, value: string) => {
+    setHorarios(prev => ({ ...prev, [pontoId]: value }));
+    // Save immediately once a complete time is entered (format HH:MM = 5 chars)
+    if (value.length === 5) {
+      const link = links.find(l => l.ponto_embarque_id === pontoId);
+      if (!link) return;
+      supabase.from('tour_pontos_embarque').update({ horario: value }).eq('id', link.id).then(({ error }) => {
+        if (error) toast({ title: 'Erro ao salvar horário', description: error.message, variant: 'destructive' });
+      });
+    }
+  };
+
+  const horarioToMinutes = (h: string | undefined): number => {
+    if (!h || h.length < 5) return 99999;
+    const [hh, mm] = h.split(':').map(Number);
+    return (hh || 0) * 60 + (mm || 0);
   };
 
   // --- Global ponto management ---
@@ -212,7 +229,9 @@ export function TourBoardingPointsManager({ tourId, tourName }: TourBoardingPoin
   }
 
   const selectedLinks = links;
-  const selectedPontos = allPontos.filter(p => isSelected(p.id));
+  const selectedPontos = allPontos
+    .filter(p => isSelected(p.id))
+    .sort((a, b) => horarioToMinutes(horarios[a.id]) - horarioToMinutes(horarios[b.id]));
   const unselectedPontos = allPontos.filter(p => !isSelected(p.id));
 
   return (
@@ -271,16 +290,15 @@ export function TourBoardingPointsManager({ tourId, tourName }: TourBoardingPoin
                       )}
                     </div>
                   </div>
-                  {/* Horario input */}
+                  {/* Horario time picker */}
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                    <Input
-                      className="h-7 w-20 text-xs"
-                      placeholder="05h00"
+                    <input
+                      type="time"
+                      className="h-7 w-24 text-xs border border-input rounded-md px-2 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                       value={horarios[ponto.id] || ''}
-                      onChange={e => setHorarios(prev => ({ ...prev, [ponto.id]: e.target.value }))}
+                      onChange={e => handleHorarioChange(ponto.id, e.target.value)}
                       onBlur={() => saveHorario(ponto.id)}
-                      onKeyDown={e => { if (e.key === 'Enter') saveHorario(ponto.id); }}
                     />
                   </div>
                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0 flex-shrink-0"
