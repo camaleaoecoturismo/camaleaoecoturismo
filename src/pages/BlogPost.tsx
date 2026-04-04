@@ -88,36 +88,58 @@ function BlogGallery({ images }: { images: string[] }) {
   }
 
   return (
-    <div className="my-6 relative rounded-xl overflow-hidden bg-black group">
-      <img
-        src={images[idx]}
-        alt=""
-        className="w-full object-contain max-h-[520px] transition-opacity duration-300"
-        key={idx}
-      />
+    <div className="my-6 rounded-xl overflow-hidden bg-black group relative select-none">
+      {/* Sliding track */}
+      <div className="overflow-hidden">
+        <div
+          className="flex transition-transform duration-500 ease-in-out"
+          style={{ transform: `translateX(-${idx * 100}%)` }}
+        >
+          {images.map((src, i) => (
+            <div key={i} className="w-full shrink-0 flex items-center justify-center max-h-[520px]">
+              <img
+                src={src}
+                alt=""
+                className="w-full max-h-[520px] object-contain"
+                draggable={false}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Prev */}
       <button
         onClick={prev}
-        className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/75 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        aria-label="Anterior"
       >
         <ChevronLeft className="h-5 w-5" />
       </button>
+
+      {/* Next */}
       <button
         onClick={next}
-        className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/75 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        aria-label="Próxima"
       >
         <ChevronRight className="h-5 w-5" />
       </button>
+
       {/* Dots */}
-      <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+      <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
         {images.map((_, i) => (
           <button
             key={i}
             onClick={() => setIdx(i)}
-            className={`w-2 h-2 rounded-full transition-all ${i === idx ? 'bg-white scale-125' : 'bg-white/50'}`}
+            className={`w-2 h-2 rounded-full transition-all ${i === idx ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/75'}`}
+            aria-label={`Foto ${i + 1}`}
           />
         ))}
       </div>
-      <div className="absolute top-2 right-3 text-xs text-white/70 bg-black/40 px-2 py-0.5 rounded-full">
+
+      {/* Counter */}
+      <div className="absolute top-2 right-3 text-xs text-white/80 bg-black/50 px-2 py-0.5 rounded-full z-10">
         {idx + 1}/{images.length}
       </div>
     </div>
