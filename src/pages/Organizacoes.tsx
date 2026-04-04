@@ -164,8 +164,8 @@ const CONTENT: Record<
   }
 > = {
   empresas: {
-    color: "#7A4327",
-    tint: "from-[#7A4327]/90 via-[#8f5638]/75 to-black/55",
+    color: "#820AD1",
+    tint: "from-[#1e1327]/92 via-[#4c2368]/78 to-[#820AD1]/62",
     heroEyebrow: "Experiências corporativas sob medida",
     heroTitle: "A natureza como palco para equipes mais conectadas, engajadas e memoráveis.",
     heroSub:
@@ -278,8 +278,8 @@ const CONTENT: Record<
     ],
   },
   escolas: {
-    color: "#2F6A46",
-    tint: "from-[#2F6A46]/90 via-[#417c58]/75 to-black/55",
+    color: "#820AD1",
+    tint: "from-[#1e1327]/92 via-[#4c2368]/78 to-[#820AD1]/62",
     heroEyebrow: "Saídas pedagógicas com intenção",
     heroTitle: "Experiências educativas fora da sala de aula, com natureza, segurança e significado.",
     heroSub:
@@ -392,8 +392,8 @@ const CONTENT: Record<
     ],
   },
   grupos: {
-    color: "#B6642E",
-    tint: "from-[#B6642E]/90 via-[#ca7a43]/75 to-black/55",
+    color: "#820AD1",
+    tint: "from-[#1e1327]/92 via-[#4c2368]/78 to-[#820AD1]/62",
     heroEyebrow: "Passeios privativos e exclusivos",
     heroTitle: "Seu grupo, seu ritmo, sua ocasião: uma experiência desenhada só para vocês.",
     heroSub:
@@ -579,7 +579,64 @@ export default function Organizacoes() {
               </a>
             </div>
 
-            <div className="mt-10 grid gap-3 sm:grid-cols-3">
+            <div className="mt-10 rounded-[28px] border border-white/12 bg-white/8 p-4 backdrop-blur-md">
+              <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/68">
+                    1. Escolha o perfil
+                  </p>
+                  <p className="mt-1 text-lg font-medium text-white">
+                    Selecione abaixo para ver a proposta certa para o seu caso
+                  </p>
+                </div>
+                <p className="text-sm text-white/70">
+                  O conteúdo da página muda conforme a sua escolha
+                </p>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                {TABS.map((item) => {
+                  const Icon = item.icon;
+                  const active = item.id === tab;
+                  return (
+                    <button
+                      key={`hero-${item.id}`}
+                      onClick={() => setTab(item.id)}
+                      className={`rounded-2xl border p-4 text-left transition-all ${
+                        active
+                          ? "border-white bg-white text-stone-900 shadow-xl"
+                          : "border-white/14 bg-white/6 text-white hover:bg-white/12"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                            active ? "bg-primary/10 text-primary" : "bg-white/10 text-white"
+                          }`}
+                        >
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="font-semibold">{item.label}</p>
+                            {active && (
+                              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
+                                Selecionado
+                              </span>
+                            )}
+                          </div>
+                          <p className={`mt-1 text-sm leading-6 ${active ? "text-muted-foreground" : "text-white/76"}`}>
+                            {item.description}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
               {d.heroHighlights.map((item) => (
                 <div
                   key={item}
@@ -632,6 +689,20 @@ export default function Organizacoes() {
 
       <section className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 py-3 md:px-6">
+          <div className="mb-3 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+                Escolha principal
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Clique em um perfil para atualizar todo o conteúdo da página
+              </p>
+            </div>
+            <div className="hidden rounded-full bg-primary/8 px-4 py-2 text-xs font-medium text-primary md:block">
+              {TABS.find((item) => item.id === tab)?.label} ativo
+            </div>
+          </div>
+
           <div className="grid gap-3 md:grid-cols-3">
             {TABS.map((item) => {
               const Icon = item.icon;
