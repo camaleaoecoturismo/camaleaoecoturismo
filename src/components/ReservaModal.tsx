@@ -2859,20 +2859,23 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
 
   const confirmClose = async () => {
     confirmedCloseRef.current = true;
-    // Register abandonment before closing (if not paid)
-    if (trackingIdRef.current && !paymentComplete) {
-      console.log('ReservaModal: Registering abandonment on close, step:', currentStepRef.current);
-      await supabase
-        .from('form_abandonment_tracking')
-        .update({
-          step_reached: currentStepRef.current,
-          last_field: 'modal_closed',
-          last_activity_at: new Date().toISOString()
-        })
-        .eq('id', trackingIdRef.current);
+    try {
+      // Register abandonment before closing (if not paid)
+      if (trackingIdRef.current && !paymentComplete) {
+        console.log('ReservaModal: Registering abandonment on close, step:', currentStepRef.current);
+        await supabase
+          .from('form_abandonment_tracking')
+          .update({
+            step_reached: currentStepRef.current,
+            last_field: 'modal_closed',
+            last_activity_at: new Date().toISOString()
+          })
+          .eq('id', trackingIdRef.current);
+      }
+    } finally {
+      setShowCloseConfirmation(false);
+      resetForm();
     }
-    setShowCloseConfirmation(false);
-    resetForm();
   };
 
   return (
