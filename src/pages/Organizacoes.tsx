@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const WhatsAppIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -767,51 +773,51 @@ export default function Organizacoes() {
             <p className="mt-5 text-base leading-7 text-muted-foreground">{d.deliverText}</p>
           </div>
 
-          <div className="mt-10 grid gap-6 lg:grid-cols-3">
-            {d.formats.map((format, index) => (
-              <article
-                key={format.title}
-                className="group relative overflow-hidden rounded-[28px] border border-border bg-card p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
-              >
-                <div
-                  className="absolute left-0 top-0 h-1.5 w-full"
-                  style={{ backgroundColor: d.color }}
-                />
-                <div className="mb-6 flex items-center justify-between">
-                  <span
-                    className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]"
-                    style={{ backgroundColor: `${d.color}18`, color: d.color }}
-                  >
-                    Formato {index + 1}
-                  </span>
-                  {index === 0 ? (
-                    <TreePine className="h-5 w-5 text-muted-foreground" />
-                  ) : index === 1 ? (
-                    <CalendarRange className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <Star className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </div>
-
-                <h3 className="text-2xl font-semibold leading-tight">{format.title}</h3>
-                <p className="mt-4 text-sm leading-6 text-muted-foreground">{format.desc}</p>
-
-                <div className="mt-6 grid gap-3">
-                  {format.points.map((point) => (
-                    <div key={point} className="flex items-start gap-3">
+          <Accordion type="single" defaultValue="formato-0" collapsible className="mt-10 divide-y divide-border rounded-[20px] border border-border bg-card shadow-sm overflow-hidden">
+            {d.formats.map((format, index) => {
+              const icons = [TreePine, CalendarRange, Star];
+              const Icon = icons[index];
+              return (
+                <AccordionItem key={format.title} value={`formato-${index}`} className="border-0">
+                  <AccordionTrigger className="px-6 py-5 hover:no-underline hover:bg-muted/30 transition-colors [&[data-state=open]]:bg-muted/30">
+                    <div className="flex items-center gap-4 text-left">
                       <div
-                        className="mt-1.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
                         style={{ backgroundColor: d.color }}
                       >
-                        <Check className="h-3 w-3" />
+                        <Icon className="h-5 w-5" />
                       </div>
-                      <p className="text-sm leading-6 text-foreground">{point}</p>
+                      <div>
+                        <p
+                          className="text-[11px] font-semibold uppercase tracking-[0.14em]"
+                          style={{ color: d.color }}
+                        >
+                          Formato {index + 1}
+                        </p>
+                        <p className="mt-0.5 text-base font-semibold text-foreground">{format.title}</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </article>
-            ))}
-          </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-6">
+                    <p className="text-sm leading-6 text-muted-foreground">{format.desc}</p>
+                    <div className="mt-4 grid gap-3">
+                      {format.points.map((point) => (
+                        <div key={point} className="flex items-start gap-3">
+                          <div
+                            className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white"
+                            style={{ backgroundColor: d.color }}
+                          >
+                            <Check className="h-3 w-3" />
+                          </div>
+                          <p className="text-sm leading-6 text-foreground">{point}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
         </div>
       </section>
 
