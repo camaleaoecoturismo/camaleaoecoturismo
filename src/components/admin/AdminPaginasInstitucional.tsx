@@ -9,11 +9,17 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus, Pencil, Trash2, Check, X, Loader2, Globe, BookOpen,
-  HelpCircle, FileText, Users, Eye, EyeOff, Star, Building2, Upload,
+  HelpCircle, FileText, Users, Eye, EyeOff, Star, Building2, Upload, User,
 } from "lucide-react";
 import RichTextEditor from "@/components/RichTextEditor";
 
 // ─── Blog ─────────────────────────────────────────────────────────────────────
+
+interface BlogAuthor {
+  id: string;
+  nome: string;
+  foto_url: string | null;
+}
 
 interface BlogPost {
   id: string;
@@ -24,6 +30,7 @@ interface BlogPost {
   cover_image: string | null;
   autor: string | null;
   autor_foto: string | null;
+  author_id: string | null;
   publicado: boolean;
   published_at: string | null;
   meta_description: string | null;
@@ -70,26 +77,124 @@ function ImageUploadField({ label, value, onChange }: { label: string; value: st
   );
 }
 
+// ─── Authors Manager ──────────────────────────────────────────────────────────
+
+function AuthorsManager() {
+  const [authors, setAuthors] = useState<BlogAuthor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState<BlogAuthor | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ nome: "", foto_url: "" });
+
+  useEffect(() => { load(); }, []);
+  const load = async () => {
+    const { data } = await supabase.from("blog_authors").select("*").order("nome");
+    if (data) setAuthors(data);
+    setLoading(false);
+  };
+
+  const startNew = () => { setForm({ nome: "", foto_url: "" }); setEditing(null); setShowForm(true); };
+  const startEdit = (a: BlogAuthor) => { setForm({ nome: a.nome, foto_url: a.foto_url || "" }); setEditing(a); setShowForm(true); };
+
+  const save = async () => {
+    if (!form.nome.trim()) { toast.error("Nome obrigatório"); return; }
+    setSaving(true);
+    const payload = { nome: form.nome.trim(), foto_url: form.foto_url || null };
+    const { error } = editing
+      ? await supabase.from("blog_authors").update(payload).eq("id", editing.id)
+      : await supabase.from("blog_authors").insert(payload);
+    if (error) toast.error(error.message);
+    else { toast.success(editing ? "Autor atualizado" : "Autor criado"); setShowForm(false); load(); }
+    setSaving(false);
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Remover autor?")) return;
+    await supabase.from("blog_authors").delete().eq("id", id);
+    toast.success("Autor removido"); load();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button size="sm" onClick={startNew}><Plus className="h-4 w-4 mr-1.5" />Novo Autor</Button>
+      </div>
+
+      {showForm && (
+        <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+          <h3 className="font-semibold text-sm">{editing ? "Editar Autor" : "Novo Autor"}</h3>
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">Nome</label>
+            <Input value={form.nome} onChange={(e) => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome do autor" />
+          </div>
+          <ImageUploadField label="Foto" value={form.foto_url} onChange={(url) => setForm(f => ({ ...f, foto_url: url }))} />
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancelar</Button>
+            <Button size="sm" onClick={save} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Check className="h-4 w-4 mr-1.5" />}
+              Salvar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+      ) : authors.length === 0 ? (
+        <p className="text-center text-muted-foreground py-10">Nenhum autor cadastrado.</p>
+      ) : (
+        <div className="space-y-2">
+          {authors.map(a => (
+            <div key={a.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
+              {a.foto_url ? (
+                <img src={a.foto_url} alt={a.nome} className="w-10 h-10 rounded-full object-cover shrink-0" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground text-sm font-bold">
+                  {a.nome.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span className="flex-1 font-medium text-sm">{a.nome}</span>
+              <div className="flex items-center gap-1">
+                <button onClick={() => startEdit(a)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors"><Pencil className="h-4 w-4" /></button>
+                <button onClick={() => remove(a.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="h-4 w-4" /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Blog Manager ─────────────────────────────────────────────────────────────
+
 function BlogManager() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [authors, setAuthors] = useState<BlogAuthor[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<BlogPost | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     titulo: "", slug: "", excerpt: "", content_html: "",
-    cover_image: "", autor: "", autor_foto: "", publicado: false,
+    cover_image: "", author_id: "", publicado: false,
     published_at_custom: "", meta_description: "", tags: [] as string[],
   });
   const [tagInput, setTagInput] = useState("");
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); loadAuthors(); }, []);
 
   const load = async () => {
     const { data } = await supabase
       .from("blog_posts").select("*").order("created_at", { ascending: false });
     if (data) setPosts(data);
     setLoading(false);
+  };
+
+  const loadAuthors = async () => {
+    const { data } = await supabase.from("blog_authors").select("*").order("nome");
+    if (data) setAuthors(data);
   };
 
   const toDatetimeLocal = (iso: string | null) => {
@@ -100,13 +205,13 @@ function BlogManager() {
   };
 
   const startNew = () => {
-    setForm({ titulo: "", slug: "", excerpt: "", content_html: "", cover_image: "", autor: "", autor_foto: "", publicado: false, published_at_custom: toDatetimeLocal(new Date().toISOString()), meta_description: "", tags: [] });
+    setForm({ titulo: "", slug: "", excerpt: "", content_html: "", cover_image: "", author_id: "", publicado: false, published_at_custom: toDatetimeLocal(new Date().toISOString()), meta_description: "", tags: [] });
     setTagInput("");
     setEditing(null); setShowForm(true);
   };
 
   const startEdit = (p: BlogPost) => {
-    setForm({ titulo: p.titulo, slug: p.slug, excerpt: p.excerpt || "", content_html: p.content_html || "", cover_image: p.cover_image || "", autor: p.autor || "", autor_foto: p.autor_foto || "", publicado: p.publicado, published_at_custom: toDatetimeLocal(p.published_at), meta_description: p.meta_description || "", tags: p.tags || [] });
+    setForm({ titulo: p.titulo, slug: p.slug, excerpt: p.excerpt || "", content_html: p.content_html || "", cover_image: p.cover_image || "", author_id: p.author_id || "", publicado: p.publicado, published_at_custom: toDatetimeLocal(p.published_at), meta_description: p.meta_description || "", tags: p.tags || [] });
     setTagInput("");
     setEditing(p); setShowForm(true);
   };
@@ -129,12 +234,15 @@ function BlogManager() {
     const publishedAt = form.published_at_custom
       ? new Date(form.published_at_custom).toISOString()
       : (form.publicado ? new Date().toISOString() : null);
+    // Resolve author name/foto from selected author
+    const selectedAuthor = authors.find(a => a.id === form.author_id) || null;
     const data = {
       titulo: form.titulo, slug, excerpt: form.excerpt || null,
       content_html: form.content_html || null,
       cover_image: form.cover_image || null,
-      autor: form.autor || null,
-      autor_foto: form.autor_foto || null,
+      author_id: form.author_id || null,
+      autor: selectedAuthor?.nome || null,
+      autor_foto: selectedAuthor?.foto_url || null,
       publicado: form.publicado,
       published_at: publishedAt,
       meta_description: form.meta_description || null,
@@ -174,12 +282,32 @@ function BlogManager() {
           <label className="text-sm font-medium mb-1.5 block">Slug (URL)</label>
           <Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} placeholder="meu-post" />
         </div>
-        <div>
-          <label className="text-sm font-medium mb-1.5 block">Autor</label>
-          <Input value={form.autor} onChange={(e) => setForm({ ...form, autor: e.target.value })} placeholder="Nome do autor" />
-        </div>
         <div className="sm:col-span-2">
-          <ImageUploadField label="Foto do autor" value={form.autor_foto} onChange={(url) => setForm(f => ({ ...f, autor_foto: url }))} />
+          <label className="text-sm font-medium mb-1.5 block">Autor</label>
+          {authors.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Nenhum autor cadastrado. <span className="text-primary">Crie autores na aba "Autores".</span></p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setForm(f => ({ ...f, author_id: "" }))}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm transition-colors ${!form.author_id ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}
+              >
+                Sem autor
+              </button>
+              {authors.map(a => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, author_id: a.id }))}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm transition-colors ${form.author_id === a.id ? 'border-primary bg-primary/10 text-primary' : 'border-border text-foreground hover:border-primary/50'}`}
+                >
+                  {a.foto_url && <img src={a.foto_url} alt={a.nome} className="w-5 h-5 rounded-full object-cover" />}
+                  {a.nome}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="sm:col-span-2">
           <ImageUploadField label="Imagem de capa" value={form.cover_image} onChange={(url) => setForm(f => ({ ...f, cover_image: url }))} />
@@ -818,9 +946,12 @@ function PartnersManager() {
 export default function AdminPaginasInstitucional() {
   return (
     <Tabs defaultValue="blog">
-      <TabsList className="mb-6">
+      <TabsList className="mb-6 flex-wrap">
         <TabsTrigger value="blog" className="flex items-center gap-1.5">
           <BookOpen className="h-4 w-4" />Blog
+        </TabsTrigger>
+        <TabsTrigger value="autores" className="flex items-center gap-1.5">
+          <User className="h-4 w-4" />Autores
         </TabsTrigger>
         <TabsTrigger value="faq" className="flex items-center gap-1.5">
           <HelpCircle className="h-4 w-4" />FAQ
@@ -839,6 +970,7 @@ export default function AdminPaginasInstitucional() {
         </TabsTrigger>
       </TabsList>
       <TabsContent value="blog"><BlogManager /></TabsContent>
+      <TabsContent value="autores"><AuthorsManager /></TabsContent>
       <TabsContent value="faq"><FAQManager /></TabsContent>
       <TabsContent value="politicas"><PoliticasManager /></TabsContent>
       <TabsContent value="equipe"><EquipeManager /></TabsContent>
