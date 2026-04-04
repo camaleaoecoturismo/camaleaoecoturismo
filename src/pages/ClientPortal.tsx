@@ -320,6 +320,7 @@ const ClientPortal = () => {
   }, [navigate]);
 
   const checkAuthAndLoad = async () => {
+    try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigatingRef.current = true;
@@ -379,15 +380,19 @@ const ClientPortal = () => {
       level,
     });
 
-    // Buscar contagem de mensagens não lidas
-    const { count } = await supabase
-      .from('client_communications')
-      .select('id', { count: 'exact', head: true })
-      .eq('client_account_id', clientAccount.id)
-      .eq('is_read', false);
-    setUnreadCount(count || 0);
-
     setLoading(false);
+
+    // Buscar contagem de mensagens não lidas (não-bloqueante)
+    supabase
+      .from('client_communications')
+      .select('id')
+      .eq('client_account_id', clientAccount.id)
+      .eq('is_read', false)
+      .then(({ data }) => setUnreadCount(data?.length || 0));
+    } catch {
+      setLoadError(true);
+      setLoading(false);
+    }
   };
 
   const handleLogout = async () => {
