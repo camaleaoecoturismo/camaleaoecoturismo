@@ -23,10 +23,51 @@ interface BlogPost {
   content_html: string | null;
   cover_image: string | null;
   autor: string | null;
+  autor_foto: string | null;
   publicado: boolean;
   published_at: string | null;
   meta_description: string | null;
   tags: string[] | null;
+}
+
+async function uploadBlogImage(file: File): Promise<string | null> {
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `blog/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabase.storage.from('blog-images').upload(path, file, { upsert: false });
+  if (error) { toast.error('Erro ao fazer upload'); return null; }
+  return supabase.storage.from('blog-images').getPublicUrl(path).data.publicUrl;
+}
+
+function ImageUploadField({ label, value, onChange }: { label: string; value: string; onChange: (url: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setUploading(true);
+    const url = await uploadBlogImage(file);
+    if (url) onChange(url);
+    setUploading(false);
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium block">{label}</label>
+      <div className="flex gap-2 items-start">
+        {value && <img src={value} alt="" className="w-16 h-16 rounded-lg object-cover border border-border shrink-0" />}
+        <div className="flex-1 space-y-1.5">
+          <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+          <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={uploading}>
+            {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+            {value ? 'Trocar foto' : 'Escolher foto'}
+          </Button>
+          <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder="ou cole a URL da imagem" className="text-xs" />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function BlogManager() {
@@ -37,8 +78,8 @@ function BlogManager() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     titulo: "", slug: "", excerpt: "", content_html: "",
-    cover_image: "", autor: "", publicado: false,
-    meta_description: "", tags: [] as string[],
+    cover_image: "", autor: "", autor_foto: "", publicado: false,
+    published_at_custom: "", meta_description: "", tags: [] as string[],
   });
   const [tagInput, setTagInput] = useState("");
 
@@ -51,14 +92,21 @@ function BlogManager() {
     setLoading(false);
   };
 
+  const toDatetimeLocal = (iso: string | null) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   const startNew = () => {
-    setForm({ titulo: "", slug: "", excerpt: "", content_html: "", cover_image: "", autor: "", publicado: false, meta_description: "", tags: [] });
+    setForm({ titulo: "", slug: "", excerpt: "", content_html: "", cover_image: "", autor: "", autor_foto: "", publicado: false, published_at_custom: toDatetimeLocal(new Date().toISOString()), meta_description: "", tags: [] });
     setTagInput("");
     setEditing(null); setShowForm(true);
   };
 
   const startEdit = (p: BlogPost) => {
-    setForm({ titulo: p.titulo, slug: p.slug, excerpt: p.excerpt || "", content_html: p.content_html || "", cover_image: p.cover_image || "", autor: p.autor || "", publicado: p.publicado, meta_description: p.meta_description || "", tags: p.tags || [] });
+    setForm({ titulo: p.titulo, slug: p.slug, excerpt: p.excerpt || "", content_html: p.content_html || "", cover_image: p.cover_image || "", autor: p.autor || "", autor_foto: p.autor_foto || "", publicado: p.publicado, published_at_custom: toDatetimeLocal(p.published_at), meta_description: p.meta_description || "", tags: p.tags || [] });
     setTagInput("");
     setEditing(p); setShowForm(true);
   };
@@ -78,11 +126,17 @@ function BlogManager() {
     if (!form.titulo.trim()) { toast.error("Título obrigatório"); return; }
     setSaving(true);
     const slug = form.slug || generateSlug(form.titulo);
+    const publishedAt = form.published_at_custom
+      ? new Date(form.published_at_custom).toISOString()
+      : (form.publicado ? new Date().toISOString() : null);
     const data = {
       titulo: form.titulo, slug, excerpt: form.excerpt || null,
-      content_html: form.content_html || null, cover_image: form.cover_image || null,
-      autor: form.autor || null, publicado: form.publicado,
-      published_at: form.publicado ? new Date().toISOString() : null,
+      content_html: form.content_html || null,
+      cover_image: form.cover_image || null,
+      autor: form.autor || null,
+      autor_foto: form.autor_foto || null,
+      publicado: form.publicado,
+      published_at: publishedAt,
       meta_description: form.meta_description || null,
       tags: form.tags.length > 0 ? form.tags : null,
     };
@@ -125,8 +179,10 @@ function BlogManager() {
           <Input value={form.autor} onChange={(e) => setForm({ ...form, autor: e.target.value })} placeholder="Nome do autor" />
         </div>
         <div className="sm:col-span-2">
-          <label className="text-sm font-medium mb-1.5 block">URL da imagem de capa</label>
-          <Input value={form.cover_image} onChange={(e) => setForm({ ...form, cover_image: e.target.value })} placeholder="https://..." />
+          <ImageUploadField label="Foto do autor" value={form.autor_foto} onChange={(url) => setForm(f => ({ ...f, autor_foto: url }))} />
+        </div>
+        <div className="sm:col-span-2">
+          <ImageUploadField label="Imagem de capa" value={form.cover_image} onChange={(url) => setForm(f => ({ ...f, cover_image: url }))} />
         </div>
         <div className="sm:col-span-2">
           <label className="text-sm font-medium mb-1.5 block">Resumo</label>
@@ -168,11 +224,20 @@ function BlogManager() {
           <RichTextEditor label="Conteúdo" value={form.content_html} onChange={(v) => setForm({ ...form, content_html: v })} />
         </div>
       </div>
-      <div className="flex items-center gap-3 pt-2">
+      <div className="flex flex-wrap items-center gap-4 pt-2">
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" checked={form.publicado} onChange={(e) => setForm({ ...form, publicado: e.target.checked })} className="rounded" />
-          <span className="text-sm font-medium">Publicar imediatamente</span>
+          <span className="text-sm font-medium">Publicado</span>
         </label>
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium whitespace-nowrap">Data de publicação:</label>
+          <input
+            type="datetime-local"
+            value={form.published_at_custom}
+            onChange={(e) => setForm({ ...form, published_at_custom: e.target.value })}
+            className="h-8 text-xs border border-input rounded-md px-2 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+        </div>
         <div className="ml-auto flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancelar</Button>
           <Button size="sm" onClick={save} disabled={saving}>
