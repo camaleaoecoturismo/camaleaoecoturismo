@@ -279,8 +279,8 @@ serve(async (req) => {
       pontos_embarque: (boardingPoints || []).map(bp => ({ nome: bp.nome, endereco: bp.endereco })),
     }, null, 0);
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const systemPrompt = `Você é um auditor de dados + analista estratégico + consultor operacional especializado em turismo de aventura e ecoturismo.
 
@@ -329,19 +329,21 @@ REGRAS:
 - Se dados insuficientes para uma seção, diga "Dados insuficientes."
 - Nunca confunda reservas com participantes.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 4096,
+        stream: true,
+        system: systemPrompt,
         messages: [
-          { role: "system", content: systemPrompt },
           { role: "user", content: `Analise os seguintes dados do passeio "${tour.name}":\n\n${dataContext}` },
         ],
-        stream: true,
       }),
     });
 
@@ -351,36 +353,50 @@ REGRAS:
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos insuficientes para análise IA." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
       const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
+      console.error("Anthropic API error:", response.status, t);
       return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Return both stream and metrics
-    // We'll send metrics as the first SSE event, then pipe the AI stream
+    // Send metrics first as SSE, then transform Anthropic stream → OpenAI SSE format
     const encoder = new TextEncoder();
     const metricsEvent = `data: ${JSON.stringify({ type: "metrics", data: metrics })}\n\n`;
 
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
 
-    // Write metrics first, then pipe AI stream
     (async () => {
       try {
         await writer.write(encoder.encode(metricsEvent));
+
         const reader = response.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          await writer.write(value);
+          buffer += decoder.decode(value, { stream: true });
+
+          let newlineIndex: number;
+          while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+            let line = buffer.slice(0, newlineIndex);
+            buffer = buffer.slice(newlineIndex + 1);
+            if (line.endsWith('\r')) line = line.slice(0, -1);
+            if (!line.startsWith('data: ')) continue;
+            const jsonStr = line.slice(6).trim();
+            try {
+              const parsed = JSON.parse(jsonStr);
+              if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
+                const chunk = { choices: [{ delta: { content: parsed.delta.text } }] };
+                await writer.write(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+              }
+            } catch { /* ignore parse errors */ }
+          }
         }
+        await writer.write(encoder.encode('data: [DONE]\n\n'));
       } catch (e) {
         console.error("Stream error:", e);
       } finally {

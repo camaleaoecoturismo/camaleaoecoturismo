@@ -299,7 +299,7 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
       // Fetch boarding points
       const { data: pontosData } = await supabase
         .from("tour_boarding_points")
-        .select("id, nome, endereco, horario")
+        .select("id, nome, endereco, horario, maps_link, foto_url")
         .eq("tour_id", tour.id)
         .order("order_index");
       setPontosEmbarque(pontosData || []);

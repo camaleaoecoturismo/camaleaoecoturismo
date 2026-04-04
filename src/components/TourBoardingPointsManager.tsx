@@ -12,6 +12,8 @@ interface TourBoardingPoint {
   nome: string;
   endereco: string | null;
   horario: string | null;
+  maps_link: string | null;
+  foto_url: string | null;
   order_index: number;
 }
 
@@ -31,12 +33,16 @@ export function TourBoardingPointsManager({
   const [newPoint, setNewPoint] = useState({
     nome: '',
     endereco: '',
-    horario: ''
+    horario: '',
+    maps_link: '',
+    foto_url: '',
   });
   const [editingPoint, setEditingPoint] = useState({
     nome: '',
     endereco: '',
-    horario: ''
+    horario: '',
+    maps_link: '',
+    foto_url: '',
   });
   const { toast } = useToast();
 
@@ -56,7 +62,7 @@ export function TourBoardingPointsManager({
         .order('order_index');
 
       if (error) throw error;
-      setBoardingPoints(data || []);
+      setBoardingPoints((data || []) as unknown as TourBoardingPoint[]);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar pontos de embarque",
@@ -89,6 +95,8 @@ export function TourBoardingPointsManager({
           nome: newPoint.nome.trim(),
           endereco: newPoint.endereco.trim() || null,
           horario: newPoint.horario.trim() || null,
+          maps_link: newPoint.maps_link.trim() || null,
+          foto_url: newPoint.foto_url.trim() || null,
           order_index: maxOrder + 1
         })
         .select()
@@ -96,8 +104,8 @@ export function TourBoardingPointsManager({
 
       if (error) throw error;
 
-      setBoardingPoints(prev => [...prev, data]);
-      setNewPoint({ nome: '', endereco: '', horario: '' });
+      setBoardingPoints(prev => [...prev, data as unknown as TourBoardingPoint]);
+      setNewPoint({ nome: '', endereco: '', horario: '', maps_link: '', foto_url: '' });
       
       toast({
         title: "Ponto de embarque adicionado!",
@@ -131,7 +139,9 @@ export function TourBoardingPointsManager({
         .update({
           nome: editingPoint.nome.trim(),
           endereco: editingPoint.endereco.trim() || null,
-          horario: editingPoint.horario.trim() || null
+          horario: editingPoint.horario.trim() || null,
+          maps_link: editingPoint.maps_link.trim() || null,
+          foto_url: editingPoint.foto_url.trim() || null,
         })
         .eq('id', pointId)
         .select()
@@ -139,8 +149,8 @@ export function TourBoardingPointsManager({
 
       if (error) throw error;
 
-      setBoardingPoints(prev => 
-        prev.map(point => point.id === pointId ? data : point)
+      setBoardingPoints(prev =>
+        prev.map(point => point.id === pointId ? (data as unknown as TourBoardingPoint) : point)
       );
       setEditingId(null);
       
@@ -191,13 +201,15 @@ export function TourBoardingPointsManager({
     setEditingPoint({
       nome: point.nome,
       endereco: point.endereco || '',
-      horario: point.horario || ''
+      horario: point.horario || '',
+      maps_link: point.maps_link || '',
+      foto_url: point.foto_url || '',
     });
   };
 
   const cancelEditing = () => {
     setEditingId(null);
-    setEditingPoint({ nome: '', endereco: '', horario: '' });
+    setEditingPoint({ nome: '', endereco: '', horario: '', maps_link: '', foto_url: '' });
   };
 
   // Extract time from name pattern like "06h00 - Nome" or "06H00 - Nome"
@@ -324,6 +336,24 @@ export function TourBoardingPointsManager({
                   onChange={e => setNewPoint(prev => ({ ...prev, horario: e.target.value }))}
                 />
               </div>
+              <div>
+                <Label htmlFor="new-maps">Link Google Maps (opcional)</Label>
+                <Input
+                  id="new-maps"
+                  placeholder="https://maps.google.com/..."
+                  value={newPoint.maps_link}
+                  onChange={e => setNewPoint(prev => ({ ...prev, maps_link: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="new-foto">URL da Foto do Local (opcional)</Label>
+                <Input
+                  id="new-foto"
+                  placeholder="https://..."
+                  value={newPoint.foto_url}
+                  onChange={e => setNewPoint(prev => ({ ...prev, foto_url: e.target.value }))}
+                />
+              </div>
             </div>
             <div className="flex justify-end mt-3">
               <Button onClick={addBoardingPoint} disabled={saving} size="sm">
@@ -385,6 +415,22 @@ export function TourBoardingPointsManager({
                             onChange={e => setEditingPoint(prev => ({ ...prev, horario: e.target.value }))}
                           />
                         </div>
+                        <div>
+                          <Label>Link Google Maps (opcional)</Label>
+                          <Input
+                            value={editingPoint.maps_link}
+                            placeholder="https://maps.google.com/..."
+                            onChange={e => setEditingPoint(prev => ({ ...prev, maps_link: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <Label>URL da Foto do Local (opcional)</Label>
+                          <Input
+                            value={editingPoint.foto_url}
+                            placeholder="https://..."
+                            onChange={e => setEditingPoint(prev => ({ ...prev, foto_url: e.target.value }))}
+                          />
+                        </div>
                       </div>
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" size="sm" onClick={cancelEditing}>
@@ -418,6 +464,18 @@ export function TourBoardingPointsManager({
                             {point.endereco}
                           </p>
                         )}
+                        <div className="flex gap-2 mt-1">
+                          {point.maps_link && (
+                            <a href={point.maps_link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 underline">
+                              🗺️ Maps
+                            </a>
+                          )}
+                          {point.foto_url && (
+                            <a href={point.foto_url} target="_blank" rel="noopener noreferrer" className="text-xs text-green-600 underline">
+                              📷 Foto
+                            </a>
+                          )}
+                        </div>
                       </div>
                       <div className="flex gap-1">
                         <Button

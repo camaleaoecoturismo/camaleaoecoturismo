@@ -1953,7 +1953,6 @@ const TourManagement: React.FC<TourManagementProps> = ({
                     <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 text-sm font-bold">
                       {reservasConfirmadas.length}
                     </span>
-                    Reservas Confirmadas
                   </CardTitle>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" onClick={copyBoardingPointsText}>

@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PhoneInput } from '@/components/ui/phone-input';
-import { Loader2, User, ChevronDown, ChevronUp, Plus, Minus, ShoppingCart, ArrowRight, AlertCircle } from 'lucide-react';
+import { Loader2, User, ChevronDown, ChevronUp, Plus, Minus, ShoppingCart, ArrowRight, AlertCircle, MapPin, Map, Camera, X } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { validarCPF, validarTelefone, formatarCPF, cn } from '@/lib/utils';
 import { NIVEL_CONDICIONAMENTO_OPTIONS, COMO_CONHECEU_OPTIONS } from '@/types/participant';
@@ -19,6 +20,8 @@ interface BoardingPoint {
   nome: string;
   endereco: string;
   horario?: string | null;
+  maps_link?: string | null;
+  foto_url?: string | null;
 }
 
 export interface SelectedOptionalItem {
@@ -147,6 +150,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
   const [healthTouched, setHealthTouched] = useState<Set<number>>(new Set());
   const participantRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
+  const [fotoPopup, setFotoPopup] = useState<{ url: string; nome: string } | null>(null);
 
   // Scroll to participant when expanded
   useEffect(() => {
@@ -459,6 +463,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
   };
 
   return (
+    <>
     <Card className="bg-white shadow-lg border-purple-200">
       <CardContent className="p-4 space-y-4">
         <div className="space-y-1">
@@ -650,32 +655,110 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                       />
                     </div>
 
-                    {/* Boarding point - Select */}
+                    {/* Boarding point - Cards */}
                     <div className="space-y-2">
                       <Label className="text-xs">Ponto de Embarque *</Label>
-                      <select
-                        value={participant.ponto_embarque_id}
-                        onChange={(e) => setBoardingPoint(index, e.target.value)}
-                        className="w-full h-10 px-3 py-2 text-xs border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                      >
-                        <option value="">Selecione o ponto de embarque...</option>
-                        {boardingPoints.map((point) => (
-                          <option key={point.id} value={point.id}>
-                            {point.horario ? `${point.horario} - ` : ''}{point.nome}{point.endereco ? ` (${point.endereco})` : ''}
-                          </option>
-                        ))}
-                        <option value="outro">Outro local (na rota)</option>
-                      </select>
-                      
-                      {/* Custom boarding point input and info */}
+                      <div className="space-y-2">
+                        {boardingPoints.map((point) => {
+                          const isSelected = participant.ponto_embarque_id === point.id;
+                          return (
+                            <button
+                              key={point.id}
+                              type="button"
+                              onClick={() => setBoardingPoint(index, point.id)}
+                              className={cn(
+                                "w-full text-left px-3 py-2.5 rounded-lg border transition-all",
+                                isSelected
+                                  ? "border-primary bg-primary/5 ring-1 ring-primary"
+                                  : "border-border bg-background hover:border-primary/40 hover:bg-muted/30"
+                              )}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-start gap-2 min-w-0">
+                                  <div className={cn(
+                                    "mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                                    isSelected ? "border-primary" : "border-muted-foreground/40"
+                                  )}>
+                                    {isSelected && <div className="w-2 h-2 rounded-full bg-primary" />}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      {point.horario && (
+                                        <span className="text-[10px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                                          {point.horario}
+                                        </span>
+                                      )}
+                                      <span className="text-xs font-medium text-foreground">{point.nome}</span>
+                                    </div>
+                                    {point.endereco && (
+                                      <p className="text-[10px] text-muted-foreground mt-0.5">{point.endereco}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  {point.maps_link && (
+                                    <a
+                                      href={point.maps_link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-1.5 py-1 rounded border border-blue-200 transition-colors"
+                                    >
+                                      <Map className="h-2.5 w-2.5" />
+                                      Maps
+                                    </a>
+                                  )}
+                                  {point.foto_url && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setFotoPopup({ url: point.foto_url!, nome: point.nome });
+                                      }}
+                                      className="flex items-center gap-1 text-[10px] text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-1.5 py-1 rounded border border-emerald-200 transition-colors"
+                                    >
+                                      <Camera className="h-2.5 w-2.5" />
+                                      Ver foto
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+
+                        {/* Outro local */}
+                        <button
+                          type="button"
+                          onClick={() => setBoardingPoint(index, 'outro')}
+                          className={cn(
+                            "w-full text-left px-3 py-2.5 rounded-lg border transition-all",
+                            participant.ponto_embarque_id === 'outro'
+                              ? "border-primary bg-primary/5 ring-1 ring-primary"
+                              : "border-dashed border-border bg-background hover:border-primary/40 hover:bg-muted/30"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className={cn(
+                              "flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                              participant.ponto_embarque_id === 'outro' ? "border-primary" : "border-muted-foreground/40"
+                            )}>
+                              {participant.ponto_embarque_id === 'outro' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                            </div>
+                            <span className="text-xs text-muted-foreground">Outro local (na rota)</span>
+                          </div>
+                        </button>
+                      </div>
+
+                      {/* Custom boarding point input */}
                       {participant.ponto_embarque_id === 'outro' && (
                         <div className="ml-5 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
                           <div className="bg-muted/40 border border-border rounded-md p-2">
                             <p className="text-[10px] text-muted-foreground leading-relaxed">
                               Podemos adicionar outros pontos que estejam na rota de embarque, sujeito à aprovação da equipe da Camaleão.{' '}
-                              <a 
+                              <a
                                 href={`https://wa.me/5582993649454?text=${encodeURIComponent(`Olá! Gostaria de adicionar um ponto de embarque na rota para o passeio "${tourName || 'Camaleão'}". O local seria: `)}`}
-                                target="_blank" 
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="font-semibold text-primary underline hover:opacity-80"
                               >
@@ -689,10 +772,10 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                             placeholder="Digite o endereço do ponto de embarque"
                             className={cn(
                               "text-sm",
-                              participant.ponto_embarque_id === 'outro' && !participant.ponto_embarque_personalizado.trim() && "border-primary/50 focus:border-primary"
+                              !participant.ponto_embarque_personalizado.trim() && "border-primary/50 focus:border-primary"
                             )}
                           />
-                          {participant.ponto_embarque_id === 'outro' && !participant.ponto_embarque_personalizado.trim() && (
+                          {!participant.ponto_embarque_personalizado.trim() && (
                             <p className="text-xs text-muted-foreground">Informe o endereço do ponto de embarque desejado.</p>
                           )}
                         </div>
@@ -956,5 +1039,35 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
         </div>
       </CardContent>
     </Card>
+
+    {/* Photo popup */}
+    <Dialog open={!!fotoPopup} onOpenChange={(open) => { if (!open) setFotoPopup(null); }}>
+      <DialogContent className="max-w-lg p-0 overflow-hidden">
+        <div className="relative">
+          <button
+            onClick={() => setFotoPopup(null)}
+            className="absolute top-2 right-2 z-10 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          {fotoPopup && (
+            <>
+              <img
+                src={fotoPopup.url}
+                alt={fotoPopup.nome}
+                className="w-full object-cover max-h-[70vh]"
+              />
+              <div className="px-4 py-3 bg-white">
+                <p className="text-sm font-medium text-slate-800 flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                  {fotoPopup.nome}
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };

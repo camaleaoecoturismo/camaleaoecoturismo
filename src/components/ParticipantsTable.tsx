@@ -2719,6 +2719,9 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
                 {confirmedPaymentRows.length} participante{confirmedPaymentRows.length !== 1 ? 's' : ''}
               </span>
             </div>
+            <span className="text-xs text-slate-500 font-medium">
+              {new Set(confirmedPaymentRows.filter(r => r.type !== 'staff' && !r.isStaff).map(r => r.reserva.id)).size} reserva{new Set(confirmedPaymentRows.filter(r => r.type !== 'staff' && !r.isStaff).map(r => r.reserva.id)).size !== 1 ? 's' : ''}
+            </span>
             {/* Package summary pills */}
             {(() => {
               const packageCounts: Record<string, number> = {};
