@@ -1,8 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { TopMenu } from "@/components/TopMenu";
-import { ArrowLeft, Calendar, User, Loader2, Clock, Share2, BookOpen, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Calendar, User, Loader2, Clock, Share2, BookOpen, ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Carousel, CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import DOMPurify from "dompurify";
 
 interface Post {
@@ -86,112 +89,154 @@ function parseSegments(html: string): Segment[] {
 
 // ── Gallery carousel ──────────────────────────────────────────────────────────
 function BlogGallery({ images }: { images: string[] }) {
-  const [idx, setIdx] = useState(0);
-  const [lightbox, setLightbox] = useState<number | null>(null);
-  const touchStartX = useRef<number | null>(null);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [modalApi, setModalApi] = useState<CarouselApi>();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const prev = () => setIdx(i => (i - 1 + images.length) % images.length);
-  const next = () => setIdx(i => (i + 1) % images.length);
+  const syncCurrentIndex = useCallback(() => {
+    if (!carouselApi) return;
+    setCurrentIndex(carouselApi.selectedScrollSnap());
+  }, [carouselApi]);
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
+  const syncLightboxIndex = useCallback(() => {
+    if (!modalApi) return;
+    setLightboxIndex(modalApi.selectedScrollSnap());
+  }, [modalApi]);
+
+  useEffect(() => {
+    if (!carouselApi) return;
+    syncCurrentIndex();
+    carouselApi.on("select", syncCurrentIndex);
+    carouselApi.on("reInit", syncCurrentIndex);
+    return () => {
+      carouselApi.off("select", syncCurrentIndex);
+      carouselApi.off("reInit", syncCurrentIndex);
+    };
+  }, [carouselApi, syncCurrentIndex]);
+
+  useEffect(() => {
+    if (!modalApi) return;
+    syncLightboxIndex();
+    modalApi.on("select", syncLightboxIndex);
+    modalApi.on("reInit", syncLightboxIndex);
+    return () => {
+      modalApi.off("select", syncLightboxIndex);
+      modalApi.off("reInit", syncLightboxIndex);
+    };
+  }, [modalApi, syncLightboxIndex]);
+
+  useEffect(() => {
+    if (!lightboxOpen || !modalApi) return;
+    modalApi.scrollTo(lightboxIndex, true);
+  }, [lightboxOpen, lightboxIndex, modalApi]);
+
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
   };
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(dx) > 40) dx < 0 ? next() : prev();
-    touchStartX.current = null;
-  };
-
-  if (images.length === 1) {
-    return (
-      <div className="my-6 rounded-xl overflow-hidden cursor-zoom-in" onClick={() => setLightbox(0)}>
-        <img src={images[0]} alt="" className="w-full object-cover max-h-[520px]" />
-        {lightbox !== null && (
-          <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center" onClick={() => setLightbox(null)}>
-            <img src={images[0]} alt="" className="max-w-full max-h-full object-contain p-4" />
-          </div>
-        )}
-      </div>
-    );
-  }
 
   return (
     <>
-      <div
-        className="my-6 rounded-xl overflow-hidden bg-black group relative select-none"
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
-        {/* Sliding track */}
-        <div className="overflow-hidden">
-          <div
-            className="flex transition-transform duration-500 ease-in-out"
-            style={{ transform: `translateX(-${idx * 100}%)` }}
-          >
+      <div className="my-8 not-prose">
+        <Carousel
+          setApi={setCarouselApi}
+          opts={{ loop: images.length > 1 }}
+          className="group"
+        >
+          <CarouselContent className="ml-0">
             {images.map((src, i) => (
-              <div
-                key={i}
-                className="w-full shrink-0 flex items-center justify-center cursor-zoom-in"
-                onClick={() => setLightbox(i)}
-              >
-                <img src={src} alt="" className="w-full max-h-[480px] object-contain" draggable={false} />
-              </div>
+              <CarouselItem key={src + i} className="pl-0 basis-full">
+                <button
+                  type="button"
+                  onClick={() => openLightbox(i)}
+                  className="relative block w-full overflow-hidden rounded-2xl bg-muted text-left"
+                  aria-label={`Abrir foto ${i + 1} da galeria`}
+                >
+                  <img
+                    src={src}
+                    alt={`Imagem ${i + 1} da galeria`}
+                    className="h-[260px] w-full object-cover sm:h-[360px] lg:h-[460px]"
+                    draggable={false}
+                  />
+                </button>
+              </CarouselItem>
             ))}
-          </div>
-        </div>
+          </CarouselContent>
 
-        {/* Prev */}
-        <button
-          onClick={e => { e.stopPropagation(); prev(); }}
-          className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
-          aria-label="Anterior"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
+          {images.length > 1 && (
+            <>
+              <CarouselPrevious className="left-3 h-10 w-10 border-0 bg-black/55 text-white hover:bg-black/75 disabled:opacity-0" />
+              <CarouselNext className="right-3 h-10 w-10 border-0 bg-black/55 text-white hover:bg-black/75 disabled:opacity-0" />
 
-        {/* Next */}
-        <button
-          onClick={e => { e.stopPropagation(); next(); }}
-          className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
-          aria-label="Próxima"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
+              <div className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white">
+                {currentIndex + 1}/{images.length}
+              </div>
 
-        {/* Dots */}
-        <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
-          {images.map((_, i) => (
-            <button
-              key={i}
-              onClick={e => { e.stopPropagation(); setIdx(i); }}
-              className={`w-2 h-2 rounded-full transition-all ${i === idx ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/80'}`}
-            />
-          ))}
-        </div>
-
-        {/* Counter */}
-        <div className="absolute top-2 right-3 text-xs text-white/80 bg-black/50 px-2 py-0.5 rounded-full z-10">
-          {idx + 1}/{images.length}
-        </div>
+              <div className="mt-3 flex justify-center gap-2">
+                {images.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => carouselApi?.scrollTo(i)}
+                    className={`h-2 rounded-full transition-all ${i === currentIndex ? "w-6 bg-primary" : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/60"}`}
+                    aria-label={`Ir para foto ${i + 1}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </Carousel>
       </div>
 
-      {/* Lightbox */}
-      {lightbox !== null && (
-        <div
-          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center"
-          onClick={() => setLightbox(null)}
-        >
-          <button onClick={e => { e.stopPropagation(); setLightbox(l => l !== null ? (l - 1 + images.length) % images.length : null); }} className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center">
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-          <img src={images[lightbox]} alt="" className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl" onClick={e => e.stopPropagation()} />
-          <button onClick={e => { e.stopPropagation(); setLightbox(l => l !== null ? (l + 1) % images.length : null); }} className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center">
-            <ChevronRight className="h-6 w-6" />
-          </button>
-          <div className="absolute bottom-6 text-white/60 text-sm">{lightbox + 1} / {images.length}</div>
-        </div>
-      )}
+      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+        <DialogContent className="h-auto w-auto max-h-[95vh] max-w-[95vw] overflow-hidden border-0 bg-black/95 p-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2 z-50 text-white hover:bg-white/10"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+
+          <div className="flex flex-col overflow-hidden pt-10">
+            <Carousel
+              setApi={setModalApi}
+              opts={{ startIndex: lightboxIndex, loop: images.length > 1 }}
+              className="w-full"
+            >
+              <CarouselContent className="ml-0">
+                {images.map((src, i) => (
+                  <CarouselItem key={`lightbox-${src}-${i}`} className="flex basis-full items-center justify-center pl-0">
+                    <div className="flex w-full items-center justify-center px-4 pb-4">
+                      <img
+                        src={src}
+                        alt={`Imagem ${i + 1} da galeria ampliada`}
+                        className="max-h-[80vh] max-w-full rounded-xl object-contain"
+                      />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+
+              {images.length > 1 && (
+                <>
+                  <CarouselPrevious className="left-2 border-0 bg-white/10 text-white hover:bg-white/20" />
+                  <CarouselNext className="right-2 border-0 bg-white/10 text-white hover:bg-white/20" />
+                </>
+              )}
+            </Carousel>
+
+            {images.length > 1 && (
+              <div className="pb-5 text-center text-sm text-white/70">
+                {lightboxIndex + 1} / {images.length}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
