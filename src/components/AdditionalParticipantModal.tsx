@@ -919,15 +919,25 @@ const AdditionalParticipantModal: React.FC<AdditionalParticipantModalProps> = ({
                 );
               })}
               
-              {/* Admin-only: Observações */}
-              <div className="space-y-2 border-t pt-4 mt-4">
-                <Label className="text-muted-foreground">Observações (admin)</Label>
-                <Textarea
-                  value={formData.observacoes || ''}
-                  onChange={(e) => handleFieldChange('observacoes', e.target.value)}
-                  placeholder="Observações internas..."
-                  rows={2}
-                />
+              {/* Admin-only: Instagram + Observações */}
+              <div className="space-y-3 border-t pt-4 mt-4">
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground">Instagram <span className="font-normal">(opcional)</span></Label>
+                  <Input
+                    value={formData.instagram || ''}
+                    onChange={(e) => handleFieldChange('instagram', e.target.value.replace(/\s/g, ''))}
+                    placeholder="@seuinstagram"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground">Observações (admin)</Label>
+                  <Textarea
+                    value={formData.observacoes || ''}
+                    onChange={(e) => handleFieldChange('observacoes', e.target.value)}
+                    placeholder="Observações internas..."
+                    rows={2}
+                  />
+                </div>
               </div>
             </div>
           ) : (
@@ -1147,15 +1157,25 @@ const AdditionalParticipantModal: React.FC<AdditionalParticipantModalProps> = ({
                 </div>
               </div>
 
-              {/* Observações */}
-              <div className="space-y-2 border-t pt-4 mt-4">
-                <Label className="text-muted-foreground">Observações (admin)</Label>
-                <Textarea
-                  value={formData.observacoes || ''}
-                  onChange={(e) => handleFieldChange('observacoes', e.target.value)}
-                  placeholder="Observações internas..."
-                  rows={2}
-                />
+              {/* Instagram + Observações */}
+              <div className="space-y-3 border-t pt-4 mt-4">
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground">Instagram <span className="font-normal">(opcional)</span></Label>
+                  <Input
+                    value={formData.instagram || ''}
+                    onChange={(e) => handleFieldChange('instagram', e.target.value.replace(/\s/g, ''))}
+                    placeholder="@seuinstagram"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground">Observações (admin)</Label>
+                  <Textarea
+                    value={formData.observacoes || ''}
+                    onChange={(e) => handleFieldChange('observacoes', e.target.value)}
+                    placeholder="Observações internas..."
+                    rows={2}
+                  />
+                </div>
               </div>
             </div>
           )}
