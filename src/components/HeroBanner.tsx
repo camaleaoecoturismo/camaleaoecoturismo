@@ -176,9 +176,10 @@ export function HeroBanner({ location = "hero" }: { location?: string }) {
             />
           ) : slide.image_url ? (
             <img
+              key={`${slide.id}-${idx === current ? 'active' : 'idle'}`}
               src={slide.image_url}
               alt={slide.title || "Banner"}
-              className="absolute inset-0 w-full h-full object-cover"
+              className={`absolute inset-0 w-full h-full object-cover origin-center ${idx === current ? [`ken-burns-1`, `ken-burns-2`, `ken-burns-3`][idx % 3] : ''}`}
               loading={idx === 0 ? "eager" : "lazy"}
             />
           ) : (
