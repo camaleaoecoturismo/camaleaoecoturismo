@@ -2932,11 +2932,19 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
             </div>
           )}
           <DialogHeader className="p-4 pb-2 border-b shrink-0">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2 text-lg pr-8">
-                <Calendar className="h-5 w-5" />
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="flex items-center gap-2 text-lg min-w-0 flex-1">
+                <Calendar className="h-5 w-5 shrink-0" />
                 <span className="truncate">Reservar: {tour.name}</span>
               </DialogTitle>
+              <button
+                type="button"
+                onClick={() => handleDialogClose(false)}
+                className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                aria-label="Fechar"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
           </DialogHeader>
 
