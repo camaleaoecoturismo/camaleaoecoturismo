@@ -43,6 +43,7 @@ interface AnalyticsContextType {
   trackFormQuestionStart: (questionId: string, questionText: string) => void;
   trackFormQuestionAnswer: (questionId: string) => void;
   trackFormComplete: (formName: string, totalQuestions: number) => void;
+  trackCTAClick: (ctaType: string) => void;
   trackClick: (elementName: string, context?: string) => void;
   trackScroll: (scrollPercent: number, context?: string) => void;
   getSessionId: () => string | null;
@@ -167,27 +168,6 @@ async function getOrCreateSession(): Promise<SessionData | null> {
   }
 }
 
-async function trackPageview(sessionId: string, pathname: string) {
-  try {
-    const pageviewData = {
-      session_id: sessionId,
-      page_path: pathname,
-      page_title: document.title || pathname,
-      viewed_at: new Date().toISOString(),
-    };
-    
-    const { error } = await supabase
-      .from('analytics_pageviews')
-      .insert(pageviewData);
-    
-    if (error) {
-      console.error('Error tracking pageview:', error);
-    }
-  } catch (error) {
-    console.error('Pageview tracking error:', error);
-  }
-}
-
 async function updateSessionMetrics(sessionId: string, pagesCount: number, duration: number) {
   try {
     await supabase
@@ -209,11 +189,16 @@ export function useAnalyticsTracking() {
   const pageCountRef = useRef(0);
   const sessionStartRef = useRef(Date.now());
   const lastPathnameRef = useRef<string | null>(null);
-  
+
+  // Pageview enrichment
+  const currentPageviewIdRef = useRef<string | null>(null);
+  const pageEnterTimeRef = useRef<number>(Date.now());
+  const maxScrollDepthRef = useRef<number>(0);
+
   // Modal tracking state
   const activeModalsRef = useRef<Map<string, ModalTrackingData>>(new Map());
   const currentTabRef = useRef<Map<string, { tabName: string; startedAt: number }>>(new Map());
-  
+
   // Form question timing
   const formQuestionsRef = useRef<Map<string, FormQuestionTiming>>(new Map());
   const formStartTimeRef = useRef<number | null>(null);
@@ -230,23 +215,46 @@ export function useAnalyticsTracking() {
     
     initSession();
     
+    // Scroll depth tracking
+    const handleScroll = () => {
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight <= 0) return;
+      const pct = Math.round((window.scrollY / docHeight) * 100);
+      if (pct > maxScrollDepthRef.current) maxScrollDepthRef.current = pct;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
     // Update session metrics on page unload
     const handleUnload = () => {
       if (sessionIdRef.current) {
         const duration = Date.now() - sessionStartRef.current;
-        // Use sendBeacon for reliability on page unload
-        navigator.sendBeacon?.(
-          `https://guwplwuwriixgvkjlutg.supabase.co/rest/v1/analytics_sessions?id=eq.${sessionIdRef.current}`,
-          JSON.stringify({
-            pages_per_session: pageCountRef.current,
-            session_duration_seconds: Math.floor(duration / 1000),
-          })
-        );
+        const SUPABASE_URL = 'https://guwplwuwriixgvkjlutg.supabase.co';
+        const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+        // Use fetch with keepalive so auth headers are sent (sendBeacon can't set headers)
+        fetch(
+          `${SUPABASE_URL}/rest/v1/analytics_sessions?id=eq.${sessionIdRef.current}`,
+          {
+            method: 'PATCH',
+            keepalive: true,
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+            },
+            body: JSON.stringify({
+              pages_per_session: pageCountRef.current,
+              session_duration_seconds: Math.floor(duration / 1000),
+            }),
+          }
+        ).catch(() => {});
       }
     };
     
     window.addEventListener('beforeunload', handleUnload);
-    return () => window.removeEventListener('beforeunload', handleUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
   
   // Track page views on route change
@@ -267,11 +275,46 @@ export function useAnalyticsTracking() {
           sessionIdRef.current = session.id;
         }
       }
-      
+
       if (sessionIdRef.current) {
+        // Enrich previous pageview with time on page and scroll depth
+        if (currentPageviewIdRef.current) {
+          const timeOnPage = Math.floor((Date.now() - pageEnterTimeRef.current) / 1000);
+          supabase
+            .from('analytics_pageviews')
+            .update({
+              time_on_page_seconds: timeOnPage,
+              scroll_depth_percent: maxScrollDepthRef.current,
+            })
+            .eq('id', currentPageviewIdRef.current)
+            .then(() => {});
+        }
+
+        // Reset enrichment state
+        pageEnterTimeRef.current = Date.now();
+        maxScrollDepthRef.current = 0;
+
         pageCountRef.current += 1;
-        await trackPageview(sessionIdRef.current, pathname);
-        
+
+        // Insert new pageview and store its id
+        try {
+          const { data, error } = await supabase
+            .from('analytics_pageviews')
+            .insert({
+              session_id: sessionIdRef.current,
+              page_path: pathname,
+              page_title: document.title || pathname,
+              viewed_at: new Date().toISOString(),
+            })
+            .select('id')
+            .single();
+          if (!error && data) {
+            currentPageviewIdRef.current = data.id;
+          }
+        } catch {
+          // non-critical
+        }
+
         // Update session metrics periodically
         if (pageCountRef.current % 3 === 0) {
           const duration = Date.now() - sessionStartRef.current;
@@ -336,10 +379,18 @@ export function useAnalyticsTracking() {
     // Track event
     trackEvent('modal_open', 'modal', modalName, undefined);
     
-    // If it's reservation form, start tracking form time
+    // If it's reservation form, start tracking form time and mark CTA click
     if (modalName === 'reserva') {
       formStartTimeRef.current = now;
       formQuestionsRef.current.clear();
+      // Record that a CTA was clicked on the current page
+      if (currentPageviewIdRef.current) {
+        supabase
+          .from('analytics_pageviews')
+          .update({ clicked_main_cta: true, cta_type: 'reservar_vaga' })
+          .eq('id', currentPageviewIdRef.current)
+          .then(() => {});
+      }
     }
   }, [trackEvent]);
   
@@ -431,6 +482,16 @@ export function useAnalyticsTracking() {
     }
   }, [trackEvent, trackConversion]);
   
+  // Track CTA click on current pageview
+  const trackCTAClick = useCallback((ctaType: string) => {
+    if (!currentPageviewIdRef.current) return;
+    supabase
+      .from('analytics_pageviews')
+      .update({ clicked_main_cta: true, cta_type: ctaType })
+      .eq('id', currentPageviewIdRef.current)
+      .then(() => {});
+  }, []);
+
   // Track click
   const trackClick = useCallback((elementName: string, context?: string) => {
     trackEvent('click', 'interaction', context ? `${context}_${elementName}` : elementName);
@@ -455,6 +516,7 @@ export function useAnalyticsTracking() {
     trackFormQuestionStart,
     trackFormQuestionAnswer,
     trackFormComplete,
+    trackCTAClick,
     trackClick,
     trackScroll,
     getSessionId,
@@ -477,6 +539,7 @@ export function useAnalytics() {
       trackFormQuestionStart: () => {},
       trackFormQuestionAnswer: () => {},
       trackFormComplete: () => {},
+      trackCTAClick: () => {},
       trackClick: () => {},
       trackScroll: () => {},
       getSessionId: () => null,

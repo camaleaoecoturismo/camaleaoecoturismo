@@ -1552,6 +1552,7 @@ setChatMessages([]);
         setRealPaidAmount(afterDiscount); // PIX não tem juros
         setPaymentComplete(true);
         setShowPixCheckout(false);
+        analytics.trackFormComplete("reserva", questions.length);
         toast({
           title: "Pagamento confirmado!",
         });
