@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselApi } from '@/components/ui/carousel';
@@ -78,6 +78,15 @@ export function TourGalleryCarousel({
     e?.stopPropagation();
     setCurrentIndex(i => (i === images.length - 1 ? 0 : i + 1));
   };
+
+  const handleNextRef = useRef(handleNext);
+  handleNextRef.current = handleNext;
+
+  useEffect(() => {
+    if (images.length <= 1 || lightboxOpen) return;
+    const timer = setInterval(() => handleNextRef.current(), 5000);
+    return () => clearInterval(timer);
+  }, [images.length, lightboxOpen]);
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
@@ -209,7 +218,7 @@ export function TourGalleryCarousel({
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
                   <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
                 </svg>
-                {currentIndex + 1} / {images.length}
+                + fotos
               </button>
             )}
           </>

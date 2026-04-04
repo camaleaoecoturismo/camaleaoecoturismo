@@ -515,8 +515,8 @@ const Passeio = () => {
         {/* Sobre */}
         {tour.about && (
           <section id="sobre" className="mb-8 scroll-mt-4">
-            <h2 className="font-semibold text-lg text-primary mb-3">Sobre o passeio</h2>
-            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+            <h2 className="font-semibold text-base text-primary mb-3">Sobre o passeio</h2>
+            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-xs"
               dangerouslySetInnerHTML={{ __html: sanitize(tour.about) }} />
           </section>
         )}
@@ -524,8 +524,8 @@ const Passeio = () => {
         {/* Portfólio */}
         {tour.itinerary && (
           <section id="roteiro" className="mb-8 scroll-mt-4">
-            <h2 className="font-semibold text-lg text-primary mb-3">Roteiro</h2>
-            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+            <h2 className="font-semibold text-base text-primary mb-3">Roteiro</h2>
+            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-xs"
               dangerouslySetInnerHTML={{ __html: sanitize(tour.itinerary) }} />
           </section>
         )}
@@ -533,7 +533,7 @@ const Passeio = () => {
         {/* Incluso / Não incluso */}
         {(tour.includes || tour.not_includes) && (
           <section id="incluso" className="mb-8 scroll-mt-4">
-            <h2 className="font-semibold text-lg text-primary mb-3">O que está incluso</h2>
+            <h2 className="font-semibold text-base text-primary mb-3">O que está incluso</h2>
             <div className="flex flex-col gap-3">
               {tour.includes && (
                 <div className="rounded-xl border border-green-200 bg-green-50/60 overflow-hidden">
@@ -541,7 +541,7 @@ const Passeio = () => {
                     <span className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0">✓</span>
                     <span className="text-xs font-semibold text-green-800 uppercase tracking-wide">Incluso no pacote</span>
                   </div>
-                  <div className="px-4 py-3 prose prose-sm max-w-none text-green-900 leading-relaxed"
+                  <div className="px-4 py-3 prose prose-sm max-w-none text-green-900 leading-relaxed text-xs"
                     dangerouslySetInnerHTML={{ __html: sanitize(tour.includes) }} />
                 </div>
               )}
@@ -551,7 +551,7 @@ const Passeio = () => {
                     <span className="w-4 h-4 rounded-full bg-red-400 flex items-center justify-center text-white text-[10px] font-bold shrink-0">✕</span>
                     <span className="text-xs font-semibold text-red-800 uppercase tracking-wide">Não incluso</span>
                   </div>
-                  <div className="px-4 py-3 prose prose-sm max-w-none text-red-900 leading-relaxed"
+                  <div className="px-4 py-3 prose prose-sm max-w-none text-red-900 leading-relaxed text-xs"
                     dangerouslySetInnerHTML={{ __html: sanitize(tour.not_includes) }} />
                 </div>
               )}
@@ -561,7 +561,7 @@ const Passeio = () => {
 
         {/* Pontos de embarque */}
         <section id="embarques" className="mb-8 scroll-mt-4">
-          <h2 className="font-semibold text-lg text-primary mb-3 flex items-center gap-2">
+          <h2 className="font-semibold text-base text-primary mb-3 flex items-center gap-2">
             <MapPin className="w-5 h-5" />
             Pontos de embarque
           </h2>
@@ -786,7 +786,7 @@ const Passeio = () => {
         {/* Próximas datas — mobile only */}
         {relatedTours.length > 0 && (
           <section className="mb-8 md:hidden">
-            <h2 className="font-semibold text-lg text-primary mb-3">Próximas datas</h2>
+            <h2 className="font-semibold text-base text-primary mb-3">Próximas datas</h2>
             <div className="flex overflow-x-auto gap-3 pb-2 snap-x -mx-4 px-4">
               {relatedTours.map((related) => {
                 const relStart = new Date(related.start_date + "T12:00:00");
