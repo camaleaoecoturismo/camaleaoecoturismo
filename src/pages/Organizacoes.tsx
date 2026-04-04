@@ -539,16 +539,21 @@ export default function Organizacoes() {
       <TopMenu />
 
       <section className="relative isolate overflow-hidden border-b border-border bg-stone-950">
-        <img
-          src={d.sideImage}
-          alt={d.heroTitle}
-          className="absolute inset-0 h-full w-full object-cover"
-          fetchPriority="high"
-        />
-        <div className={`absolute inset-0 bg-gradient-to-br ${d.tint}`} />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.16),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.08),transparent_26%)]" />
+        <div className="absolute inset-x-0 top-0 h-[38vh] min-h-[260px] md:h-[46vh] lg:h-[52vh]">
+          <img
+            src={d.sideImage}
+            alt={d.heroTitle}
+            className="h-full w-full object-cover object-center"
+            fetchPriority="high"
+          />
+          <div className={`absolute inset-0 bg-gradient-to-br ${d.tint}`} />
+          <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.14),transparent_28%)]" />
+        </div>
 
-        <div className="relative mx-auto grid min-h-[760px] max-w-7xl items-end gap-10 px-4 pb-14 pt-28 md:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:pb-20">
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-stone-950 via-stone-950/70 to-transparent" />
+
+        <div className="relative mx-auto grid min-h-[760px] max-w-7xl items-end gap-10 px-4 pb-14 pt-24 md:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:pb-20 lg:pt-32">
           <div className="max-w-3xl">
             <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-white/85 backdrop-blur-sm">
               {d.heroEyebrow}
