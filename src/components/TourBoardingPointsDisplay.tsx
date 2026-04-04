@@ -74,16 +74,16 @@ export function TourBoardingPointsDisplay({
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-medium text-gray-700">{point.nome}</span>
+                  <span className="text-xs font-medium text-gray-700">{point.nome}</span>
                   {point.horario && (
-                    <span className="inline-flex items-center gap-0.5 text-sm text-gray-500">
+                    <span className="inline-flex items-center gap-0.5 text-xs text-gray-500">
                       <Clock className="w-3.5 h-3.5" />
                       {point.horario}
                     </span>
                   )}
                 </div>
                 {point.endereco && (
-                  <p className="text-sm text-gray-500 mt-0.5">{point.endereco}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{point.endereco}</p>
                 )}
               </div>
             </div>
@@ -97,12 +97,12 @@ export function TourBoardingPointsDisplay({
             <MapPin className="w-3.5 h-3.5" />
             Informações adicionais
           </p>
-          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{departures}</p>
+          <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-line">{departures}</p>
         </div>
       )}
 
       {boardingPoints.length === 0 && !departures && (
-        <p className="text-sm text-gray-500 flex items-center gap-1.5">
+        <p className="text-xs text-gray-500 flex items-center gap-1.5">
           <MapPin className="w-4 h-4 opacity-50" />
           Nenhuma informação de embarque disponível.
         </p>
