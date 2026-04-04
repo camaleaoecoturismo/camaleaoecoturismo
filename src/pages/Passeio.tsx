@@ -652,7 +652,7 @@ const Passeio = () => {
                   <>
                     <button
                       onClick={() => setShowInstallments(!showInstallments)}
-                      className="w-full flex items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      className="w-full flex items-center justify-between text-sm text-primary font-medium hover:text-primary/80 transition-colors"
                     >
                       <span>Ver parcelamento no cartão</span>
                       {showInstallments ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -700,7 +700,7 @@ const Passeio = () => {
                   <>
                     <button
                       onClick={() => setShowInstallments(!showInstallments)}
-                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      className="flex items-center gap-1 text-sm text-primary font-medium hover:text-primary/80 transition-colors"
                     >
                       {showInstallments ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       Ver parcelamento no cartão
@@ -945,7 +945,7 @@ const Passeio = () => {
                     <>
                       <button
                         onClick={() => setShowInstallments(!showInstallments)}
-                        className="w-full flex items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        className="w-full flex items-center justify-between text-sm text-primary font-medium hover:text-primary/80 transition-colors"
                       >
                         <span>Ver parcelamento no cartão</span>
                         {showInstallments ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -992,7 +992,7 @@ const Passeio = () => {
                     <>
                       <button
                         onClick={() => setShowInstallments(!showInstallments)}
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        className="flex items-center gap-1 text-sm text-primary font-medium hover:text-primary/80 transition-colors"
                       >
                         {showInstallments ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                         Ver parcelamento no cartão
