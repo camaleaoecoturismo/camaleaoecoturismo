@@ -360,9 +360,7 @@ const Passeio = () => {
         <div className="absolute bottom-0 inset-x-0 h-3/4 bg-gradient-to-t from-black/85 via-black/35 to-transparent z-10 pointer-events-none" />
 
         {/* TopMenu — transparent */}
-        <div className="absolute top-0 inset-x-0 z-20">
-          <TopMenu transparent />
-        </div>
+        <TopMenu transparent />
 
         {/* Back button */}
         <button
