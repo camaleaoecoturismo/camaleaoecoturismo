@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import bannerSobre from "@/assets/banner-sobre.png";
-import rioGelado from "@/assets/rio-gelado.jpg";
 import { TopMenu } from "@/components/TopMenu";
 import Footer from "@/components/Footer";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -30,6 +35,10 @@ interface Partner {
   name: string;
   logo_url: string;
   website_url: string | null;
+}
+
+function companyMedia(path: string) {
+  return new URL(`../../algumas fotos/Empresas/${path}`, import.meta.url).href;
 }
 
 const WA_NUMBER = "5582993649454";
@@ -81,6 +90,45 @@ const GLOBAL_DIFFERENTIALS = [
   },
 ];
 
+const SHARED_CASES = [
+  {
+    company: "Quartier Interiores",
+    audience: "Integração, convivência e experiência memorável",
+    title: "Confraternização na natureza com trilha, piscina, churrasco e música",
+    summary:
+      "Um encontro pensado para reunir o grupo fora da rotina e criar um clima de união, leveza e presença em um cenário natural bonito.",
+    result:
+      "Esse case ajuda a vender a Camaleão como experiência de conexão real, não só como passeio. Funciona muito bem como referência para empresas, turmas e grupos privativos.",
+    image: companyMedia("Quartier Interiores/camaleaoecoturismo_1764452943_3776827493157345936_42300883601_1.jpg"),
+    video: companyMedia("Quartier Interiores/camaleaoecoturismo_1764452943_3776824074531160957_42300883601_10.mp4"),
+    highlight: "Mostra como um dia de confraternização pode ter mais identidade e memória afetiva.",
+  },
+  {
+    company: "Saneares",
+    audience: "Bem-estar, pausa da rotina e natureza como experiência coletiva",
+    title: "Imersão no Rio Gelado com barco, flutuação e banho de lagoa",
+    summary:
+      "Uma experiência de desaceleração e presença, com água, natureza e tempo de qualidade compartilhado em grupo.",
+    result:
+      "Esse case reforça a proposta de bem-estar e conexão humana, ótima tanto para equipes quanto para grupos escolares e privativos.",
+    image: companyMedia("Saneares/camaleaoecoturismo_1752955384_3680378971366991789_42300883601_1.jpg"),
+    video: companyMedia("Saneares/camaleaoecoturismo_1752955384_3680378388887264868_42300883601_5.mp4"),
+    highlight: "Excelente vitrine para comunicar leveza, cuidado e experiência fora do óbvio.",
+  },
+  {
+    company: "EngenhARQ",
+    audience: "Aventura leve, integração e lembrança boa em grupo",
+    title: "Dia de experiência em Jequiá com barco, trilha ecológica e flutuação",
+    summary:
+      "Uma combinação equilibrada entre movimento, natureza e tranquilidade, perfeita para grupos que querem viver algo especial juntos.",
+    result:
+      "Esse material prova a versatilidade da Camaleão para públicos diferentes e ajuda a dar mais verdade visual à página.",
+    image: companyMedia("EngenhARQ/camaleaoecoturismo_1748734060_3644967940801338755_42300883601_1.jpg"),
+    video: companyMedia("EngenhARQ/camaleaoecoturismo_1748734060_3644966648209032440_42300883601_3.mp4"),
+    highlight: "Ajuda a mostrar que a experiência pode ser ao mesmo tempo bonita, leve e energizante.",
+  },
+];
+
 const CONTENT: Record<
   Tab,
   {
@@ -109,6 +157,8 @@ const CONTENT: Record<
     ctaText: string;
     waMsg: string;
     sideImage: string;
+    supportImage: string;
+    sampleImages: string[];
   }
 > = {
   empresas: {
@@ -217,7 +267,13 @@ const CONTENT: Record<
     ctaText: "Quero montar uma proposta",
     waMsg:
       "Olá! Quero entender melhor uma proposta da Camaleão para empresas. Podemos conversar sobre o perfil da minha equipe?",
-    sideImage: rioGelado,
+    sideImage: companyMedia("Saneares/camaleaoecoturismo_1752955384_3680378971366991789_42300883601_1.jpg"),
+    supportImage: companyMedia("Quartier Interiores/camaleaoecoturismo_1764452943_3776827493165752983_42300883601_5.jpg"),
+    sampleImages: [
+      companyMedia("Saneares/camaleaoecoturismo_1752955384_3680378971366923405_42300883601_2.jpg"),
+      companyMedia("Quartier Interiores/camaleaoecoturismo_1764452943_3776827493157324776_42300883601_2.jpg"),
+      companyMedia("EngenhARQ/camaleaoecoturismo_1748734060_3644967940809670753_42300883601_7.jpg"),
+    ],
   },
   escolas: {
     color: "#2F6A46",
@@ -325,7 +381,13 @@ const CONTENT: Record<
     ctaText: "Quero planejar com a escola",
     waMsg:
       "Olá! Quero conversar sobre uma proposta da Camaleão para minha escola. Podemos falar sobre a turma e o objetivo da saída?",
-    sideImage: bannerSobre,
+    sideImage: companyMedia("Turma de Psicologia - UFAL/camaleaoecoturismo_1714263304_3355806278024608285_42300883601_1.jpg"),
+    supportImage: companyMedia("Turma de Psicologia - UFAL/camaleaoecoturismo_1714263304_3355806278007838970_42300883601_3.jpg"),
+    sampleImages: [
+      companyMedia("Turma de Psicologia - UFAL/camaleaoecoturismo_1714263304_3355806277982543875_42300883601_9.jpg"),
+      companyMedia("Farofeiros da Trilha/camaleaoecoturismo_1746916888_3629724401779843165_42300883601_1.jpg"),
+      companyMedia("Quartier Interiores/camaleaoecoturismo_1764452944_3776827493442519317_42300883601_8.jpg"),
+    ],
   },
   grupos: {
     color: "#B6642E",
@@ -433,7 +495,13 @@ const CONTENT: Record<
     ctaText: "Quero um roteiro exclusivo",
     waMsg:
       "Olá! Quero montar um passeio privativo com a Camaleão para o meu grupo. Podemos conversar sobre o perfil da turma?",
-    sideImage: rioGelado,
+    sideImage: companyMedia("Farofeiros da Trilha/camaleaoecoturismo_1746916888_3629724401779843165_42300883601_1.jpg"),
+    supportImage: companyMedia("Uniodonto/camaleaoecoturismo_1745795077_3620313965896440272_42300883601_1.jpg"),
+    sampleImages: [
+      companyMedia("Uniodonto/camaleaoecoturismo_1745795077_3620313965879673562_42300883601_2.jpg"),
+      companyMedia("Grupo Giseng/camaleaoecoturismo_1705096273_3278907653114152875_42300883601_1.jpg"),
+      companyMedia("Sicredi/camaleaoecoturismo_1733012201_3513083430263102556_42300883601_1.jpg"),
+    ],
   },
 };
 
@@ -616,36 +684,52 @@ export default function Organizacoes() {
             </p>
           </div>
 
-          <div className="rounded-[28px] border border-black/5 bg-white p-6 shadow-[0_20px_80px_rgba(0,0,0,0.07)]">
-            <div className="mb-5 flex items-center gap-3">
-              <div
-                className="flex h-11 w-11 items-center justify-center rounded-xl text-white"
-                style={{ backgroundColor: d.color }}
-              >
-                {tab === "empresas" ? (
-                  <BriefcaseBusiness className="h-5 w-5" />
-                ) : tab === "escolas" ? (
-                  <GraduationCap className="h-5 w-5" />
-                ) : (
-                  <Users className="h-5 w-5" />
-                )}
-              </div>
-              <div>
-                <p className="font-semibold">Ideal para</p>
-                <p className="text-sm text-muted-foreground">Situações em que o formato certo faz diferença</p>
+          <div className="overflow-hidden rounded-[28px] border border-black/5 bg-white shadow-[0_20px_80px_rgba(0,0,0,0.07)]">
+            <div className="relative aspect-[16/10] overflow-hidden">
+              <img
+                src={d.supportImage}
+                alt={d.badge}
+                className="h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-5">
+                <span className="inline-flex rounded-full bg-white/16 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
+                  Experiência real Camaleão
+                </span>
               </div>
             </div>
 
-            <div className="grid gap-3">
-              {d.idealFor.map((item) => (
-                <div key={item} className="flex items-start gap-3 rounded-2xl bg-muted/45 px-4 py-4">
-                  <span
-                    className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: d.color }}
-                  />
-                  <p className="text-sm leading-6 text-foreground">{item}</p>
+            <div className="p-6">
+              <div className="mb-5 flex items-center gap-3">
+                <div
+                  className="flex h-11 w-11 items-center justify-center rounded-xl text-white"
+                  style={{ backgroundColor: d.color }}
+                >
+                  {tab === "empresas" ? (
+                    <BriefcaseBusiness className="h-5 w-5" />
+                  ) : tab === "escolas" ? (
+                    <GraduationCap className="h-5 w-5" />
+                  ) : (
+                    <Users className="h-5 w-5" />
+                  )}
                 </div>
-              ))}
+                <div>
+                  <p className="font-semibold">Ideal para</p>
+                  <p className="text-sm text-muted-foreground">Situações em que o formato certo faz diferença</p>
+                </div>
+              </div>
+
+              <div className="grid gap-3">
+                {d.idealFor.map((item) => (
+                  <div key={item} className="flex items-start gap-3 rounded-2xl bg-muted/45 px-4 py-4">
+                    <span
+                      className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: d.color }}
+                    />
+                    <p className="text-sm leading-6 text-foreground">{item}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -770,6 +854,87 @@ export default function Organizacoes() {
         </div>
       </section>
 
+      <section className="border-b border-border bg-[#fbf8f4]">
+        <div className="mx-auto max-w-7xl px-4 py-16 md:px-6">
+          <div className="max-w-3xl">
+            <p
+              className="text-xs font-semibold uppercase tracking-[0.24em]"
+              style={{ color: d.color }}
+            >
+              Cases reais
+            </p>
+            <h2 className="mt-4 font-serif text-3xl font-semibold leading-tight sm:text-4xl">
+              Um carrossel de cases que funciona nas três frentes
+            </h2>
+            <p className="mt-5 text-base leading-7 text-muted-foreground">
+              Esses cases aparecem em `Empresas`, `Escolas` e `Grupos Privativos` porque comunicam
+              muito bem o coração da proposta: grupos vivendo algo especial na natureza, com
+              integração, presença e memória afetiva.
+            </p>
+          </div>
+
+          <div className="mt-10">
+            <Carousel opts={{ align: "start", loop: true }} className="px-12">
+              <CarouselContent className="-ml-5">
+                {SHARED_CASES.map((item) => (
+                  <CarouselItem key={item.company} className="pl-5 md:basis-[88%] lg:basis-[78%]">
+                    <article className="overflow-hidden rounded-[30px] border border-border bg-white shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
+                      <div className="grid lg:grid-cols-[1.05fr_0.95fr]">
+                        <div className="relative min-h-[320px] overflow-hidden bg-stone-950">
+                          <video
+                            src={item.video}
+                            poster={item.image}
+                            className="h-full w-full object-cover"
+                            controls
+                            preload="metadata"
+                          />
+                          <div className="absolute left-5 top-5 rounded-full bg-black/55 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
+                            {item.company}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col justify-between p-6 md:p-8">
+                          <div>
+                            <p
+                              className="text-xs font-semibold uppercase tracking-[0.22em]"
+                              style={{ color: d.color }}
+                            >
+                              {item.audience}
+                            </p>
+                            <h3 className="mt-3 text-2xl font-semibold leading-tight text-foreground md:text-3xl">
+                              {item.title}
+                            </h3>
+                            <p className="mt-4 text-sm leading-7 text-muted-foreground">
+                              {item.summary}
+                            </p>
+                            <div className="mt-6 rounded-2xl bg-muted/45 p-4">
+                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                                O que esse case prova
+                              </p>
+                              <p className="mt-2 text-sm leading-7 text-foreground">{item.result}</p>
+                            </div>
+                          </div>
+
+                          <div className="mt-6 flex items-start gap-3 rounded-2xl border border-border bg-card px-4 py-4">
+                            <div
+                              className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
+                              style={{ backgroundColor: d.color }}
+                            />
+                            <p className="text-sm leading-6 text-foreground">{item.highlight}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="left-0 h-11 w-11" />
+              <CarouselNext className="right-0 h-11 w-11" />
+            </Carousel>
+          </div>
+        </div>
+      </section>
+
       <section className="border-b border-border bg-background">
         <div className="mx-auto max-w-7xl px-4 py-16 md:px-6">
           <div className="max-w-3xl">
@@ -786,14 +951,14 @@ export default function Organizacoes() {
           </div>
 
           <div className="mt-10 grid gap-6 lg:grid-cols-3">
-            {d.examples.map((item) => (
+            {d.examples.map((item, index) => (
               <article
                 key={item.title}
                 className="overflow-hidden rounded-[28px] border border-border bg-card"
               >
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img
-                    src={item.title === d.examples[1].title ? bannerSobre : rioGelado}
+                    src={d.sampleImages[index] || d.supportImage}
                     alt={item.title}
                     className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                   />
