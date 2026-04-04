@@ -2898,7 +2898,7 @@ setChatMessages([]);
     <>
       <Dialog open={isOpen}>
         <DialogContent
-          className="max-w-2xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-0"
+          className="max-w-2xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-0 [&>button:last-child]:hidden"
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => { e.preventDefault(); handleCloseRequest(); }}
         >
