@@ -342,12 +342,7 @@ const ClientPortal = () => {
 
     const { data: clientAccount, error } = await supabase
       .from('client_accounts')
-      .select(`
-        id, cliente_id, total_points,
-        clientes!client_accounts_cliente_id_fkey (
-          id, nome_completo, cpf, email, whatsapp, data_nascimento
-        )
-      `)
+      .select('id, cliente_id, total_points')
       .eq('user_id', session.user.id)
       .maybeSingle();
 
@@ -359,6 +354,18 @@ const ClientPortal = () => {
     if (!clientAccount) {
       navigatingRef.current = true;
       navigate('/cliente', { replace: true });
+      return;
+    }
+
+    const { data: clienteData, error: clienteError } = await supabase
+      .from('clientes')
+      .select('id, nome_completo, cpf, email, whatsapp, data_nascimento')
+      .eq('id', clientAccount.cliente_id)
+      .maybeSingle();
+
+    if (clienteError || !clienteData) {
+      setLoadError(true);
+      setLoading(false);
       return;
     }
 
@@ -376,7 +383,7 @@ const ClientPortal = () => {
       id: clientAccount.id,
       cliente_id: clientAccount.cliente_id,
       total_points: clientAccount.total_points,
-      cliente: clientAccount.clientes as any,
+      cliente: clienteData,
       level,
     });
 
