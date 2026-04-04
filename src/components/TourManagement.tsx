@@ -1945,15 +1945,15 @@ const TourManagement: React.FC<TourManagementProps> = ({
         </div> : <div className="space-y-6">
 
           {/* Tabela de Reservas Confirmadas */}
-          <Card>
-            <CardHeader className="bg-green-50 py-3">
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="bg-white border-b border-slate-100 py-3">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Badge variant="confirmed" className="text-sm">
+                  <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
+                    <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 text-sm font-bold">
                       {reservasConfirmadas.length}
-                    </Badge>
-                    Participantes Confirmados
+                    </span>
+                    Reservas Confirmadas
                   </CardTitle>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" onClick={copyBoardingPointsText}>
@@ -2039,13 +2039,13 @@ const TourManagement: React.FC<TourManagementProps> = ({
 
           {/* Tabela de Reservas Não Confirmadas (Cancelados, Reembolsados, Transferidos) */}
           {reservasNaoConfirmadas.length > 0 && (
-            <Card className="border-gray-300">
-              <CardHeader className="bg-gray-50 py-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Badge variant="destructive" className="text-sm">
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader className="bg-slate-50 border-b border-slate-100 py-3">
+                <CardTitle className="text-base font-semibold text-slate-600 flex items-center gap-2">
+                  <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-200 text-slate-600 text-sm font-bold">
                     {reservasNaoConfirmadas.length}
-                  </Badge>
-                  Não Participantes (Cancelados / Reembolsados / Transferidos)
+                  </span>
+                  Cancelados / Reembolsados / Transferidos
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">

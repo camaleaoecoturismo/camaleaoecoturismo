@@ -1808,7 +1808,7 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
                 openParticipantModal(reserva.id, participantIndex, additionalData || null);
               }
             }}
-            className="font-medium text-foreground hover:text-primary hover:underline text-left"
+            className="font-semibold text-slate-800 hover:text-primary hover:underline text-left leading-tight"
           >
             {nome}
             {isTitular && <span className="text-primary ml-1 text-xs">(T)</span>}
@@ -2613,21 +2613,26 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
 
       {/* PENDING PAYMENTS SECTION - Highlighted at top */}
       {pendingPaymentRows.length > 0 && (
-        <div className="mb-4 border-2 border-amber-400 rounded-lg bg-amber-50/80 overflow-hidden">
-          <div className="px-4 py-2 bg-amber-200 border-b border-amber-300 flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-amber-700" />
+        <div className="mb-4 border border-amber-300 rounded-xl bg-white overflow-hidden shadow-sm">
+          <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-200 flex items-center gap-2.5">
+            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-200">
+              <AlertCircle className="h-3.5 w-3.5 text-amber-700" />
+            </div>
             <span className="font-semibold text-amber-800 text-sm">
-              Pagamentos Pendentes ({pendingPaymentRows.length})
+              Pagamentos Pendentes
             </span>
-            <span className="text-xs text-amber-600 ml-2">
-              Estes participantes precisam regularizar o pagamento
+            <span className="px-2 py-0.5 bg-amber-200 text-amber-800 text-xs font-bold rounded-full">
+              {pendingPaymentRows.length}
+            </span>
+            <span className="text-xs text-amber-600 ml-1 hidden sm:inline">
+              Regularizar antes do passeio
             </span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
-              <thead className="sticky top-0 z-10 bg-amber-100/95 backdrop-blur-sm">
+              <thead className="sticky top-0 z-10">
                 <tr>
-                  <th className="px-2 py-2 text-center border-r border-b border-amber-300 w-10 bg-amber-100/95">
+                  <th className="px-2 py-2.5 text-center border-r border-b border-amber-300 w-10 bg-amber-100">
                     <Checkbox
                       checked={pendingPaymentRows.length > 0 && pendingPaymentRows.every(row => selectedRows.has(getRowKey(row)))}
                       onCheckedChange={(checked) => {
@@ -2644,10 +2649,10 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
                   {visibleColumns.map((col) => {
                     const isCollapsed = collapsedColumns.has(col.id);
                     return (
-                      <th 
-                        key={col.id} 
-                        className={`text-left font-medium text-amber-800 border-r border-b border-amber-300 whitespace-nowrap bg-amber-100/95 cursor-pointer select-none ${isCollapsed ? 'px-0.5 py-2' : 'px-3 py-2'}`}
-                        style={{ width: isCollapsed ? '24px' : 'auto', minWidth: isCollapsed ? '24px' : 'auto', maxWidth: isCollapsed ? '24px' : undefined }}
+                      <th
+                        key={col.id}
+                        className={`text-left font-semibold text-amber-800 uppercase tracking-wide border-r border-b border-amber-300 whitespace-nowrap bg-amber-100 cursor-pointer select-none ${isCollapsed ? 'px-0.5 py-2.5' : 'px-3 py-2.5'}`}
+                        style={{ fontSize: '10px', width: isCollapsed ? '24px' : 'auto', minWidth: isCollapsed ? '24px' : 'auto', maxWidth: isCollapsed ? '24px' : undefined }}
                         onClick={() => toggleColumnCollapse(col.id)}
                         title={isCollapsed ? `Expandir: ${col.label}` : `Minimizar: ${col.label}`}
                       >
@@ -2660,16 +2665,17 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {pendingPaymentRows.map((row) => {
+                {pendingPaymentRows.map((row, rowIdx) => {
                   const isPending = row.type === 'additional' && !row.additionalData?.nome_completo;
                   const rowKey = getRowKey(row);
                   const isSelected = selectedRows.has(rowKey);
+                  const isEven = rowIdx % 2 === 0;
                   return (
-                    <tr 
+                    <tr
                       key={`pending-${row.reserva.id}-${row.participantIndex}-${row.type}`}
-                      className={`border-b border-amber-200 hover:bg-amber-100/50 ${isPending ? 'bg-amber-100/30' : ''} ${isSelected ? 'bg-amber-200/50' : ''}`}
+                      className={`border-b border-amber-100 transition-colors ${isSelected ? 'bg-amber-200/60' : isPending ? 'bg-amber-50/80 hover:bg-amber-100/70' : isEven ? 'bg-white hover:bg-amber-50/50' : 'bg-amber-50/30 hover:bg-amber-50/60'}`}
                     >
-                      <td className="px-2 py-2 text-center border-r border-amber-200">
+                      <td className="px-2 py-2 text-center border-r border-amber-100">
                         <Checkbox
                           checked={isSelected}
                           onCheckedChange={() => toggleRowSelection(rowKey)}
@@ -2678,9 +2684,9 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
                       {visibleColumns.map((col) => {
                         const isCollapsed = collapsedColumns.has(col.id);
                         return (
-                          <td 
-                            key={col.id} 
-                            className={`border-r border-amber-200 whitespace-nowrap overflow-hidden ${isCollapsed ? 'px-0 py-2' : 'px-3 py-2'}`}
+                          <td
+                            key={col.id}
+                            className={`border-r border-amber-100 whitespace-nowrap overflow-hidden ${isCollapsed ? 'px-0 py-2' : 'px-3 py-2'}`}
                             style={{ width: isCollapsed ? '24px' : undefined, maxWidth: isCollapsed ? '24px' : undefined }}
                           >
                             {isCollapsed ? null : getCellValue(row, col.id)}
@@ -2699,25 +2705,27 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
       {/* CONFIRMED PAYMENTS TABLE */}
       {confirmedPaymentRows.length > 0 && (
         <div className="mb-2">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <Check className="h-4 w-4 text-green-600" />
-            <span className="font-semibold text-green-800 text-sm">
-              Participantes Confirmados ({confirmedPaymentRows.length})
-            </span>
-            {/* Package summary */}
+          <div className="flex items-center gap-3 mb-2 flex-wrap">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <Check className="h-3.5 w-3.5 text-emerald-600" />
+              <span className="font-semibold text-emerald-800 text-xs">
+                {confirmedPaymentRows.length} participante{confirmedPaymentRows.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            {/* Package summary pills */}
             {(() => {
               const packageCounts: Record<string, number> = {};
               confirmedPaymentRows.forEach(row => {
                 const { reserva, additionalData, type } = row;
                 const isTitular = type === 'titular';
                 let pacoteName: string | null = null;
-                
+
                 if (additionalData?.pricing_option_name) {
                   pacoteName = additionalData.pricing_option_name;
                 } else if (isTitular) {
                   const titularParticipant = (additionalParticipants[reserva.id] || []).find(p => p.participant_index === 1);
                   pacoteName = titularParticipant?.pricing_option_name || null;
-                  
+
                   if (!pacoteName && reserva.valor_passeio && pricingOptions.length > 0) {
                     const matchingOption = pricingOptions.find(opt => opt.pix_price === reserva.valor_passeio);
                     if (matchingOption) {
@@ -2725,30 +2733,30 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
                     }
                   }
                 }
-                
+
                 if (pacoteName) {
                   packageCounts[pacoteName] = (packageCounts[pacoteName] || 0) + 1;
                 }
               });
-              
+
               const packageEntries = Object.entries(packageCounts);
               if (packageEntries.length === 0) return null;
-              
+
               return (
-                <span className="text-xs text-muted-foreground ml-2">
-                  ({packageEntries.map(([name, count], idx) => (
-                    <span key={name}>
-                      {count} {name}{idx < packageEntries.length - 1 ? ', ' : ''}
+                <>
+                  {packageEntries.map(([name, count]) => (
+                    <span key={name} className="px-2 py-1 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-700 font-medium">
+                      {count}× {name}
                     </span>
-                  ))})
-                </span>
+                  ))}
+                </>
               );
             })()}
           </div>
         </div>
       )}
-      <div 
-        className="relative border border-border rounded-md bg-background group/table-scroll"
+      <div
+        className="relative border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden group/table-scroll"
       >
         {/* Scroll arrow buttons */}
         <button
@@ -2785,10 +2793,10 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
           }}
         >
           <table className="w-full text-xs border-collapse">
-            <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur-sm">
+            <thead className="sticky top-0 z-10">
               <tr>
                 {/* Select all checkbox */}
-                <th className="px-2 py-2 text-center border-r border-b border-border w-10 bg-muted/95">
+                <th className="px-2 py-2.5 text-center border-r border-b border-slate-300 w-10 bg-slate-100">
                   <Checkbox
                     checked={confirmedPaymentRows.length > 0 && confirmedPaymentRows.every(row => selectedRows.has(getRowKey(row)))}
                     onCheckedChange={(checked) => {
@@ -2805,10 +2813,11 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
                 {visibleColumns.map((col) => {
                   const isCollapsed = collapsedColumns.has(col.id);
                   return (
-                    <th 
-                      key={col.id} 
-                      className={`text-left font-medium border-r border-b border-border whitespace-nowrap bg-muted/95 relative group select-none cursor-pointer ${isCollapsed ? 'px-0.5 py-2' : 'px-3 py-2'}`}
-                      style={{ 
+                    <th
+                      key={col.id}
+                      className={`text-left font-semibold text-slate-600 uppercase tracking-wide border-r border-b border-slate-300 whitespace-nowrap bg-slate-100 relative group select-none cursor-pointer ${isCollapsed ? 'px-0.5 py-2.5' : 'px-3 py-2.5'}`}
+                      style={{
+                        fontSize: isCollapsed ? undefined : '10px',
                         width: isCollapsed ? '24px' : (columnWidths[col.id] ? `${columnWidths[col.id]}px` : 'auto'),
                         minWidth: isCollapsed ? '24px' : (columnWidths[col.id] ? `${columnWidths[col.id]}px` : 'auto'),
                         maxWidth: isCollapsed ? '24px' : undefined,
@@ -2828,7 +2837,7 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
                       {/* Resize handle - only when expanded */}
                       {!isCollapsed && (
                         <div
-                          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 group-hover:bg-gray-300"
+                          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 group-hover:bg-slate-300"
                           onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(e, col.id); }}
                         />
                       )}
@@ -2838,18 +2847,19 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
               </tr>
             </thead>
             <tbody>
-              {confirmedPaymentRows.map((row) => {
+              {confirmedPaymentRows.map((row, rowIdx) => {
                 const isPending = row.type === 'additional' && !row.additionalData?.nome_completo;
                 const isStaff = row.type === 'staff' || row.isStaff;
                 const rowKey = getRowKey(row);
                 const isSelected = selectedRows.has(rowKey);
+                const isEven = rowIdx % 2 === 0;
                 return (
-                  <tr 
+                  <tr
                     key={`confirmed-${row.reserva.id}-${row.participantIndex}-${row.type}`}
-                    className={`border-b border-border hover:bg-muted/30 ${showCancelled ? 'opacity-50' : ''} ${isPending ? 'bg-amber-50/50' : ''} ${isStaff ? 'bg-teal-50 hover:bg-teal-100/50' : ''} ${isSelected ? 'bg-primary/5' : ''}`}
+                    className={`border-b border-slate-100 transition-colors ${showCancelled ? 'opacity-50' : ''} ${isSelected ? 'bg-primary/8 hover:bg-primary/10' : isPending ? 'bg-amber-50/60 hover:bg-amber-100/60' : isStaff ? 'bg-teal-50/70 hover:bg-teal-100/60' : isEven ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/40 hover:bg-slate-100/60'}`}
                   >
                     {/* Row checkbox */}
-                    <td className="px-2 py-2 text-center border-r border-border">
+                    <td className="px-2 py-2 text-center border-r border-slate-100">
                       <Checkbox
                         checked={isSelected}
                         onCheckedChange={() => toggleRowSelection(rowKey)}
@@ -2858,10 +2868,10 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
                     {visibleColumns.map((col) => {
                       const isCollapsed = collapsedColumns.has(col.id);
                       return (
-                        <td 
-                          key={col.id} 
-                          className={`border-r border-border whitespace-nowrap overflow-hidden ${isCollapsed ? 'px-0 py-2' : 'px-3 py-2'}`}
-                          style={{ 
+                        <td
+                          key={col.id}
+                          className={`border-r border-slate-100 whitespace-nowrap overflow-hidden ${isCollapsed ? 'px-0 py-2' : 'px-3 py-2'}`}
+                          style={{
                             width: isCollapsed ? '24px' : undefined,
                             maxWidth: isCollapsed ? '24px' : undefined,
                             backgroundColor: col.bgColor || undefined,
