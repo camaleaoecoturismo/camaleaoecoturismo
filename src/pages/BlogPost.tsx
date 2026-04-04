@@ -19,14 +19,13 @@ interface Post {
   tags: string[] | null;
 }
 
-// ── Sanitize HTML allowing YouTube/Vimeo iframes ─────────────────────────────
+// ── Sanitize HTML allowing YouTube/Vimeo iframes + gallery data attr ─────────
 function sanitizeBlogHtml(html: string): string {
   return DOMPurify.sanitize(html, {
     ADD_TAGS: ['iframe'],
-    ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'src', 'class', 'data-gallery'],
+    ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'src', 'class', 'data-images', 'contenteditable', 'style'],
     ALLOW_DATA_ATTR: true,
     FORBID_ATTR: [],
-    // hook runs after each element is sanitized
   });
 }
 
@@ -52,87 +51,34 @@ type Segment =
   | { type: 'html'; html: string }
   | { type: 'gallery'; images: string[] };
 
-// Quill converts gallery HTML into individual <p><img></p> blocks (one per image).
-// Strategy: scan top-level nodes and collect runs of "image-only" elements
-// (p/div/span that contain a single <img>, OR a bare <img>).
-// A run of 2+ consecutive image-only elements becomes a gallery slider.
-// A run of exactly 1 stays as regular HTML.
+// Gallery is stored as <div class="ql-gallery" data-images="url1|url2|url3">
+// by the custom Quill GalleryBlot. Detection is simple and unambiguous.
 function parseSegments(html: string): Segment[] {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   const body = doc.body;
   const segments: Segment[] = [];
 
-  // Returns the single img src if node is image-only, else null
-  // Quill outputs gallery images as: <p><img src="..."><br></p> or <p><img src="..."></p>
-  const singleImgSrc = (node: ChildNode): string | null => {
-    if (node.nodeType !== Node.ELEMENT_NODE) return null;
+  for (const node of Array.from(body.childNodes)) {
     const el = node as Element;
+    const dataImages = el.nodeType === Node.ELEMENT_NODE
+      ? el.getAttribute?.('data-images')
+      : null;
 
-    // bare <img>
-    if (el.tagName === 'IMG') return el.getAttribute('src') || null;
-
-    // class="blog-gallery" with multiple imgs → handled separately below
-    if (el.classList?.contains('blog-gallery')) return null;
-
-    // container (p, div, span…): strip whitespace text nodes and <br> tags,
-    // check if what remains is exactly one <img>
-    const meaningful = Array.from(el.childNodes).filter(c => {
-      if (c.nodeType === Node.TEXT_NODE && c.textContent?.trim() === '') return false;
-      if (c.nodeType === Node.ELEMENT_NODE && (c as Element).tagName === 'BR') return false;
-      return true;
-    });
-    if (meaningful.length === 1 && (meaningful[0] as Element).tagName === 'IMG') {
-      return (meaningful[0] as Element).getAttribute('src') || null;
-    }
-    return null;
-  };
-
-  const nodes = Array.from(body.childNodes);
-  let i = 0;
-
-  while (i < nodes.length) {
-    const node = nodes[i];
-    const el = node as Element;
-
-    // Explicit blog-gallery div (if Quill ever preserves it)
-    if (node.nodeType === Node.ELEMENT_NODE && el.classList?.contains('blog-gallery')) {
-      const imgs = Array.from(el.querySelectorAll('img'))
-        .map(img => img.getAttribute('src') || '').filter(Boolean);
-      if (imgs.length >= 2) {
-        segments.push({ type: 'gallery', images: imgs });
-        i++; continue;
+    if (dataImages) {
+      const images = dataImages.split('|').filter(Boolean);
+      if (images.length >= 1) {
+        segments.push({ type: 'gallery', images });
+        continue;
       }
     }
 
-    // Try to start an image run
-    const src = singleImgSrc(node);
-    if (src) {
-      const run: string[] = [src];
-      let j = i + 1;
-      while (j < nodes.length) {
-        const nextSrc = singleImgSrc(nodes[j]);
-        if (nextSrc) { run.push(nextSrc); j++; }
-        else break;
-      }
-
-      if (run.length >= 2) {
-        // It's a gallery
-        segments.push({ type: 'gallery', images: run });
-        i = j; continue;
-      }
-      // Single image — falls through to html buffer
-    }
-
-    // Regular HTML node
-    const outerHtml = (node as Element).outerHTML ?? node.textContent ?? '';
-    // Merge into previous html segment or create new one
+    const outerHtml = el.outerHTML ?? node.textContent ?? '';
     if (segments.length > 0 && segments[segments.length - 1].type === 'html') {
       (segments[segments.length - 1] as { type: 'html'; html: string }).html += outerHtml;
     } else {
       segments.push({ type: 'html', html: outerHtml });
     }
-    i++;
   }
 
   return segments;
@@ -141,73 +87,112 @@ function parseSegments(html: string): Segment[] {
 // ── Gallery carousel ──────────────────────────────────────────────────────────
 function BlogGallery({ images }: { images: string[] }) {
   const [idx, setIdx] = useState(0);
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const touchStartX = useRef<number | null>(null);
+
   const prev = () => setIdx(i => (i - 1 + images.length) % images.length);
   const next = () => setIdx(i => (i + 1) % images.length);
 
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 40) dx < 0 ? next() : prev();
+    touchStartX.current = null;
+  };
+
   if (images.length === 1) {
     return (
-      <div className="my-6 rounded-xl overflow-hidden">
+      <div className="my-6 rounded-xl overflow-hidden cursor-zoom-in" onClick={() => setLightbox(0)}>
         <img src={images[0]} alt="" className="w-full object-cover max-h-[520px]" />
+        {lightbox !== null && (
+          <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center" onClick={() => setLightbox(null)}>
+            <img src={images[0]} alt="" className="max-w-full max-h-full object-contain p-4" />
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="my-6 rounded-xl overflow-hidden bg-black group relative select-none">
-      {/* Sliding track */}
-      <div className="overflow-hidden">
-        <div
-          className="flex transition-transform duration-500 ease-in-out"
-          style={{ transform: `translateX(-${idx * 100}%)` }}
+    <>
+      <div
+        className="my-6 rounded-xl overflow-hidden bg-black group relative select-none"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        {/* Sliding track */}
+        <div className="overflow-hidden">
+          <div
+            className="flex transition-transform duration-500 ease-in-out"
+            style={{ transform: `translateX(-${idx * 100}%)` }}
+          >
+            {images.map((src, i) => (
+              <div
+                key={i}
+                className="w-full shrink-0 flex items-center justify-center cursor-zoom-in"
+                onClick={() => setLightbox(i)}
+              >
+                <img src={src} alt="" className="w-full max-h-[480px] object-contain" draggable={false} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Prev */}
+        <button
+          onClick={e => { e.stopPropagation(); prev(); }}
+          className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          aria-label="Anterior"
         >
-          {images.map((src, i) => (
-            <div key={i} className="w-full shrink-0 flex items-center justify-center max-h-[520px]">
-              <img
-                src={src}
-                alt=""
-                className="w-full max-h-[520px] object-contain"
-                draggable={false}
-              />
-            </div>
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+
+        {/* Next */}
+        <button
+          onClick={e => { e.stopPropagation(); next(); }}
+          className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          aria-label="Próxima"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+
+        {/* Dots */}
+        <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              onClick={e => { e.stopPropagation(); setIdx(i); }}
+              className={`w-2 h-2 rounded-full transition-all ${i === idx ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/80'}`}
+            />
           ))}
+        </div>
+
+        {/* Counter */}
+        <div className="absolute top-2 right-3 text-xs text-white/80 bg-black/50 px-2 py-0.5 rounded-full z-10">
+          {idx + 1}/{images.length}
         </div>
       </div>
 
-      {/* Prev */}
-      <button
-        onClick={prev}
-        className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
-        aria-label="Anterior"
-      >
-        <ChevronLeft className="h-5 w-5" />
-      </button>
-
-      {/* Next */}
-      <button
-        onClick={next}
-        className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 hover:bg-black/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
-        aria-label="Próxima"
-      >
-        <ChevronRight className="h-5 w-5" />
-      </button>
-
-      {/* Dots */}
-      <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
-        {images.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setIdx(i)}
-            className={`w-2 h-2 rounded-full transition-all ${i === idx ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/75'}`}
-            aria-label={`Foto ${i + 1}`}
-          />
-        ))}
-      </div>
-
-      {/* Counter */}
-      <div className="absolute top-2 right-3 text-xs text-white/80 bg-black/50 px-2 py-0.5 rounded-full z-10">
-        {idx + 1}/{images.length}
-      </div>
-    </div>
+      {/* Lightbox */}
+      {lightbox !== null && (
+        <div
+          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center"
+          onClick={() => setLightbox(null)}
+        >
+          <button onClick={e => { e.stopPropagation(); setLightbox(l => l !== null ? (l - 1 + images.length) % images.length : null); }} className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center">
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          <img src={images[lightbox]} alt="" className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl" onClick={e => e.stopPropagation()} />
+          <button onClick={e => { e.stopPropagation(); setLightbox(l => l !== null ? (l + 1) % images.length : null); }} className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center">
+            <ChevronRight className="h-6 w-6" />
+          </button>
+          <div className="absolute bottom-6 text-white/60 text-sm">{lightbox + 1} / {images.length}</div>
+        </div>
+      )}
+    </>
   );
 }
 
