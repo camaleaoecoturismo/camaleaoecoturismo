@@ -30,6 +30,7 @@ import {
   ShoppingCart,
   Plus,
   Minus,
+  Share2,
 } from "lucide-react";
 
 const INSTALLMENT_FEES: Record<number, number> = {
@@ -369,6 +370,23 @@ const Passeio = () => {
         >
           <ChevronLeft className="w-4 h-4" />
           Voltar
+        </button>
+
+        {/* Share button */}
+        <button
+          onClick={() => {
+            const url = window.location.href;
+            const title = tour.name;
+            if (navigator.share) {
+              navigator.share({ title, url });
+            } else {
+              navigator.clipboard.writeText(url);
+            }
+          }}
+          className="absolute top-[68px] right-4 z-20 w-9 h-9 flex items-center justify-center text-white bg-black/30 backdrop-blur-sm hover:bg-black/50 transition-colors rounded-full"
+          aria-label="Compartilhar"
+        >
+          <Share2 className="w-4 h-4" />
         </button>
 
         {/* Tour info — bottom left */}
