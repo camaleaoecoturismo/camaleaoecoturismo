@@ -1127,7 +1127,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                   Processando...
                 </>
               ) : (
-                'Continuar para pagamento'
+                'Continuar'
               )}
             </Button>
           )}
