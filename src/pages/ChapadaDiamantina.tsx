@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   Accordion,
   AccordionContent,
@@ -30,6 +31,8 @@ import {
   Flame,
   Footprints,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   AlertTriangle,
   X,
   Clock,
@@ -46,13 +49,19 @@ document.title = "Chapada Diamantina | Camaleão Ecoturismo";
 
 // ─── Difficulty badge ─────────────────────────────────────────────────────────
 const diffConfig: Record<string, { bg: string; label: string }> = {
+  Leve: { bg: "bg-sky-100 text-sky-800 border-sky-200", label: "Leve" },
   Fácil: { bg: "bg-green-100 text-green-800 border-green-200", label: "Fácil" },
+  "Fácil-Moderado": {
+    bg: "bg-lime-100 text-lime-800 border-lime-200",
+    label: "Fácil-Moderado",
+  },
   Moderado: { bg: "bg-yellow-100 text-yellow-800 border-yellow-200", label: "Moderado" },
   "Moderado-Intenso": {
     bg: "bg-orange-100 text-orange-800 border-orange-200",
     label: "Moderado-Intenso",
   },
   Intenso: { bg: "bg-red-100 text-red-800 border-red-200", label: "Intenso" },
+  Difícil: { bg: "bg-rose-100 text-rose-800 border-rose-200", label: "Difícil" },
 };
 const DiffBadge = ({ level }: { level: string }) => {
   const cfg = diffConfig[level] ?? diffConfig["Moderado"];
@@ -74,6 +83,9 @@ const roteiros = [
     dias: 4,
     hospedagem: "Pousada em Lençóis",
     experiencia: "Variedade e equilíbrio",
+    idealPara: "Quem quer ver os clássicos da Chapada com boa estrutura e ritmo equilibrado.",
+    ritmo: "Dias variados com trilhas leves a moderadas e boa dose de banho, gruta e contemplação.",
+    verdade: "É o roteiro mais seguro para primeira vez no destino.",
     destaque: "Mais popular",
     cor: "from-emerald-500 to-teal-600",
     atrativos: [
@@ -134,6 +146,9 @@ const roteiros = [
     dias: 3,
     hospedagem: "Casa de nativo no vale",
     experiencia: "Imersão e desconexão",
+    idealPara: "Quem quer sentir a Chapada por dentro, com travessia, silêncio e esforço real.",
+    ritmo: "Caminhadas longas em dias consecutivos, com paisagens grandiosas e pouco conforto urbano.",
+    verdade: "Não é um passeio comum: é uma travessia de verdade.",
     destaque: null,
     cor: "from-blue-500 to-indigo-600",
     atrativos: [
@@ -192,6 +207,9 @@ const roteiros = [
     dias: 3,
     hospedagem: "Pousada histórica em Mucugê",
     experiencia: "Natureza bruta + patrimônio",
+    idealPara: "Quem quer uma base charmosa com dias bem diferentes entre si e cachoeiras fortes.",
+    ritmo: "Mistura dia leve, dia intenso e dia contemplativo, com clima mais rústico e menos turístico.",
+    verdade: "Entrega uma Chapada menos óbvia e mais dramática.",
     destaque: null,
     cor: "from-amber-500 to-orange-600",
     atrativos: [
@@ -236,6 +254,32 @@ const roteiros = [
   },
 ] as const;
 
+const routeKeywords: Record<string, string[]> = {
+  lencois: ["lençois", "lencois", "pratinha", "lapa doce", "pai inácio", "pai inacio", "poço azul", "poco azul", "ribeirão do meio", "ribeirao do meio", "poço do diabo", "poco do diabo"],
+  valedopati: ["vale do pati", "pati", "morro do castelo", "aleixo", "bananeira", "funil", "travessia"],
+  mucuge: ["mucugê", "mucuge", "fumacinha", "buracão", "buracao", "tiburtino", "piabinha", "sempre viva", "sempre-viva"],
+};
+
+const normalizeText = (value?: string | null) =>
+  (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+const classifyChapadaRoute = (tour: Tour): (typeof roteiros)[number]["id"] | null => {
+  const haystack = normalizeText(
+    [tour.destination_name, tour.name, tour.about, tour.slug, tour.etiqueta].filter(Boolean).join(" ")
+  );
+
+  for (const [routeId, keywords] of Object.entries(routeKeywords)) {
+    if (keywords.some((keyword) => haystack.includes(normalizeText(keyword)))) {
+      return routeId as (typeof roteiros)[number]["id"];
+    }
+  }
+
+  return haystack.includes("chapada") || haystack.includes("diamantina") ? "lencois" : null;
+};
+
 // ─── FAQ data ──────────────────────────────────────────────────────────────────
 const faqGeral = [
   { q: "Qual a melhor época para ir à Chapada Diamantina?", a: "A Chapada pode ser visitada o ano todo. A estação seca (maio a setembro) oferece mais dias de sol e trilhas mais firmes. A temporada de chuvas (novembro a março) deixa a vegetação mais verde e as cachoeiras mais cheias, mas algumas trilhas ficam escorregadias." },
@@ -274,7 +318,7 @@ const ChapadaDiamantina = () => {
         .filter(
           (t) =>
             t.is_active &&
-            t.name.toLowerCase().includes("chapada") &&
+            classifyChapadaRoute(t) !== null &&
             new Date(t.start_date + "T12:00:00") >= new Date()
         )
         .sort(
@@ -283,6 +327,26 @@ const ChapadaDiamantina = () => {
             new Date(b.start_date + "T12:00:00").getTime()
         ),
     [tours]
+  );
+
+  const toursByRoute = useMemo(() => {
+    return roteiros.reduce((acc, roteiro) => {
+      acc[roteiro.id] = chapadaTours.filter((tour) => classifyChapadaRoute(tour) === roteiro.id);
+      return acc;
+    }, {} as Record<(typeof roteiros)[number]["id"], Tour[]>);
+  }, [chapadaTours]);
+
+  const routeBadges = useMemo(
+    () =>
+      roteiros.reduce((acc, roteiro) => {
+        acc[roteiro.id] = [
+          `${roteiro.dias} dias`,
+          roteiro.experiencia,
+          roteiro.hospedagem,
+        ];
+        return acc;
+      }, {} as Record<(typeof roteiros)[number]["id"], string[]>),
+    []
   );
 
   const tourIds = useMemo(() => chapadaTours.map((t) => t.id), [chapadaTours]);
@@ -298,6 +362,13 @@ const ChapadaDiamantina = () => {
     { id: string; nome: string; foto_url: string | null; texto: string; nota: number }[]
   >([]);
   const [faqRouteiro, setFaqRouteiro] = useState("lencois");
+  const [routeMedia, setRouteMedia] = useState<Record<string, string[]>>({
+    lencois: [],
+    valedopati: [],
+    mucuge: [],
+  });
+  const [lightboxRoute, setLightboxRoute] = useState<string | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
     (supabase as any)
@@ -312,6 +383,66 @@ const ChapadaDiamantina = () => {
       });
   }, []);
 
+  useEffect(() => {
+    const fetchRouteMedia = async () => {
+      if (chapadaTours.length === 0) {
+        setRouteMedia({ lencois: [], valedopati: [], mucuge: [] });
+        return;
+      }
+
+      const routeMap = chapadaTours.reduce((acc, tour) => {
+        const routeId = classifyChapadaRoute(tour);
+        if (!routeId) return acc;
+        if (!acc[routeId]) acc[routeId] = [];
+        acc[routeId].push(tour.id);
+        return acc;
+      }, {} as Record<string, string[]>);
+
+      const allTourIds = chapadaTours.map((tour) => tour.id);
+      const [galleryRes, momentsRes] = await Promise.all([
+        (supabase as any)
+          .from("tour_gallery_images")
+          .select("tour_id, image_url, order_index, is_cover")
+          .in("tour_id", allTourIds)
+          .order("is_cover", { ascending: false })
+          .order("order_index", { ascending: true }),
+        (supabase as any)
+          .from("tour_moments")
+          .select("destination_name, media_url, media_type, cover_url")
+          .eq("active", true)
+          .order("display_order"),
+      ]);
+
+      const galleryData = galleryRes.data || [];
+      const momentsData = momentsRes.data || [];
+
+      const nextMedia = roteiros.reduce((acc, roteiro) => {
+        const ids = routeMap[roteiro.id] || [];
+        const galleryImages = galleryData
+          .filter((item: any) => ids.includes(item.tour_id))
+          .map((item: any) => item.image_url)
+          .filter(Boolean);
+
+        const momentImages = momentsData
+          .filter((item: any) => {
+            const normalized = normalizeText(item.destination_name);
+            if (roteiro.id === "valedopati") return normalized.includes("pati");
+            if (roteiro.id === "mucuge") return normalized.includes("mucuge");
+            return normalized.includes("chapada") || normalized.includes("lencois");
+          })
+          .map((item: any) => item.cover_url || (item.media_type === "image" ? item.media_url : null))
+          .filter(Boolean);
+
+        acc[roteiro.id] = [...new Set([...galleryImages, ...momentImages])].slice(0, 4);
+        return acc;
+      }, {} as Record<string, string[]>);
+
+      setRouteMedia(nextMedia);
+    };
+
+    fetchRouteMedia();
+  }, [chapadaTours]);
+
   const handleMoreInfo = (tour: Tour) => {
     setSelectedTour(tour);
     setModalOpen(true);
@@ -323,6 +454,18 @@ const ChapadaDiamantina = () => {
   const handleWaitlist = (tour: Tour) => {
     setWaitlistTour(tour);
     setWaitlistModalOpen(true);
+  };
+
+  const openRouteLightbox = (routeId: string, index: number) => {
+    setLightboxRoute(routeId);
+    setLightboxIndex(index);
+  };
+
+  const currentLightboxImages = lightboxRoute ? routeMedia[lightboxRoute] || [] : [];
+
+  const stepLightbox = (direction: -1 | 1) => {
+    if (currentLightboxImages.length === 0) return;
+    setLightboxIndex((prev) => (prev + direction + currentLightboxImages.length) % currentLightboxImages.length);
   };
 
   const scrollTo = (id: string) => {
@@ -442,6 +585,18 @@ const ChapadaDiamantina = () => {
                     </div>
                   </div>
 
+                  <div className="mb-5 rounded-xl bg-muted/40 border border-border/60 p-3">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                      Leitura rápida
+                    </p>
+                    <p className="text-sm text-foreground font-medium mb-2">{r.idealPara}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {toursByRoute[r.id].length > 0
+                        ? `${toursByRoute[r.id].length} saída(s) ativa(s) relacionada(s) a esse formato hoje.`
+                        : "Sem saída ativa agora, mas o roteiro segue disponível para próximas temporadas."}
+                    </p>
+                  </div>
+
                   <Button
                     variant={r.destaque ? "default" : "outline"}
                     className="w-full"
@@ -508,6 +663,89 @@ const ChapadaDiamantina = () => {
                 <p className="text-lg text-muted-foreground">{r.tagline}</p>
               </div>
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6 mb-10">
+              <div className={`relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${r.cor} p-8 text-white`}>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.16),transparent_30%)]" />
+                <div className="relative">
+                  <p className="text-xs uppercase tracking-[0.24em] text-white/75 mb-3">
+                    Essência do roteiro
+                  </p>
+                  <h3 className="text-2xl md:text-3xl font-bold mb-4">
+                    {r.experiencia}
+                  </h3>
+                  <p className="text-white/90 max-w-2xl mb-6">
+                    {r.idealPara}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {routeBadges[r.id].map((badge) => (
+                      <div key={badge} className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm">
+                        {badge}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border bg-background p-6 shadow-sm">
+                <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground mb-3">
+                  Antes de escolher
+                </p>
+                <p className="text-lg font-semibold text-foreground mb-3">{r.verdade}</p>
+                <p className="text-sm text-muted-foreground mb-4">{r.ritmo}</p>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+                    <span>{r.perfil}</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+                    <span>{toursByRoute[r.id].length > 0 ? `${toursByRoute[r.id].length} saída(s) aberta(s) associada(s)` : "Sem saídas abertas agora"}</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+                    <span>{r.hospedagem}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {routeMedia[r.id]?.length > 0 && (
+              <div className="mb-10">
+                <div className="flex items-center justify-between gap-4 mb-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground mb-1">
+                      Galeria do roteiro
+                    </p>
+                    <h3 className="text-xl font-semibold text-foreground">
+                      Imagens reais de {r.nome}
+                    </h3>
+                  </div>
+                  <Badge variant="outline">
+                    {routeMedia[r.id].length} fotos
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {routeMedia[r.id].map((imageUrl, imageIndex) => (
+                    <button
+                      key={`${r.id}-${imageIndex}`}
+                      type="button"
+                      onClick={() => openRouteLightbox(r.id, imageIndex)}
+                      className={`overflow-hidden rounded-2xl border bg-muted text-left ${imageIndex === 0 ? "md:col-span-2 md:row-span-2 aspect-[4/3] md:aspect-auto md:h-full min-h-[220px]" : "aspect-[4/3]"}`}
+                    >
+                      <img
+                        src={imageUrl}
+                        alt={`${r.nome} - foto ${imageIndex + 1}`}
+                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               {/* Left column */}
@@ -666,6 +904,58 @@ const ChapadaDiamantina = () => {
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
+
+                <div className="rounded-2xl border bg-muted/20 p-5">
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    <div>
+                      <h4 className="font-semibold text-foreground">Saídas ligadas a {r.nome}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {toursByRoute[r.id].length > 0
+                          ? "Essas datas conversam mais diretamente com este formato de experiência."
+                          : "Quando abrirem novas datas desse formato, elas aparecerão aqui."}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="shrink-0">
+                      {toursByRoute[r.id].length} saída(s)
+                    </Badge>
+                  </div>
+
+                  {toursByRoute[r.id].length > 0 ? (
+                    <div className="space-y-3">
+                      {toursByRoute[r.id].slice(0, 2).map((tour) => (
+                        <button
+                          key={tour.id}
+                          type="button"
+                          onClick={() => handleMoreInfo(tour)}
+                          className="w-full rounded-xl border bg-background px-4 py-3 text-left hover:border-primary hover:shadow-sm transition-all"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                              <p className="font-medium text-foreground line-clamp-2">{tour.name}</p>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {formatDate(tour.start_date, tour.end_date)}
+                              </p>
+                            </div>
+                            {tour.valor_padrao && tour.valor_padrao > 0 && (
+                              <span className="text-sm font-semibold text-primary whitespace-nowrap">
+                                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(tour.valor_padrao)}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => window.open(waLink(`Olá! Quero ser avisado quando abrirem novas saídas de ${r.nome} na Chapada Diamantina.`), "_blank")}
+                    >
+                      <MessageCircle className="mr-2 h-4 w-4" />
+                      Avisar quando abrir
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -723,6 +1013,19 @@ const ChapadaDiamantina = () => {
             </p>
           </div>
 
+          <div className="flex flex-wrap gap-2 justify-center mb-8">
+            {roteiros.map((roteiro) => (
+              <div
+                key={roteiro.id}
+                className="rounded-full border bg-muted/20 px-4 py-2 text-sm text-muted-foreground"
+              >
+                <span className="font-medium text-foreground">{roteiro.nome}</span>
+                {" · "}
+                {toursByRoute[roteiro.id].length} saída(s)
+              </div>
+            ))}
+          </div>
+
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
@@ -761,6 +1064,11 @@ const ChapadaDiamantina = () => {
                       )}
                     </div>
                     <CardContent className="p-4">
+                      <div className="mb-2">
+                        <Badge variant="outline" className="text-[11px]">
+                          {roteiros.find((r) => r.id === classifyChapadaRoute(tour))?.nome || "Chapada Diamantina"}
+                        </Badge>
+                      </div>
                       <h3 className="font-semibold text-foreground mb-2 line-clamp-2">{tour.name}</h3>
                       {tour.valor_padrao && tour.valor_padrao > 0 && (
                         <p className="text-lg font-bold text-primary mb-3">
@@ -991,6 +1299,53 @@ const ChapadaDiamantina = () => {
           onClose={() => setWaitlistModalOpen(false)}
         />
       )}
+
+      <Dialog
+        open={!!lightboxRoute && currentLightboxImages.length > 0}
+        onOpenChange={(open) => {
+          if (!open) {
+            setLightboxRoute(null);
+            setLightboxIndex(0);
+          }
+        }}
+      >
+        <DialogContent className="max-w-[95vw] md:max-w-[88vw] lg:max-w-[82vw] p-0 border-0 bg-black/95 overflow-hidden">
+          {currentLightboxImages.length > 0 && (
+            <div className="relative">
+              <img
+                src={currentLightboxImages[lightboxIndex]}
+                alt={`Galeria ${lightboxRoute} - foto ${lightboxIndex + 1}`}
+                className="w-full max-h-[88vh] object-contain bg-black"
+              />
+
+              {currentLightboxImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => stepLightbox(-1)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-black/45 text-white flex items-center justify-center hover:bg-black/65 transition-colors"
+                    aria-label="Foto anterior"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => stepLightbox(1)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-black/45 text-white flex items-center justify-center hover:bg-black/65 transition-colors"
+                    aria-label="Próxima foto"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                </>
+              )}
+
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1.5 text-xs text-white">
+                {lightboxIndex + 1} / {currentLightboxImages.length}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <FloatingContactButton />
     </div>
