@@ -129,6 +129,10 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
   const [currentPdfPath, setCurrentPdfPath] = useState<string | null>(null);
   const [allCategorias, setAllCategorias] = useState<Categoria[]>([]);
   const [selectedCategoriaIds, setSelectedCategoriaIds] = useState<string[]>([]);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatIcon, setNewCatIcon] = useState('');
+  const [showNewCatInput, setShowNewCatInput] = useState(false);
+  const [savingCat, setSavingCat] = useState(false);
   const { toast } = useToast();
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitialLoadRef = useRef(true);
@@ -248,6 +252,28 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
     setSelectedCategoriaIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
+  };
+
+  const criarCategoria = async () => {
+    if (!newCatName.trim()) return;
+    setSavingCat(true);
+    try {
+      const { data, error } = await supabase
+        .from('categorias_passeio')
+        .insert({ nome: newCatName.trim(), icone: newCatIcon.trim() || null, is_active: true })
+        .select()
+        .single();
+      if (error) throw error;
+      setAllCategorias(prev => [...prev, data]);
+      setSelectedCategoriaIds(prev => [...prev, data.id]);
+      setNewCatName('');
+      setNewCatIcon('');
+      setShowNewCatInput(false);
+    } catch (e: any) {
+      toast({ title: 'Erro ao criar categoria', description: e.message, variant: 'destructive' });
+    } finally {
+      setSavingCat(false);
+    }
   };
 
   const saveCategoriasForTour = async (tourId: string) => {
@@ -810,21 +836,6 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                       />
                     </div>
 
-                    <FormField
-                      control={form.control}
-                      name="is_featured"
-                      render={({ field }) => (
-                        <FormItem className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                          <FormControl>
-                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                          </FormControl>
-                          <div>
-                            <FormLabel className="text-yellow-700 text-sm font-medium">⭐ Passeio em Destaque</FormLabel>
-                            <p className="text-xs text-yellow-600">Aparece com visual especial na página inicial</p>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
 
                     <FormField
                       control={form.control}
@@ -861,38 +872,73 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                 </Card>
 
                 {/* Categorias */}
-                {allCategorias.length > 0 && (
-                  <Card className="border-0 shadow-sm">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base font-medium text-slate-700">Categorias</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-xs text-muted-foreground mb-3">
-                        Selecione as categorias que descrevem este passeio. Usadas nos filtros da home.
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {allCategorias.map((cat) => {
-                          const selected = selectedCategoriaIds.includes(cat.id);
-                          return (
-                            <button
-                              key={cat.id}
-                              type="button"
-                              onClick={() => toggleCategoria(cat.id)}
-                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
-                                selected
-                                  ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                                  : 'bg-white text-slate-600 border-slate-200 hover:border-primary/50 hover:text-primary'
-                              }`}
-                            >
-                              {cat.icone && <span>{cat.icone}</span>}
-                              {cat.nome}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                <Card className="border-0 shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base font-medium text-slate-700">Categorias</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Selecione as categorias que descrevem este passeio. Usadas nos filtros da home.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {allCategorias.map((cat) => {
+                        const selected = selectedCategoriaIds.includes(cat.id);
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => toggleCategoria(cat.id)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                              selected
+                                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-primary/50 hover:text-primary'
+                            }`}
+                          >
+                            {cat.icone && <span>{cat.icone}</span>}
+                            {cat.nome}
+                          </button>
+                        );
+                      })}
+
+                      {/* Criar nova categoria inline */}
+                      {!showNewCatInput ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowNewCatInput(true)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-slate-300 text-slate-400 hover:border-primary hover:text-primary transition-all"
+                        >
+                          + Nova
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-1.5 p-1 rounded-full border border-primary/40 bg-white shadow-sm">
+                          <input
+                            type="text"
+                            placeholder="emoji"
+                            value={newCatIcon}
+                            onChange={e => setNewCatIcon(e.target.value)}
+                            className="w-10 text-center text-sm outline-none bg-transparent"
+                            maxLength={2}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Nome da categoria"
+                            value={newCatName}
+                            onChange={e => setNewCatName(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); criarCategoria(); } if (e.key === 'Escape') setShowNewCatInput(false); }}
+                            autoFocus
+                            className="text-sm outline-none bg-transparent w-36 text-slate-700 placeholder:text-slate-400"
+                          />
+                          <button type="button" onClick={criarCategoria} disabled={savingCat || !newCatName.trim()}
+                            className="text-xs px-2 py-0.5 rounded-full bg-primary text-white disabled:opacity-40">
+                            {savingCat ? '...' : 'Ok'}
+                          </button>
+                          <button type="button" onClick={() => { setShowNewCatInput(false); setNewCatName(''); setNewCatIcon(''); }}
+                            className="text-xs text-slate-400 hover:text-slate-600 px-1">✕</button>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {/* Preços */}
                 <Card className="border-0 shadow-sm">
@@ -1090,25 +1136,6 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                       />
                     </div>
 
-                    <FormField
-                      control={form.control}
-                      name="departures"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-slate-600 text-sm">Informações adicionais de embarque</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Ex: Ponto de encontro, orientações gerais de saída..."
-                              className="bg-white resize-none"
-                              rows={3}
-                              {...field}
-                            />
-                          </FormControl>
-                          <p className="text-xs text-muted-foreground">Exibido abaixo dos pontos de embarque na página do passeio.</p>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
 
                     <div>
                       <FormLabel className="text-slate-600 text-sm">PDF do Roteiro</FormLabel>
