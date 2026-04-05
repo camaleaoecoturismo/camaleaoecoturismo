@@ -3105,26 +3105,28 @@ setChatMessages([]);
                 <div className="flex justify-end">
                   <div className="w-[85%]">{renderInputField(currentQuestion)}</div>
                 </div>
-                <div className="flex justify-between items-center gap-3 px-4 py-3 bg-white/60 rounded-2xl shadow-sm">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={prevField}
-                    disabled={currentQuestionIndex === 0}
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-1" />
-                    Voltar
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={nextField}
-                    disabled={loading}
-                    className="bg-purple-700 hover:bg-purple-800 text-white"
-                  >
-                    Enviar
-                  </Button>
-                </div>
+                {!['aceita_politica', 'aceita_cancelamento'].includes(currentQuestion.standard_field_key || '') && (
+                  <div className="flex justify-between items-center gap-3 px-4 py-3 bg-white/60 rounded-2xl shadow-sm">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={prevField}
+                      disabled={currentQuestionIndex === 0}
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-1" />
+                      Voltar
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={nextField}
+                      disabled={loading}
+                      className="bg-purple-700 hover:bg-purple-800 text-white"
+                    >
+                      Enviar
+                    </Button>
+                  </div>
+                )}
               </>
             )}
 
