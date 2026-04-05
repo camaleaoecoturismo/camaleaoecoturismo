@@ -27,6 +27,11 @@ interface TourOption {
   destination_name: string | null;
 }
 
+interface DestinationGroupMeta {
+  destination: string;
+  tours: TourOption[];
+}
+
 const EMPTY_FORM = {
   media_url: "",
   media_type: "video",
@@ -97,6 +102,19 @@ export default function AdminTourMoments() {
     });
     return map;
   }, [moments, tours]);
+
+  const destinationMeta = useMemo(() => {
+    const map = new Map<string, DestinationGroupMeta>();
+
+    allDestinations.forEach((destination) => {
+      map.set(destination, {
+        destination,
+        tours: tours.filter((tour) => (tour.destination_name || tour.name) === destination),
+      });
+    });
+
+    return map;
+  }, [allDestinations, tours]);
 
   // Filter by search
   const filteredDestinations = useMemo(() => {
@@ -268,10 +286,13 @@ export default function AdminTourMoments() {
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Film className="h-5 w-5 text-primary" />
-            Momentos por Passeio
+            Momentos por Destino
           </h2>
           <p className="text-muted-foreground text-sm mt-1">
-            {totalMoments} momento{totalMoments !== 1 ? 's' : ''} em {filteredDestinations.length} passeio{filteredDestinations.length !== 1 ? 's' : ''}
+            Cadastre uma vez por destino e reutilize os mesmos vídeos em todos os passeios com esse destino.
+          </p>
+          <p className="text-muted-foreground text-sm mt-1">
+            {totalMoments} momento{totalMoments !== 1 ? 's' : ''} em {filteredDestinations.length} destino{filteredDestinations.length !== 1 ? 's' : ''}
           </p>
         </div>
       </div>
@@ -280,7 +301,7 @@ export default function AdminTourMoments() {
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar passeio..."
+          placeholder="Buscar destino..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="pl-9"
@@ -293,13 +314,15 @@ export default function AdminTourMoments() {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : filteredDestinations.length === 0 ? (
-        <div className="text-center py-10 text-muted-foreground text-sm">Nenhum passeio encontrado.</div>
+        <div className="text-center py-10 text-muted-foreground text-sm">Nenhum destino encontrado.</div>
       ) : (
         <div className="space-y-3">
           {filteredDestinations.map(dest => {
             const destMoments = grouped.get(dest) || [];
             const isExpanded = expandedGroups.has(dest);
             const isFormOpen = formDestination === dest;
+            const meta = destinationMeta.get(dest);
+            const linkedTours = meta?.tours || [];
 
             return (
               <div key={dest} className="border border-border rounded-xl overflow-hidden bg-card">
@@ -315,6 +338,8 @@ export default function AdminTourMoments() {
                       {destMoments.length} momento{destMoments.length !== 1 ? 's' : ''}
                       {' · '}
                       {destMoments.filter(m => m.active).length} ativo{destMoments.filter(m => m.active).length !== 1 ? 's' : ''}
+                      {' · '}
+                      {linkedTours.length} passeio{linkedTours.length !== 1 ? 's' : ''} usando este destino
                     </p>
                   </div>
                   {/* Thumbnails preview (up to 4) */}
@@ -364,6 +389,28 @@ export default function AdminTourMoments() {
                 {/* Expanded content */}
                 {isExpanded && (
                   <div className="border-t border-border">
+                    <div className="px-4 py-3 border-b border-border bg-muted/20">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        Passeios vinculados a este destino
+                      </p>
+                      {linkedTours.length > 0 ? (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {linkedTours.map((tour) => (
+                            <span
+                              key={tour.id}
+                              className="inline-flex rounded-full border border-border bg-background px-3 py-1 text-xs text-foreground"
+                            >
+                              {tour.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          Ainda não encontrei passeios cadastrados com esse destino exato.
+                        </p>
+                      )}
+                    </div>
+
                     {/* Add/edit form */}
                     {isFormOpen && editingId && (
                       <div className="p-4 bg-muted/20 border-b border-border space-y-4">
@@ -454,7 +501,7 @@ export default function AdminTourMoments() {
                     {destMoments.length === 0 && !isFormOpen ? (
                       <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                         <Film className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                        <p>Nenhum momento ainda.</p>
+                        <p>Nenhum momento ainda para este destino.</p>
                         <label className="cursor-pointer mt-2 inline-block">
                           <span className="text-primary hover:underline font-medium">Selecionar arquivos</span>
                           <input
