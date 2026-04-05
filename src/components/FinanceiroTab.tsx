@@ -116,6 +116,7 @@ interface Reservation {
 interface FinanceiroTabProps {
   tours: Tour[];
   viewMode?: string;
+  onNavigate?: (tab: string) => void;
 }
 const IR_RATE = 0.06; // 6%
 // Password validation done server-side via site_settings
@@ -213,7 +214,8 @@ const PasswordGate = ({
 };
 const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   tours,
-  viewMode: propViewMode = 'passeio'
+  viewMode: propViewMode = 'passeio',
+  onNavigate,
 }) => {
   const {
     toast
@@ -3282,15 +3284,50 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
       </div>;
   };
 
-  return <div className="space-y-4">
+  const FINANCEIRO_NAV = [
+    { key: 'dashboard', label: 'Visão Geral' },
+    { key: 'diario',    label: 'Diário' },
+    { key: 'passeio',   label: 'Por Passeio' },
+    { key: 'mensal',    label: 'Mensal' },
+    { key: 'balanco',   label: 'Balanço' },
+    { key: 'competencia', label: 'Por Evento' },
+    { key: 'historico', label: 'Histórico' },
+    { key: 'comparacao', label: 'Comparação' },
+    { key: 'grafica',   label: 'Análise Gráfica' },
+    { key: 'analise',   label: 'Análise IA' },
+  ];
+
+  return <div className="space-y-0">
+      {/* Top navigation */}
+      {onNavigate && (
+        <div className="bg-white border-b mb-4 -mx-4 md:-mx-6 px-4 md:px-6">
+          <div className="flex items-center gap-0 overflow-x-auto">
+            {FINANCEIRO_NAV.map(item => (
+              <button
+                key={item.key}
+                onClick={() => onNavigate(`financeiro-${item.key}`)}
+                className={[
+                  'px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors',
+                  viewMode === item.key
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-slate-300',
+                ].join(' ')}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       <ScrollArea className="h-[calc(100vh-200px)]">
         {viewMode === 'diario' ? <FinanceiroDiario tours={tours} reservations={reservations} clientes={clientes} /> :
          viewMode === 'analise' ? <FinanceiroAnaliseInteligente tours={tours} reservations={reservations} allTourCosts={allTourCosts} allMonthlyGeneralCosts={allMonthlyGeneralCosts} /> :
          viewMode === 'comparacao' ? <FinanceiroComparacao tours={tours} reservations={reservations} allTourCosts={allTourCosts} allMonthlyGeneralCosts={allMonthlyGeneralCosts} /> :
-         viewMode === 'dashboard' ? <DashboardView /> : 
-         viewMode === 'passeio' ? <TourView /> : 
-         viewMode === 'balanco' ? <BalancoView /> : 
+         viewMode === 'dashboard' ? <DashboardView /> :
+         viewMode === 'passeio' ? <TourView /> :
+         viewMode === 'balanco' ? <BalancoView /> :
          viewMode === 'grafica' ? <AnaliseGraficaView /> :
          viewMode === 'historico' ? <HistoricoView /> :
          viewMode === 'competencia' ? <CompetenciaView /> :

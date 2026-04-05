@@ -295,7 +295,7 @@ const Admin = () => {
       case 'gestao':
         return <TourManagementTab tours={allToursForManagement} onRefresh={fetchTours} viewMode={subSection || 'dashboard'} />;
       case 'financeiro':
-        return <FinanceiroTab tours={tours} viewMode={subSection || 'passeio'} />;
+        return <FinanceiroTab tours={tours} viewMode={subSection || 'passeio'} onNavigate={setActiveTab} />;
       case 'funcionalidades':
         return <FuncionalidadesTab activeSubTab={subSection || 'menu'} />;
       case 'catalogo':

@@ -6,7 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { startOfMonth, endOfMonth } from 'date-fns';
-import { Info } from 'lucide-react';
+import { Info, TrendingUp, TrendingDown, Wallet, Users } from 'lucide-react';
+import {
+  BarChart, Bar, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+} from 'recharts';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -330,6 +334,112 @@ const BalancoCompetencia: React.FC<BalancoCompetenciaProps> = ({
           </SelectContent>
         </Select>
       </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          {
+            label: 'Receita Total',
+            value: fmt(totals.receita),
+            icon: <Wallet className="h-4 w-4 text-green-600" />,
+            bg: 'bg-green-50',
+            text: 'text-green-700',
+          },
+          {
+            label: 'Gastos Totais',
+            value: fmt(totals.gastosViagem + totals.manutencao + totals.proLabore + totals.ir),
+            icon: <TrendingDown className="h-4 w-4 text-red-600" />,
+            bg: 'bg-red-50',
+            text: 'text-red-700',
+          },
+          {
+            label: 'Resultado Líquido',
+            value: fmtSigned(totals.resultado),
+            icon: totals.resultado >= 0
+              ? <TrendingUp className="h-4 w-4 text-emerald-600" />
+              : <TrendingDown className="h-4 w-4 text-red-600" />,
+            bg: totals.resultado >= 0 ? 'bg-emerald-50' : 'bg-red-50',
+            text: totals.resultado >= 0 ? 'text-emerald-700' : 'text-red-700',
+          },
+          {
+            label: 'Margem Líquida',
+            value: totals.receita > 0
+              ? `${((totals.resultado / totals.receita) * 100).toFixed(1)}%`
+              : '—',
+            icon: <Users className="h-4 w-4 text-blue-600" />,
+            bg: 'bg-blue-50',
+            text: 'text-blue-700',
+          },
+        ].map(card => (
+          <Card key={card.label} className="border-0 shadow-sm">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-lg ${card.bg} flex items-center justify-center shrink-0`}>
+                {card.icon}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">{card.label}</p>
+                <p className={`text-base font-bold ${card.text} truncate`}>{card.value}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Charts */}
+      {withAccumulated.some(m => m.hasData) && (() => {
+        const chartData = withAccumulated
+          .filter(m => m.hasData)
+          .map(m => ({
+            mes: MONTH_ABBR[m.mi],
+            Receita: Math.round(m.receita),
+            Gastos: Math.round(m.gastosViagem + m.manutencao + m.proLabore + m.ir),
+            Resultado: Math.round(m.resultado),
+            Acumulado: m.acumulado !== null ? Math.round(m.acumulado) : 0,
+          }));
+
+        const fmtTick = (v: number) =>
+          v >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v}`;
+
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Bar chart: Receita vs Gastos */}
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-4">
+                <p className="text-sm font-semibold text-slate-700 mb-3">Receita vs Gastos por mês</p>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+                    <YAxis tickFormatter={fmtTick} tick={{ fontSize: 10 }} width={52} />
+                    <Tooltip formatter={(v: number) => fmt(v)} />
+                    <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+                    <Bar dataKey="Receita" fill="#22c55e" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="Gastos" fill="#ef4444" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Line chart: Resultado + Acumulado */}
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-4">
+                <p className="text-sm font-semibold text-slate-700 mb-3">Resultado e Acumulado</p>
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+                    <YAxis tickFormatter={fmtTick} tick={{ fontSize: 10 }} width={52} />
+                    <Tooltip formatter={(v: number) => fmt(Math.abs(v))} />
+                    <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
+                    <Line type="monotone" dataKey="Resultado" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="Acumulado" stroke="#0ea5e9" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      })()}
 
       {/* Table */}
       <Card className="border-0 shadow-sm overflow-hidden">
