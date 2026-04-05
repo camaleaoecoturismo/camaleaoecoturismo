@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 const SUPABASE_URL = "https://guwplwuwriixgvkjlutg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1d3Bsd3V3cmlpeGd2a2psdXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MzE3MDYsImV4cCI6MjA2OTMwNzcwNn0.XqFnllTUiv1SZrnL23hy7pWWeIeWDldfm9lpfO3vIQg";
 const WHATSAPP_NUMBER = "5582993649454";
-const SESSION_KEY = "cami_chat_v2";
+const SESSION_KEY = "cami_chat_v3";
 
 interface TourCard {
   id: string;
@@ -21,16 +21,29 @@ interface TourCard {
 
 type ChatMsg =
   | { id: string; type: "user"; content: string }
-  | { id: string; type: "assistant"; content: string }
+  | { id: string; type: "assistant"; content: string; options?: string[] }
   | { id: string; type: "tours"; tours: TourCard[] };
 
+function getRelevantMonthName(): string {
+  const now = new Date();
+  const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  // If past day 20, suggest next month
+  if (now.getDate() > 20) {
+    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return months[next.getMonth()];
+  }
+  return months[now.getMonth()];
+}
+
+const relevantMonth = getRelevantMonthName();
+
 const QUICK_ACTIONS = [
-  { label: "Passeios deste mês", icon: "🗓" },
-  { label: "Chapada Diamantina", icon: "🏔" },
-  { label: "Com cachoeira", icon: "💧" },
-  { label: "Passeios leves", icon: "🌿" },
-  { label: "Valores e pagamento", icon: "💳" },
-  { label: "Falar com a equipe", icon: "💬", whatsapp: true },
+  { label: `🗓 Passeios de ${relevantMonth}`, message: `Quais passeios têm em ${relevantMonth}?` },
+  { label: "🏔 Chapada Diamantina", message: "Quero conhecer a Chapada Diamantina" },
+  { label: "💧 Com cachoeira", message: "Quero um passeio com cachoeira" },
+  { label: "👨‍👩‍👧 Para famílias", message: "Tem passeio para levar família com crianças?" },
+  { label: "💳 Valores e pagamento", message: "Como funcionam os pagamentos e valores?" },
+  { label: "💬 Falar com a equipe", message: "", whatsapp: true },
 ] as const;
 
 function uid() {
@@ -172,13 +185,13 @@ export function AIChatWidget() {
       setIsLoading(true);
 
       try {
-        // History = text messages only (no tour card messages), last 10
+        // History = text messages only (no tour card messages), last 15
         const history = messages
           .filter(
             (m): m is Extract<ChatMsg, { type: "user" | "assistant" }> =>
               m.type === "user" || m.type === "assistant"
           )
-          .slice(-10)
+          .slice(-15)
           .map((m) => ({ role: m.type as "user" | "assistant", content: m.content }));
 
         const res = await fetch(`${SUPABASE_URL}/functions/v1/chat-ai`, {
@@ -196,7 +209,12 @@ export function AIChatWidget() {
         setMessages((prev) => {
           const next: ChatMsg[] = [
             ...prev,
-            { id: uid(), type: "assistant", content: data.text ?? "Como posso ajudar?" },
+            {
+              id: uid(),
+              type: "assistant",
+              content: data.text ?? "Como posso ajudar?",
+              options: Array.isArray(data.options) && data.options.length > 0 ? data.options : undefined,
+            },
           ];
           if (Array.isArray(data.tours) && data.tours.length > 0) {
             next.push({ id: uid(), type: "tours", tours: data.tours });
@@ -213,7 +231,7 @@ export function AIChatWidget() {
         setIsLoading(false);
       }
     },
-    [messages, isLoading]
+    [messages, isLoading, isOpen]
   );
 
   const handleQuickAction = (action: (typeof QUICK_ACTIONS)[number]) => {
@@ -224,7 +242,7 @@ export function AIChatWidget() {
       );
       return;
     }
-    sendMessage(action.label);
+    sendMessage(action.message);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -235,6 +253,9 @@ export function AIChatWidget() {
   };
 
   const showQuickActions = !quickActionsUsed && messages.length === 0;
+
+  // Id of the last assistant message (for showing inline options)
+  const lastAssistantId = [...messages].reverse().find((m) => m.type === "assistant")?.id;
 
   return (
     <>
@@ -333,7 +354,7 @@ export function AIChatWidget() {
                     onClick={() => handleQuickAction(action)}
                     className="text-[11px] font-medium bg-white border border-emerald-200 text-emerald-700 rounded-full px-3 py-1.5 hover:bg-emerald-50 hover:border-emerald-400 transition-colors"
                   >
-                    {action.icon} {action.label}
+                    {action.label}
                   </button>
                 ))}
               </div>
@@ -352,16 +373,33 @@ export function AIChatWidget() {
               }
 
               if (msg.type === "assistant") {
+                const isLastAssistant = msg.id === lastAssistantId;
+                const showOptions = isLastAssistant && !isLoading && msg.options && msg.options.length > 0;
                 return (
-                  <div key={msg.id} className="flex items-start gap-2">
-                    <img
-                      src="/lovable-uploads/camila-avatar.png"
-                      alt="Camila"
-                      className="w-6 h-6 rounded-full object-cover mt-0.5 shrink-0"
-                    />
-                    <div className="max-w-[82%] bg-white rounded-2xl rounded-tl-sm px-3 py-2.5 border border-gray-200 shadow-sm text-sm text-gray-800 leading-relaxed">
-                      {msg.content}
+                  <div key={msg.id} className="flex flex-col gap-1.5">
+                    <div className="flex items-start gap-2">
+                      <img
+                        src="/lovable-uploads/camila-avatar.png"
+                        alt="Camila"
+                        className="w-6 h-6 rounded-full object-cover mt-0.5 shrink-0"
+                      />
+                      <div className="max-w-[82%] bg-white rounded-2xl rounded-tl-sm px-3 py-2.5 border border-gray-200 shadow-sm text-sm text-gray-800 leading-relaxed">
+                        {msg.content}
+                      </div>
                     </div>
+                    {showOptions && (
+                      <div className="pl-8 flex flex-wrap gap-1.5">
+                        {msg.options!.map((opt) => (
+                          <button
+                            key={opt}
+                            onClick={() => sendMessage(opt)}
+                            className="text-[11px] font-medium bg-white border border-emerald-200 text-emerald-700 rounded-full px-3 py-1.5 hover:bg-emerald-50 hover:border-emerald-400 transition-colors"
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               }

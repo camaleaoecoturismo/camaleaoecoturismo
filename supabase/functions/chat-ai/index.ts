@@ -22,6 +22,8 @@ interface TourCard {
   imageUrl: string | null;
 }
 
+const MONTH_ABBRS = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
+
 function formatDateShort(dateStr: string): string {
   const date = new Date(dateStr + "T12:00:00");
   const months = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
@@ -32,32 +34,45 @@ function formatCurrency(value: number): string {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
 }
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s{2,}/g, " ").trim();
+}
+
 function deriveTags(tour: any): string[] {
   const text = `${tour.name} ${tour.about ?? ""} ${tour.itinerary ?? ""} ${tour.includes ?? ""}`.toLowerCase();
   const tags: string[] = [];
   if (/cachoeira/.test(text)) tags.push("cachoeira");
   if (/trilha|caminhada|trekking/.test(text)) tags.push("trilha");
   if (/chapada|diamantina|len.is|vale do pati|mucug/.test(text)) tags.push("chapada");
-  if (/c.nion|s.o francisco|piranhas/.test(text)) tags.push("canion");
+  if (/c.nion|s.o francisco|piranhas/.test(text)) tags.push("cânion");
   if (/leve|tranquil|familiar|f.milia|bate.volta/.test(text)) tags.push("leve");
   if (/aventura|intenso|trekking|desafio/.test(text)) tags.push("aventura");
   if (/barco|flutuante|rio|lagoa/.test(text)) tags.push("natureza aquática");
+  if (/rapel|tirolesa|rope jump/.test(text)) tags.push("adrenalina");
+  if (/camping|acampamento/.test(text)) tags.push("camping");
   return tags;
 }
 
 async function buildData(): Promise<{ context: string; toursMap: Map<string, TourCard> }> {
-  // Anon key only — RLS ensures no private data is accessible
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const today = new Date().toISOString().split("T")[0];
-  const currentMonthPrefix = today.substring(0, 7); // "2026-04"
 
-  const { data: tours } = await supabase
-    .from("tours")
-    .select("id, name, city, state, start_date, end_date, slug, about, itinerary, includes, not_includes, valor_padrao, image_url")
-    .eq("is_active", true)
-    .gte("start_date", today)
-    .order("start_date", { ascending: true })
-    .limit(40);
+  const [toursRes, faqRes] = await Promise.all([
+    supabase
+      .from("tours")
+      .select("id, name, city, state, start_date, end_date, slug, about, itinerary, includes, not_includes, valor_padrao, image_url")
+      .eq("is_active", true)
+      .gte("start_date", today)
+      .order("start_date", { ascending: true })
+      .limit(40),
+    supabase
+      .from("faq_items")
+      .select("pergunta, resposta, categoria")
+      .order("display_order", { ascending: true })
+      .limit(15),
+  ]);
+
+  const tours = toursRes.data;
 
   if (!tours || tours.length === 0) {
     return { context: "Nenhum passeio disponível no momento.", toursMap: new Map() };
@@ -77,7 +92,6 @@ async function buildData(): Promise<{ context: string; toursMap: Map<string, Tou
       .eq("is_cover", true),
   ]);
 
-  // Minimum price per tour
   const minPriceMap: Record<string, number> = {};
   for (const p of (pricingRes.data ?? []) as any[]) {
     if (!minPriceMap[p.tour_id] || p.pix_price < minPriceMap[p.tour_id]) {
@@ -85,7 +99,6 @@ async function buildData(): Promise<{ context: string; toursMap: Map<string, Tou
     }
   }
 
-  // Cover image per tour
   const coverMap: Record<string, string> = {};
   for (const c of (coversRes.data ?? []) as any[]) {
     coverMap[c.tour_id] = c.image_url;
@@ -99,7 +112,8 @@ async function buildData(): Promise<{ context: string; toursMap: Map<string, Tou
     const price = minPriceMap[tour.id] ?? tour.valor_padrao ?? null;
     const imageUrl = coverMap[tour.id] ?? tour.image_url ?? null;
     const tags = deriveTags(tour);
-    const isThisMonth = (tour.start_date as string).startsWith(currentMonthPrefix);
+    const tourDate = new Date(tour.start_date + "T12:00:00");
+    const monthAbbr = MONTH_ABBRS[tourDate.getMonth()];
 
     toursMap.set(slug, {
       id: tour.id,
@@ -120,13 +134,13 @@ async function buildData(): Promise<{ context: string; toursMap: Map<string, Tou
 
     contextLines.push(
       [
-        `SLUG: ${slug}${isThisMonth ? " [ESTE MÊS]" : ""}`,
+        `SLUG: ${slug}`,
         `Nome: ${tour.name}`,
         `Local: ${[tour.city, tour.state].filter(Boolean).join(" - ")}`,
-        `Data: ${formatDateShort(tour.start_date)}${endPart}`,
+        `Data: ${formatDateShort(tour.start_date)}${endPart} (${monthAbbr})`,
         `Preço a partir de: ${price ? formatCurrency(price) : "Consulte"}`,
         tags.length ? `Temas: ${tags.join(", ")}` : null,
-        tour.about ? `Sobre: ${(tour.about as string).slice(0, 180)}` : null,
+        tour.about ? `Sobre: ${(tour.about as string).slice(0, 280)}` : null,
         "---",
       ]
         .filter(Boolean)
@@ -134,7 +148,17 @@ async function buildData(): Promise<{ context: string; toursMap: Map<string, Tou
     );
   }
 
-  return { context: contextLines.join("\n"), toursMap };
+  // Build FAQ section
+  let faqSection = "";
+  if (faqRes.data && faqRes.data.length > 0) {
+    const faqLines = (faqRes.data as any[]).map((item) => {
+      const resposta = stripHtml(item.resposta ?? "").slice(0, 220);
+      return `[${item.categoria}] P: ${item.pergunta}\nR: ${resposta}`;
+    });
+    faqSection = "\n\nPERGUNTAS FREQUENTES:\n" + faqLines.join("\n---\n");
+  }
+
+  return { context: contextLines.join("\n") + faqSection, toursMap };
 }
 
 serve(async (req) => {
@@ -155,39 +179,67 @@ serve(async (req) => {
     const { context, toursMap } = await buildData();
 
     const systemPrompt = `Você é a Camila, consultora de viagens da Camaleão Ecoturismo.
-Converse como uma pessoa real: calorosa, direta, objetiva. Nunca robótica.
+Converse como uma pessoa real: calorosa, direta e objetiva. Nunca robótica.
 
 FORMATO DA RESPOSTA — sempre retorne JSON válido neste formato exato:
 {
   "text": "sua resposta conversacional aqui",
-  "tourSlugs": ["slug1", "slug2"]
+  "tourSlugs": ["slug1", "slug2"],
+  "options": ["Opção A", "Opção B"]
 }
-Use "tourSlugs" para indicar passeios a exibir como cards visuais. Se não há passeios para mostrar, use [].
+- "tourSlugs": slugs dos passeios a exibir como cards. Use [] se não há passeios para mostrar.
+- "options": botões clicáveis de resposta rápida (máx. 4 itens, máx. 25 caracteres cada). Use quando fizer uma pergunta de escolha (tipo de passeio, mês, dificuldade, próximos passos). Use [] se a pergunta for aberta ou não houver escolha a oferecer.
 
 ESTILO:
-- "text" com no máximo 3 frases curtas e diretas
+- "text" com no máximo 4 frases curtas e diretas
 - Faça UMA pergunta por vez
-- Nunca liste passeios no "text" — os cards visuais cuidam disso
+- Nunca liste nomes de passeios no "text" — os cards visuais cuidam disso
 - Máximo 1 emoji por resposta
+- Se há muitos passeios para mostrar, anuncia no texto (ex: "Encontrei 5 passeios para junho 😊") e deixa os cards falar
 - Linguagem suave, humana e comercial
 
 FUNIL DE ATENDIMENTO:
-1. ENTENDER — descubra o perfil antes de recomendar. Pergunte uma coisa de cada vez: o que busca, data, quem vai.
-2. RECOMENDAR — sugira 1 a 3 slugs via "tourSlugs". No "text", explique brevemente por que combinam com o perfil.
+1. ENTENDER — descubra o perfil antes de recomendar. Pergunte UMA coisa de cada vez: o que busca, mês/data, quem vai, nível de condicionamento.
+2. RECOMENDAR — use "tourSlugs" para mostrar os passeios. No "text", explique em 1 frase por que combinam com o perfil.
 3. CONVERTER — quando houver interesse claro, diga que pode reservar na página do passeio ou pelo WhatsApp (82) 99364-9454.
+
+REGRAS DE QUANTIDADE DE PASSEIOS:
+- Perguntas sobre um mês específico (ex: "passeios de junho", "o que tem em julho") → inclua TODOS os slugs daquele mês
+- Perguntas com filtro (cachoeira, trilha, chapada, família, etc.) → inclua TODOS os slugs que correspondem ao filtro
+- Recomendação geral sem filtro específico → sugira 2 a 4 slugs mais adequados ao perfil
+- Nunca omita passeios quando o usuário quer ver todos
+
+EMPRESA:
+- Nome: Camaleão Ecoturismo
+- WhatsApp: (82) 99364-9454
+- Instagram: @camaleaoecoturismo
+- Localização: Maceió, Alagoas
+- Fundada em 2020 por Isaías Christian (psicólogo e guia de turismo)
+- Sócia: Paula Jatobá (advogada)
+- Conquistas: +5000 viajantes, +25 roteiros, prêmio melhor ecoturismo AL 2023
+
+PÁGINAS DO SITE (mencione quando relevante):
+- /agenda → catálogo completo de passeios com filtros por mês, dificuldade e tipo
+- /chapada-diamantina → roteiros especializados para a Chapada Diamantina
+- /faq → perguntas frequentes sobre reservas, cancelamento, logística
+- /politicas → políticas de cancelamento e termos de participação
+- /sobre → história da empresa e equipe
+- /organizacoes → grupos privativos, empresas e escolas
+- /blog → artigos e dicas de viagem
 
 PASSEIOS DISPONÍVEIS (use APENAS estes slugs em "tourSlugs"):
 ${context}
 
 REGRAS ABSOLUTAS:
 - Só use slugs da lista acima — nunca invente
-- Nunca coloque dados de passeios no "text" se já incluiu em "tourSlugs"
+- Nunca coloque nomes ou datas de passeios no "text" se já incluiu em "tourSlugs"
 - Nunca peça CPF, email ou telefone
+- Use as PERGUNTAS FREQUENTES para responder diretamente — só direcione para /faq se a dúvida for muito específica
 - Reservas existentes ou dados pessoais → WhatsApp`;
 
     const openaiMessages = [
       { role: "system", content: systemPrompt },
-      ...(history as any[]).slice(-10),
+      ...(history as any[]).slice(-15),
       { role: "user", content: message },
     ];
 
@@ -199,7 +251,7 @@ REGRAS ABSOLUTAS:
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        max_tokens: 400,
+        max_tokens: 600,
         temperature: 0.75,
         response_format: { type: "json_object" },
         messages: openaiMessages,
@@ -209,7 +261,7 @@ REGRAS ABSOLUTAS:
     if (!openaiRes.ok) {
       console.error("OpenAI error:", await openaiRes.text());
       return new Response(
-        JSON.stringify({ text: "Ops, tive um problema técnico. Tente novamente em instantes 😊", tours: [] }),
+        JSON.stringify({ text: "Ops, tive um problema técnico. Tente novamente em instantes 😊", tours: [], options: [] }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -217,7 +269,7 @@ REGRAS ABSOLUTAS:
     const openaiData = await openaiRes.json();
     const raw = openaiData.choices?.[0]?.message?.content ?? "{}";
 
-    let parsed: { text?: string; tourSlugs?: string[] } = {};
+    let parsed: { text?: string; tourSlugs?: string[]; options?: string[] } = {};
     try {
       parsed = JSON.parse(raw);
     } catch {
@@ -228,14 +280,18 @@ REGRAS ABSOLUTAS:
       .map((slug: string) => toursMap.get(slug))
       .filter((t: TourCard | undefined): t is TourCard => !!t);
 
+    const options: string[] = (parsed.options ?? [])
+      .filter((o: any) => typeof o === "string" && o.trim().length > 0)
+      .slice(0, 4);
+
     return new Response(
-      JSON.stringify({ text: parsed.text ?? "Como posso ajudar?", tours }),
+      JSON.stringify({ text: parsed.text ?? "Como posso ajudar?", tours, options }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
     console.error("chat-ai error:", error);
     return new Response(
-      JSON.stringify({ text: "Ops, ocorreu um erro. Tente novamente 😊", tours: [] }),
+      JSON.stringify({ text: "Ops, ocorreu um erro. Tente novamente 😊", tours: [], options: [] }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
