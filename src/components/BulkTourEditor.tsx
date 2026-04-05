@@ -8,21 +8,8 @@ import { Tour } from "@/hooks/useTours";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
-// Igual ao TourForm — toolbar completa
-const QUILL_MODULES_FULL = {
-  toolbar: [
-    [{ header: [1, 2, 3, false] }],
-    [{ size: ['small', false, 'large', 'huge'] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ color: [] }, { background: [] }],
-    [{ align: [] }],
-    [{ list: 'ordered' }, { list: 'bullet' }],
-    [{ indent: '-1' }, { indent: '+1' }],
-    ['link', 'video'],
-    ['blockquote'],
-    ['clean'],
-  ],
-};
+// Módulos simples — definidos fora do componente (sem handlers especiais)
+
 
 // Para incluso/não incluso — listas simples
 const QUILL_MODULES_LIST = {
@@ -63,6 +50,73 @@ const BulkTourEditor: React.FC<BulkTourEditorProps> = ({ tours, onBack, onSaveSu
   const [filterMonth, setFilterMonth] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const { toast } = useToast();
+
+  // Módulos completos com handler de upload de vídeo (criado uma vez para não reinicializar o Quill)
+  const fullModules = useMemo(() => {
+    const handleVideoUpload = async function(this: any) {
+      const quill = this.quill;
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'video/mp4,video/webm,video/ogg,video/mov,video/quicktime,video/*';
+      input.click();
+
+      input.onchange = async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+
+        if (file.size > 300 * 1024 * 1024) {
+          toast({ title: 'Vídeo muito grande', description: 'Tamanho máximo: 300 MB', variant: 'destructive' });
+          return;
+        }
+
+        toast({ title: 'Enviando vídeo...', description: 'Aguarde, o upload pode demorar alguns segundos.' });
+
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path = `${Date.now()}-${safeName}`;
+
+        const { data, error } = await supabase.storage
+          .from('tour-videos')
+          .upload(path, file, { contentType: file.type });
+
+        if (error) {
+          toast({ title: 'Erro ao enviar vídeo', description: error.message, variant: 'destructive' });
+          return;
+        }
+
+        const { data: { publicUrl } } = supabase.storage.from('tour-videos').getPublicUrl(data.path);
+
+        const range = quill.getSelection(true);
+        const index = range ? range.index : quill.getLength();
+        quill.clipboard.dangerouslyPasteHTML(
+          index,
+          `<p><video controls src="${publicUrl}" style="max-width:100%;border-radius:6px;"></video></p><p><br></p>`
+        );
+
+        toast({ title: 'Vídeo inserido!' });
+      };
+    };
+
+    return {
+      toolbar: {
+        container: [
+          [{ header: [1, 2, 3, false] }],
+          [{ size: ['small', false, 'large', 'huge'] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ color: [] }, { background: [] }],
+          [{ align: [] }],
+          [{ list: 'ordered' }, { list: 'bullet' }],
+          [{ indent: '-1' }, { indent: '+1' }],
+          ['link', 'video'],
+          ['blockquote'],
+          ['clean'],
+        ],
+        handlers: {
+          video: handleVideoUpload,
+        },
+      },
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // criado apenas uma vez para não reinicializar o Quill
 
   useEffect(() => {
     const sorted = [...tours].sort((a, b) =>
@@ -320,7 +374,7 @@ const BulkTourEditor: React.FC<BulkTourEditorProps> = ({ tours, onBack, onSaveSu
                         theme="snow"
                         value={tour.about || ''}
                         onChange={value => updateTour(tour.id, 'about', value)}
-                        modules={QUILL_MODULES_FULL}
+                        modules={fullModules}
                         style={{ minHeight: '150px' }}
                       />
                     </div>
@@ -330,7 +384,7 @@ const BulkTourEditor: React.FC<BulkTourEditorProps> = ({ tours, onBack, onSaveSu
                         theme="snow"
                         value={tour.itinerary || ''}
                         onChange={value => updateTour(tour.id, 'itinerary', value)}
-                        modules={QUILL_MODULES_FULL}
+                        modules={fullModules}
                         style={{ minHeight: '150px' }}
                       />
                     </div>
