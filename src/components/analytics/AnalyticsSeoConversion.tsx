@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { AlertCircle, LineChart, Loader2, MousePointerClick, Search, Sparkles, Target, Upload } from 'lucide-react';
+import { AlertCircle, CloudDownload, LineChart, Loader2, MousePointerClick, Search, Sparkles, Target, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -170,6 +171,7 @@ const AnalyticsSeoConversion: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [importing, setImporting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [landingRows, setLandingRows] = useState<LandingPageRow[]>([]);
   const [queryRows, setQueryRows] = useState<QueryRow[]>([]);
@@ -579,6 +581,63 @@ const AnalyticsSeoConversion: React.FC = () => {
     }
   };
 
+  const handleApiSync = async () => {
+    if (!importStartDate || !importEndDate) {
+      toast({
+        title: 'Informe o período do relatório',
+        description: 'Preencha data inicial e final antes de sincronizar pela API.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSyncing(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        throw new Error('Sessão de admin não encontrada.');
+      }
+
+      const response = await fetch('/api/search-console-sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          startDate: importStartDate,
+          endDate: importEndDate,
+          notes: notes || 'Sincronização automática via API',
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || 'Falha ao sincronizar Search Console.');
+      }
+
+      toast({
+        title: 'Sincronização concluída',
+        description: `${payload.rowsImported} linha(s) importadas diretamente da API do Google.`,
+      });
+
+      setSelectedBatchId(payload.batchId);
+      setRefreshKey((current) => current + 1);
+    } catch (error: any) {
+      console.error('Error syncing Search Console via API:', error);
+      toast({
+        title: 'Erro na sincronização automática',
+        description: error.message || 'Verifique a configuração da conta de serviço do Google.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const metricCards = [
     {
       label: 'Cliques orgânicos',
@@ -656,11 +715,15 @@ const AnalyticsSeoConversion: React.FC = () => {
               O ideal é importar o mesmo período que você vai analisar no painel, para cruzar com as sessões reais do site.
             </div>
             <div className="flex items-center gap-3">
+              <Button type="button" onClick={handleApiSync} disabled={syncing} className="gap-2">
+                {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudDownload className="h-4 w-4" />}
+                Sincronizar via API
+              </Button>
               <Input
                 type="file"
                 accept=".csv,.xlsx,.xls"
                 onChange={handleImportFile}
-                disabled={importing}
+                disabled={importing || syncing}
                 className="max-w-[320px]"
               />
               {importing && (
@@ -670,6 +733,10 @@ const AnalyticsSeoConversion: React.FC = () => {
                 </div>
               )}
             </div>
+          </div>
+          <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
+            Para o modo automático funcionar, o ambiente precisa ter `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` e `GOOGLE_SEARCH_CONSOLE_SITE_URL`.
+            Também é necessário compartilhar a propriedade do Search Console com a conta de serviço do Google.
           </div>
         </CardContent>
       </Card>
