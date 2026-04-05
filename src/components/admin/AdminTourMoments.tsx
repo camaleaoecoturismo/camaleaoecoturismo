@@ -2,11 +2,12 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Pencil, Trash2, Eye, EyeOff, Loader2, Save, Upload,
   ChevronUp, ChevronDown, Play, Image as ImageIcon, Film,
+  ChevronRight, Search,
 } from "lucide-react";
 
 interface TourMoment {
@@ -27,7 +28,6 @@ interface TourOption {
 }
 
 const EMPTY_FORM = {
-  caption: "",
   media_url: "",
   media_type: "video",
   cover_url: "",
@@ -37,14 +37,16 @@ const EMPTY_FORM = {
 export default function AdminTourMoments() {
   const [moments, setMoments] = useState<TourMoment[]>([]);
   const [tours, setTours] = useState<TourOption[]>([]);
-  const [selectedDestination, setSelectedDestination] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
+  const [formDestination, setFormDestination] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [capturingCover, setCapturingCover] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const { toast } = useToast();
 
@@ -72,39 +74,56 @@ export default function AdminTourMoments() {
     setLoading(false);
   };
 
-  // Unique destination names from tours
-  const destinations = useMemo(() => {
+  // All unique destination names (from both moments and tours)
+  const allDestinations = useMemo(() => {
     const seen = new Set<string>();
-    const result: string[] = [];
-    tours.forEach((t) => {
-      const dest = t.destination_name || t.name;
-      if (dest && !seen.has(dest)) {
-        seen.add(dest);
-        result.push(dest);
-      }
+    moments.forEach(m => { if (m.destination_name) seen.add(m.destination_name); });
+    tours.forEach(t => { const d = t.destination_name || t.name; if (d) seen.add(d); });
+    return [...seen].sort();
+  }, [moments, tours]);
+
+  // Group moments by destination
+  const grouped = useMemo(() => {
+    const map = new Map<string, TourMoment[]>();
+    moments.forEach(m => {
+      const key = m.destination_name || "Sem destino";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(m);
     });
-    return result.sort();
-  }, [tours]);
+    // Add destinations from tours that have no moments yet (so they appear in list)
+    tours.forEach(t => {
+      const d = t.destination_name || t.name;
+      if (d && !map.has(d)) map.set(d, []);
+    });
+    return map;
+  }, [moments, tours]);
 
-  const filteredMoments = useMemo(
-    () => (selectedDestination ? moments.filter((m) => m.destination_name === selectedDestination) : moments),
-    [moments, selectedDestination]
-  );
+  // Filter by search
+  const filteredDestinations = useMemo(() => {
+    const q = search.toLowerCase();
+    return allDestinations.filter(d => !q || d.toLowerCase().includes(q));
+  }, [allDestinations, search]);
 
-  const openNew = () => {
-    if (!selectedDestination) {
-      toast({ title: "Selecione um destino primeiro", variant: "destructive" });
-      return;
-    }
-    setEditingId(null);
-    setForm(EMPTY_FORM);
-    setShowForm(true);
+  const toggleGroup = (dest: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(dest)) next.delete(dest);
+      else next.add(dest);
+      return next;
+    });
   };
 
   const openEdit = (m: TourMoment) => {
     setEditingId(m.id);
-    setForm({ caption: m.caption || "", media_url: m.media_url, media_type: m.media_type, cover_url: m.cover_url || "", active: m.active });
-    setShowForm(true);
+    setForm({ media_url: m.media_url, media_type: m.media_type, cover_url: m.cover_url || "", active: m.active });
+    setFormDestination(m.destination_name);
+    setExpandedGroups(prev => new Set(prev).add(m.destination_name));
+  };
+
+  const closeForm = () => {
+    setFormDestination(null);
+    setEditingId(null);
+    setForm(EMPTY_FORM);
   };
 
   const save = async () => {
@@ -112,24 +131,26 @@ export default function AdminTourMoments() {
       toast({ title: "Mídia obrigatória", description: "Faça upload de um vídeo ou foto.", variant: "destructive" });
       return;
     }
+    if (!formDestination) return;
     setSaving(true);
+    const destMoments = grouped.get(formDestination) || [];
     const payload = {
-      destination_name: selectedDestination,
+      destination_name: formDestination,
       media_url: form.media_url,
       media_type: form.media_type,
       cover_url: form.cover_url || null,
-      caption: form.caption || null,
+      caption: null,
       active: form.active,
     };
     const { error } = editingId
       ? await (supabase as any).from("tour_moments").update(payload).eq("id", editingId)
-      : await (supabase as any).from("tour_moments").insert({ ...payload, display_order: filteredMoments.length });
+      : await (supabase as any).from("tour_moments").insert({ ...payload, display_order: destMoments.length });
     setSaving(false);
     if (error) {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
     } else {
       toast({ title: editingId ? "Momento atualizado!" : "Momento adicionado!" });
-      setShowForm(false);
+      closeForm();
       fetchMoments();
     }
   };
@@ -145,12 +166,11 @@ export default function AdminTourMoments() {
     fetchMoments();
   };
 
-  const move = async (idx: number, dir: -1 | 1) => {
-    const list = filteredMoments;
+  const move = async (destMoments: TourMoment[], idx: number, dir: -1 | 1) => {
     const target = idx + dir;
-    if (target < 0 || target >= list.length) return;
-    const a = list[idx];
-    const b = list[target];
+    if (target < 0 || target >= destMoments.length) return;
+    const a = destMoments[idx];
+    const b = destMoments[target];
     await Promise.all([
       (supabase as any).from("tour_moments").update({ display_order: b.display_order }).eq("id", a.id),
       (supabase as any).from("tour_moments").update({ display_order: a.display_order }).eq("id", b.id),
@@ -187,7 +207,7 @@ export default function AdminTourMoments() {
     setUploadingMedia(true);
     const ext = file.name.split(".").pop();
     const isVideo = file.type.startsWith("video/");
-    const path = `moments/${Date.now()}.${ext}`;
+    const path = `moments/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const { data, error } = await supabase.storage
       .from("site-config")
       .upload(path, file, { upsert: true });
@@ -200,204 +220,299 @@ export default function AdminTourMoments() {
     setUploadingMedia(false);
   };
 
+  // Upload multiple files at once — each becomes its own moment
+  const handleMultiUpload = async (files: FileList, destination: string) => {
+    if (!files.length) return;
+    const fileArr = Array.from(files);
+    setUploadProgress({ done: 0, total: fileArr.length });
+    const destMoments = grouped.get(destination) || [];
+    let baseOrder = destMoments.length;
+    let successCount = 0;
+    for (const file of fileArr) {
+      const ext = file.name.split(".").pop();
+      const isVideo = file.type.startsWith("video/");
+      const path = `moments/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { data, error } = await supabase.storage
+        .from("site-config")
+        .upload(path, file, { upsert: true });
+      if (error) {
+        toast({ title: `Erro ao enviar ${file.name}`, description: error.message, variant: "destructive" });
+      } else {
+        const { data: urlData } = supabase.storage.from("site-config").getPublicUrl(data.path);
+        await (supabase as any).from("tour_moments").insert({
+          destination_name: destination,
+          media_url: urlData.publicUrl,
+          media_type: isVideo ? "video" : "image",
+          cover_url: null,
+          caption: null,
+          active: true,
+          display_order: baseOrder++,
+        });
+        successCount++;
+      }
+      setUploadProgress(p => p ? { ...p, done: p.done + 1 } : null);
+    }
+    setUploadProgress(null);
+    if (successCount > 0) {
+      toast({ title: `${successCount} arquivo${successCount > 1 ? 's' : ''} adicionado${successCount > 1 ? 's' : ''}!` });
+      fetchMoments();
+    }
+  };
+
+  const totalMoments = moments.length;
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <Film className="h-5 w-5 text-primary" />
-          Momentos por Destino
-        </h2>
-        <p className="text-muted-foreground text-sm mt-1">
-          Vídeos e fotos de momentos que aparecem nas páginas dos passeios
-        </p>
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Film className="h-5 w-5 text-primary" />
+            Momentos por Passeio
+          </h2>
+          <p className="text-muted-foreground text-sm mt-1">
+            {totalMoments} momento{totalMoments !== 1 ? 's' : ''} em {filteredDestinations.length} passeio{filteredDestinations.length !== 1 ? 's' : ''}
+          </p>
+        </div>
       </div>
 
-      {/* Destination selector */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
-        <div className="flex-1 space-y-1.5">
-          <Label>Destino</Label>
-          <select
-            value={selectedDestination}
-            onChange={(e) => { setSelectedDestination(e.target.value); setShowForm(false); }}
-            className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="">— Ver todos os destinos —</option>
-            {destinations.map((d) => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
-        </div>
-        <Button onClick={openNew} disabled={!selectedDestination}>
-          <Plus className="h-4 w-4 mr-2" /> Adicionar Momento
-        </Button>
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar passeio..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="pl-9"
+        />
       </div>
 
-      {selectedDestination && (
-        <p className="text-sm text-muted-foreground">
-          {filteredMoments.length} momento(s) para <span className="font-semibold text-foreground">{selectedDestination}</span>
-        </p>
-      )}
-
-      {/* Form */}
-      {showForm && (
-        <div className="border border-border rounded-xl p-5 bg-card space-y-4">
-          <h3 className="font-semibold">{editingId ? "Editar Momento" : `Novo Momento — ${selectedDestination}`}</h3>
-
-          <div className="space-y-2">
-            <Label>Vídeo ou Foto *</Label>
-            {form.media_url ? (
-              <div className="space-y-2">
-                {form.media_type === "video" ? (
-                  <video
-                    ref={videoRef}
-                    src={form.media_url}
-                    className="w-full max-h-64 rounded object-contain bg-black"
-                    controls
-                  />
-                ) : (
-                  <img src={form.media_url} alt="" className="w-full max-h-64 rounded object-cover" />
-                )}
-                <div className="flex gap-2">
-                  {form.media_type === "video" && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={captureVideoFrame}
-                      disabled={capturingCover}
-                    >
-                      {capturingCover
-                        ? <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        : <ImageIcon className="h-4 w-4 mr-2" />}
-                      Capturar frame como capa
-                    </Button>
-                  )}
-                  <label className="cursor-pointer">
-                    <Button type="button" variant="ghost" size="sm" asChild>
-                      <span><Upload className="h-4 w-4 mr-2" />Trocar mídia</span>
-                    </Button>
-                    <input
-                      type="file"
-                      accept="image/*,video/*"
-                      className="hidden"
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMediaUpload(f); }}
-                    />
-                  </label>
-                  <Button variant="ghost" size="sm" onClick={() => setForm((f) => ({ ...f, media_url: "", media_type: "video", cover_url: "" }))}>
-                    Remover
-                  </Button>
-                </div>
-                {form.cover_url && (
-                  <div className="flex items-center gap-3 mt-1">
-                    <img src={form.cover_url} alt="Capa" className="w-16 h-16 rounded-full object-cover border-2 border-primary" />
-                    <div>
-                      <p className="text-xs font-medium">Capa capturada</p>
-                      <button
-                        type="button"
-                        onClick={() => setForm((f) => ({ ...f, cover_url: "" }))}
-                        className="text-xs text-destructive hover:underline"
-                      >
-                        Remover capa
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-lg p-6 cursor-pointer hover:border-primary transition-colors">
-                {uploadingMedia
-                  ? <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  : <Upload className="h-8 w-8 text-muted-foreground" />}
-                <span className="text-sm text-muted-foreground">Clique para enviar vídeo ou foto</span>
-                <span className="text-xs text-muted-foreground/60">Recomendado: vídeo vertical (9:16)</span>
-                <input
-                  type="file"
-                  accept="image/*,video/*"
-                  className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMediaUpload(f); }}
-                />
-              </label>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Legenda (opcional)</Label>
-            <Textarea
-              value={form.caption}
-              onChange={(e) => setForm((f) => ({ ...f, caption: e.target.value }))}
-              placeholder="Descrição curta deste momento..."
-              rows={2}
-            />
-          </div>
-
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.active}
-                onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))}
-                className="rounded"
-              />
-              <span className="text-sm">Ativo (visível no site)</span>
-            </label>
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <Button onClick={save} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-              Salvar
-            </Button>
-            <Button variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Button>
-          </div>
-        </div>
-      )}
-
-      {/* List */}
+      {/* Groups */}
       {loading ? (
         <div className="flex justify-center py-10">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-      ) : filteredMoments.length === 0 ? (
-        <div className="text-center py-10 text-muted-foreground text-sm">
-          {selectedDestination
-            ? `Nenhum momento para "${selectedDestination}" ainda.`
-            : "Selecione um destino para ver os momentos."}
-        </div>
+      ) : filteredDestinations.length === 0 ? (
+        <div className="text-center py-10 text-muted-foreground text-sm">Nenhum passeio encontrado.</div>
       ) : (
         <div className="space-y-3">
-          {filteredMoments.map((m, idx) => (
-            <div key={m.id} className="flex items-center gap-3 border border-border rounded-xl p-3 bg-card">
-              <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-muted flex items-center justify-center">
-                {m.cover_url ? (
-                  <img src={m.cover_url} alt="" className="w-full h-full object-cover" />
-                ) : m.media_type === "video" ? (
-                  <Play className="h-6 w-6 text-muted-foreground" />
-                ) : (
-                  <img src={m.media_url} alt="" className="w-full h-full object-cover" />
+          {filteredDestinations.map(dest => {
+            const destMoments = grouped.get(dest) || [];
+            const isExpanded = expandedGroups.has(dest);
+            const isFormOpen = formDestination === dest;
+
+            return (
+              <div key={dest} className="border border-border rounded-xl overflow-hidden bg-card">
+                {/* Group header */}
+                <div
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/40 transition-colors select-none"
+                  onClick={() => toggleGroup(dest)}
+                >
+                  <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-foreground truncate">{dest}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {destMoments.length} momento{destMoments.length !== 1 ? 's' : ''}
+                      {' · '}
+                      {destMoments.filter(m => m.active).length} ativo{destMoments.filter(m => m.active).length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  {/* Thumbnails preview (up to 4) */}
+                  <div className="flex -space-x-2 shrink-0">
+                    {destMoments.slice(0, 4).map(m => (
+                      <div key={m.id} className="w-8 h-8 rounded-md border-2 border-background overflow-hidden bg-muted flex items-center justify-center">
+                        {m.cover_url || m.media_type === "image"
+                          ? <img src={m.cover_url || m.media_url} alt="" className="w-full h-full object-cover" />
+                          : <Play className="h-3 w-3 text-muted-foreground" />}
+                      </div>
+                    ))}
+                    {destMoments.length > 4 && (
+                      <div className="w-8 h-8 rounded-md border-2 border-background bg-muted flex items-center justify-center text-[10px] font-semibold text-muted-foreground">
+                        +{destMoments.length - 4}
+                      </div>
+                    )}
+                  </div>
+                  <label
+                    className="cursor-pointer shrink-0"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1 pointer-events-none" asChild>
+                      <span>
+                        {uploadProgress && formDestination === dest
+                          ? <><Loader2 className="h-3 w-3 animate-spin" />{uploadProgress.done}/{uploadProgress.total}</>
+                          : <><Plus className="h-3 w-3" />Adicionar</>}
+                      </span>
+                    </Button>
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      multiple
+                      className="hidden"
+                      onChange={e => {
+                        const files = e.target.files;
+                        if (files && files.length > 0) {
+                          setFormDestination(dest);
+                          setExpandedGroups(prev => new Set(prev).add(dest));
+                          handleMultiUpload(files, dest);
+                          e.target.value = "";
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+
+                {/* Expanded content */}
+                {isExpanded && (
+                  <div className="border-t border-border">
+                    {/* Add/edit form */}
+                    {isFormOpen && editingId && (
+                      <div className="p-4 bg-muted/20 border-b border-border space-y-4">
+                        <h3 className="font-semibold text-sm">Editar Momento</h3>
+
+                        <div className="space-y-2">
+                          <Label>Vídeo ou Foto *</Label>
+                          {form.media_url ? (
+                            <div className="space-y-2">
+                              {form.media_type === "video" ? (
+                                <video ref={videoRef} src={form.media_url} className="w-full max-h-56 rounded object-contain bg-black" controls />
+                              ) : (
+                                <img src={form.media_url} alt="" className="w-full max-h-56 rounded object-cover" />
+                              )}
+                              <div className="flex gap-2 flex-wrap">
+                                {form.media_type === "video" && (
+                                  <Button type="button" variant="outline" size="sm" onClick={captureVideoFrame} disabled={capturingCover}>
+                                    {capturingCover ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <ImageIcon className="h-4 w-4 mr-1" />}
+                                    Capturar capa
+                                  </Button>
+                                )}
+                                <label className="cursor-pointer">
+                                  <Button type="button" variant="ghost" size="sm" asChild>
+                                    <span><Upload className="h-4 w-4 mr-1" />Trocar</span>
+                                  </Button>
+                                  <input type="file" accept="image/*,video/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleMediaUpload(f); }} />
+                                </label>
+                                <Button variant="ghost" size="sm" onClick={() => setForm(f => ({ ...f, media_url: "", media_type: "video", cover_url: "" }))}>
+                                  Remover
+                                </Button>
+                              </div>
+                              {form.cover_url && (
+                                <div className="flex items-center gap-3">
+                                  <img src={form.cover_url} alt="Capa" className="w-14 h-14 rounded-full object-cover border-2 border-primary" />
+                                  <button type="button" onClick={() => setForm(f => ({ ...f, cover_url: "" }))} className="text-xs text-destructive hover:underline">
+                                    Remover capa
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border rounded-lg p-5 cursor-pointer hover:border-primary transition-colors">
+                              {uploadingMedia
+                                ? <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
+                                : <Upload className="h-7 w-7 text-muted-foreground" />}
+                              <span className="text-sm text-muted-foreground">Clique para enviar vídeo ou foto</span>
+                              <input type="file" accept="image/*,video/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleMediaUpload(f); }} />
+                            </label>
+                          )}
+                        </div>
+
+                        <label className="flex items-center gap-2 cursor-pointer text-sm">
+                          <input type="checkbox" checked={form.active} onChange={e => setForm(f => ({ ...f, active: e.target.checked }))} className="rounded" />
+                          Ativo (visível no site)
+                        </label>
+
+                        <div className="flex gap-2">
+                          <Button onClick={save} disabled={saving} size="sm">
+                            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+                            Salvar
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={closeForm}>Cancelar</Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Upload progress bar */}
+                    {uploadProgress && formDestination === dest && (
+                      <div className="px-4 py-3 bg-muted/30 border-b border-border">
+                        <div className="flex items-center gap-3">
+                          <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                          <div className="flex-1">
+                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary transition-all duration-300 rounded-full"
+                                style={{ width: `${(uploadProgress.done / uploadProgress.total) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {uploadProgress.done}/{uploadProgress.total}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Moments list */}
+                    {destMoments.length === 0 && !isFormOpen ? (
+                      <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                        <Film className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                        <p>Nenhum momento ainda.</p>
+                        <label className="cursor-pointer mt-2 inline-block">
+                          <span className="text-primary hover:underline font-medium">Selecionar arquivos</span>
+                          <input
+                            type="file"
+                            accept="image/*,video/*"
+                            multiple
+                            className="hidden"
+                            onChange={e => {
+                              const files = e.target.files;
+                              if (files && files.length > 0) {
+                                setFormDestination(dest);
+                                handleMultiUpload(files, dest);
+                                e.target.value = "";
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-border">
+                        {destMoments.map((m, idx) => (
+                          <div key={m.id} className={`flex items-center gap-3 px-4 py-3 ${!m.active ? 'opacity-50' : ''}`}>
+                            <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-muted flex items-center justify-center">
+                              {m.cover_url ? (
+                                <img src={m.cover_url} alt="" className="w-full h-full object-cover" />
+                              ) : m.media_type === "image" ? (
+                                <img src={m.media_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <Play className="h-5 w-5 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                {m.media_type === "video"
+                                  ? <Play className="h-3 w-3 text-muted-foreground shrink-0" />
+                                  : <ImageIcon className="h-3 w-3 text-muted-foreground shrink-0" />}
+                                <span className="text-xs text-muted-foreground">{m.media_type === "video" ? "Vídeo" : "Foto"}</span>
+                                {!m.active && <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">oculto</span>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              <button onClick={() => move(destMoments, idx, -1)} disabled={idx === 0} className="p-1.5 rounded hover:bg-muted disabled:opacity-30"><ChevronUp className="h-4 w-4" /></button>
+                              <button onClick={() => move(destMoments, idx, 1)} disabled={idx === destMoments.length - 1} className="p-1.5 rounded hover:bg-muted disabled:opacity-30"><ChevronDown className="h-4 w-4" /></button>
+                              <button onClick={() => toggleActive(m)} className={`p-1.5 rounded hover:bg-muted ${m.active ? "text-green-600" : "text-muted-foreground"}`}>
+                                {m.active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                              </button>
+                              <button onClick={() => openEdit(m)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="h-4 w-4" /></button>
+                              <button onClick={() => deleteMoment(m.id)} className="p-1.5 rounded hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded truncate max-w-[160px]">
-                    {m.destination_name}
-                  </span>
-                  {m.media_type === "video"
-                    ? <Play className="h-3 w-3 text-muted-foreground shrink-0" />
-                    : <ImageIcon className="h-3 w-3 text-muted-foreground shrink-0" />}
-                </div>
-                {m.caption && <p className="text-xs text-muted-foreground truncate mt-0.5">{m.caption}</p>}
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => move(idx, -1)} disabled={idx === 0} className="p-1.5 rounded hover:bg-muted disabled:opacity-30"><ChevronUp className="h-4 w-4" /></button>
-                <button onClick={() => move(idx, 1)} disabled={idx === filteredMoments.length - 1} className="p-1.5 rounded hover:bg-muted disabled:opacity-30"><ChevronDown className="h-4 w-4" /></button>
-                <button onClick={() => toggleActive(m)} className={`p-1.5 rounded hover:bg-muted ${m.active ? "text-green-600" : "text-muted-foreground"}`}>
-                  {m.active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                </button>
-                <button onClick={() => { setSelectedDestination(m.destination_name); openEdit(m); }} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="h-4 w-4" /></button>
-                <button onClick={() => deleteMoment(m.id)} className="p-1.5 rounded hover:bg-muted text-destructive"><Trash2 className="h-4 w-4" /></button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
