@@ -1104,34 +1104,34 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
             </div>
           )}
           
-          <Button 
-            onClick={() => {
-              if (!allParticipantsValid) {
-                setShowMissingMessage(-1);
-                // Find first invalid participant and expand it
-                const firstInvalidIndex = participants.findIndex(p => !isParticipantValid(p));
-                if (firstInvalidIndex >= 0) {
-                  setExpandedParticipants(new Set([firstInvalidIndex]));
-                  setScrollToIndex(firstInvalidIndex);
+          {![...expandedParticipants].some(i => (participantStep[i] || 1) === 1) && (
+            <Button
+              onClick={() => {
+                if (!allParticipantsValid) {
+                  setShowMissingMessage(-1);
+                  const firstInvalidIndex = participants.findIndex(p => !isParticipantValid(p));
+                  if (firstInvalidIndex >= 0) {
+                    setExpandedParticipants(new Set([firstInvalidIndex]));
+                    setScrollToIndex(firstInvalidIndex);
+                  }
+                  setTimeout(() => setShowMissingMessage(null), 8000);
+                  return;
                 }
-                // Auto-hide after 8 seconds
-                setTimeout(() => setShowMissingMessage(null), 8000);
-                return;
-              }
-              onConfirm();
-            }}
-            disabled={isLoading}
-            className="w-full bg-teal-600 hover:bg-teal-700 text-white"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Processando...
-              </>
-            ) : (
-              'Continuar para pagamento'
-            )}
-          </Button>
+                onConfirm();
+              }}
+              disabled={isLoading}
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                'Continuar para pagamento'
+              )}
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
