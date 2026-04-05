@@ -11,92 +11,75 @@ interface TourCoverImage {
   tourId: string;
   imageUrl: string;
   cropPosition: CropPosition;
-  galleryCount: number;
 }
 
-// Global cache to prevent re-fetching
-let globalCoverImagesCache: Map<string, TourCoverImage> | null = null;
-let fetchPromise: Promise<Map<string, TourCoverImage>> | null = null;
+// null = fetched but no cover found (prevents re-fetching)
+type CacheEntry = TourCoverImage | null;
+
+// Module-level cache — shared across all hook instances in the session
+let globalCache: Map<string, CacheEntry> = new Map();
+let pendingFetch: Promise<void> | null = null;
+
+async function fetchCovers(ids: string[]): Promise<void> {
+  // Only fetch IDs not yet in cache
+  const missing = ids.filter(id => !globalCache.has(id));
+  if (missing.length === 0) return;
+
+  const { data } = await supabase
+    .from('tour_gallery_images')
+    .select('tour_id, image_url, crop_position')
+    .in('tour_id', missing)
+    .eq('is_cover', true);
+
+  // Mark ALL missing IDs: those with covers get data, the rest get null
+  missing.forEach(id => {
+    if (!globalCache.has(id)) globalCache.set(id, null);
+  });
+
+  (data || []).forEach((img: any) => {
+    const cropPosition: CropPosition = (img.crop_position as CropPosition) || { x: 50, y: 50, scale: 1 };
+    globalCache.set(img.tour_id, { tourId: img.tour_id, imageUrl: img.image_url, cropPosition });
+  });
+}
 
 export const useTourCoverImages = (tourIds: string[]) => {
-  const [coverImages, setCoverImages] = useState<Map<string, TourCoverImage>>(
-    globalCoverImagesCache || new Map()
-  );
-  const [loading, setLoading] = useState(!globalCoverImagesCache);
+  const [, forceUpdate] = useState(0);
+  const [loading, setLoading] = useState(() => tourIds.some(id => !globalCache.has(id)));
 
-  const fetchCoverImages = useCallback(async () => {
-    if (tourIds.length === 0) {
+  const load = useCallback(async () => {
+    const missing = tourIds.filter(id => !globalCache.has(id));
+    if (missing.length === 0) {
       setLoading(false);
       return;
     }
 
-    // If we already have all the images cached, use them
-    if (globalCoverImagesCache && tourIds.every(id => globalCoverImagesCache!.has(id))) {
-      setCoverImages(globalCoverImagesCache);
-      setLoading(false);
-      return;
+    setLoading(true);
+
+    // Deduplicate concurrent fetches
+    if (pendingFetch) {
+      await pendingFetch;
+    } else {
+      pendingFetch = fetchCovers(tourIds).finally(() => { pendingFetch = null; });
+      await pendingFetch;
     }
 
-    // If there's an ongoing fetch, wait for it
-    if (fetchPromise) {
-      const result = await fetchPromise;
-      setCoverImages(result);
-      setLoading(false);
-      return;
-    }
-
-    // Start a new fetch
-    fetchPromise = (async () => {
-      const { data: coverData, error: coverError } = await supabase
-        .from('tour_gallery_images')
-        .select('tour_id, image_url, crop_position')
-        .in('tour_id', tourIds)
-        .eq('is_cover', true);
-
-      if (coverError) {
-        console.error('Error fetching tour cover images:', coverError);
-        return globalCoverImagesCache || new Map();
-      }
-
-      const newCache = new Map(globalCoverImagesCache || []);
-
-      coverData?.forEach((img) => {
-        const cropPosition = (img.crop_position as unknown as CropPosition) || { x: 50, y: 50, scale: 1 };
-        newCache.set(img.tour_id, {
-          tourId: img.tour_id,
-          imageUrl: img.image_url,
-          cropPosition,
-          galleryCount: 1,
-        });
-      });
-
-      globalCoverImagesCache = newCache;
-      return newCache;
-    })();
-
-    try {
-      const result = await fetchPromise;
-      setCoverImages(result);
-    } finally {
-      fetchPromise = null;
-      setLoading(false);
-    }
+    setLoading(false);
+    forceUpdate(n => n + 1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tourIds.join(',')]);
 
   useEffect(() => {
-    fetchCoverImages();
-  }, [fetchCoverImages]);
+    load();
+  }, [load]);
 
   const getCoverImage = useCallback((tourId: string): TourCoverImage | null => {
-    return coverImages.get(tourId) || null;
-  }, [coverImages]);
+    return globalCache.get(tourId) ?? null;
+  }, []);
 
-  return { coverImages, loading, getCoverImage };
+  return { loading, getCoverImage };
 };
 
-// Clear cache on window unload to prevent stale data
+// Reset cache on page unload to avoid serving stale data after deploys
 if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', () => {
-    globalCoverImagesCache = null;
-  });
+  window.addEventListener('beforeunload', () => { globalCache = new Map(); });
 }
