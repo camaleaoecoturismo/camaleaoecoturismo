@@ -645,13 +645,29 @@ const TourManagement: React.FC<TourManagementProps> = ({
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const parcelasCarregadas: Pagamento[] = data.map(p => ({
-          id: p.id,
-          valor: Number(p.valor),
-          data: p.data_pagamento,
-          forma: p.forma_pagamento,
-          isNew: false
-        }));
+        // Se a reserva tem card_fee_amount e os valores das parcelas ainda incluem a taxa
+        // (i.e. soma das parcelas ≈ valor_pago bruto), subtrair a taxa proporcionalmente
+        const reserva = reservas.find(r => r.id === reservaId);
+        const cardFee = reserva?.card_fee_amount || 0;
+        const totalBruto = data.reduce((sum, p) => sum + Number(p.valor), 0);
+        const valorPagoReserva = reserva?.valor_pago || 0;
+        const parcelasContemTaxa = cardFee > 0 && Math.abs(totalBruto - valorPagoReserva) < 1;
+
+        const parcelasCarregadas: Pagamento[] = data.map(p => {
+          let valor = Number(p.valor);
+          if (parcelasContemTaxa && totalBruto > 0) {
+            // Deduzir a taxa proporcionalmente a este parcela
+            valor = valor - (valor / totalBruto) * cardFee;
+            valor = Math.round(valor * 100) / 100;
+          }
+          return {
+            id: p.id,
+            valor,
+            data: p.data_pagamento,
+            forma: p.forma_pagamento,
+            isNew: false
+          };
+        });
         setPagamentos(prev => ({ ...prev, [reservaId]: parcelasCarregadas }));
       } else {
         // If no parcelas in DB but has valor_pago, create one entry as legacy data
@@ -794,9 +810,13 @@ const TourManagement: React.FC<TourManagementProps> = ({
         ? parcelasReserva.reduce((earliest, p) => (p.data && (!earliest.data || p.data < earliest.data)) ? p : earliest, parcelasReserva[0])
         : null;
       
+      const reservaAtualizada = reservas.find(r => r.id === reservaId);
       const updateData: Record<string, any> = {
         valor_pago: totalPago,
-        payment_status: totalPago > 0 ? 'pago' : 'pendente'
+        payment_status: totalPago > 0 ? 'pago' : 'pendente',
+        // Se havia taxa de cartão inclusa nos valores brutos, zeramos após ajuste
+        // (parcelas agora armazenam o valor líquido)
+        ...(reservaAtualizada?.card_fee_amount ? { card_fee_amount: 0 } : {}),
       };
       
       // Set data_pagamento from earliest parcela date, or now if none
