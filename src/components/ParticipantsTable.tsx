@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Check, Trash2, MessageCircle, Eye, UserPlus, AlertCircle, Plus, UserCog, Download, Loader2, Ticket, Bus, ArrowRightLeft, X, CheckSquare, Square, RefreshCw, Search, Contact, Copy, Brain, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, Trash2, MessageCircle, Eye, UserPlus, AlertCircle, Plus, UserCog, Download, Loader2, Ticket, Bus, ArrowRightLeft, X, CheckSquare, Square, RefreshCw, Search, Contact, Copy, Brain, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -646,8 +646,7 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
       setSelectedRows(new Set());
       setShowTransferModal(false);
       setTargetTourId('');
-      // Parent component should refresh
-      window.location.reload();
+      onRefreshReservas?.();
     } catch (error) {
       console.error('Error bulk transferring:', error);
       toast({ title: "Erro ao transferir", variant: "destructive" });
@@ -1563,6 +1562,18 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
 
   const allParticipantRows = buildParticipantRows();
 
+  // Breakdown of selected rows by type
+  const selectedBreakdown = useMemo(() => {
+    let titulares = 0, adicionais = 0, equipe = 0;
+    allParticipantRows.forEach(row => {
+      if (!selectedRows.has(getRowKey(row))) return;
+      if (row.isStaff || row.type === 'staff') equipe++;
+      else if (row.type === 'titular') titulares++;
+      else adicionais++;
+    });
+    return { titulares, adicionais, equipe };
+  }, [selectedRows, allParticipantRows]);
+
   // Filter by name search
   const participantRows = useMemo(() => {
     if (!nameSearch.trim()) return allParticipantRows;
@@ -1718,6 +1729,20 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
     const isPending = type === 'additional' && !additionalData?.nome_completo;
     const isStaffMember = type === 'staff' || isStaff;
 
+    // Dash com tooltip para campos financeiros em linhas não-titular
+    const financialDash = (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="text-muted-foreground/50 cursor-help select-none">—</span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">Financeiro registrado no titular da reserva</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+
     switch (columnId) {
       case 'index':
         return <span className="font-mono text-muted-foreground">{globalIndex}</span>;
@@ -1798,21 +1823,32 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
           );
         }
         return (
-          <button
-            onClick={() => {
-              if (isTitular) {
-                // For titular, find or create participant index 1 and open edit modal
-                const titularParticipant = (additionalParticipants[reserva.id] || []).find(p => p.participant_index === 1);
-                openParticipantModal(reserva.id, 1, titularParticipant || null);
-              } else {
-                openParticipantModal(reserva.id, participantIndex, additionalData || null);
-              }
-            }}
-            className="font-semibold text-slate-800 hover:text-primary hover:underline text-left leading-tight"
-          >
-            {nome}
-            {isTitular && <span className="text-primary ml-1 text-xs">(T)</span>}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => {
+                if (isTitular) {
+                  // For titular, find or create participant index 1 and open edit modal
+                  const titularParticipant = (additionalParticipants[reserva.id] || []).find(p => p.participant_index === 1);
+                  openParticipantModal(reserva.id, 1, titularParticipant || null);
+                } else {
+                  openParticipantModal(reserva.id, participantIndex, additionalData || null);
+                }
+              }}
+              className="font-semibold text-slate-800 hover:text-primary hover:underline text-left leading-tight"
+            >
+              {nome}
+            </button>
+            {isTitular && (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 shrink-0">
+                Titular
+              </span>
+            )}
+            {!isTitular && !isPending && !isStaffMember && (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 shrink-0">
+                +{participantIndex}
+              </span>
+            )}
+          </div>
         );
 
       case 'pacote':
@@ -2113,13 +2149,13 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
       case 'valor_total':
         // Mostrar valores financeiros apenas no titular para evitar divergência por participante
         if (isStaffMember) return <span className="text-muted-foreground">-</span>;
-        if (!isTitular) return <span className="text-muted-foreground">-</span>;
+        if (!isTitular) return financialDash;
         return <span className="font-medium">{formatarValor(calcularValorTotal(reserva))}</span>;
 
       case 'valor_pago':
         // Mostrar valores financeiros apenas no titular para evitar divergência por participante
         if (isStaffMember) return <span className="text-muted-foreground">-</span>;
-        if (!isTitular) return <span className="text-muted-foreground">-</span>;
+        if (!isTitular) return financialDash;
 
         const isPaid = reserva.payment_status === 'pago' || reserva.payment_status === 'approved';
         const valorPago = getValorPagoSemJuros(reserva);
@@ -2141,7 +2177,7 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
 
         // Mostrar valores financeiros apenas no titular para evitar divergência por participante
         if (!isTitular) {
-          return <span className="text-muted-foreground">-</span>;
+          return financialDash;
         }
         
         // Saldo = Valor Pago - Valor Total
@@ -2179,11 +2215,11 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
       }
 
       case 'parcelas':
-        if (!isTitular) return <span className="text-muted-foreground">-</span>;
+        if (!isTitular) return financialDash;
         return reserva.installments && reserva.installments > 1 ? `${reserva.installments}x` : '-';
 
       case 'status_pagamento':
-        if (!isTitular) return <span className="text-muted-foreground">-</span>;
+        if (!isTitular) return financialDash;
         const statusInfo = getPaymentStatusBadge(reserva.payment_status);
         return <span className={`px-2 py-0.5 rounded text-xs ${statusInfo.color}`}>{statusInfo.label}</span>;
 
@@ -2446,17 +2482,25 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
 
   if (reservas.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground text-sm">
-        {showCancelled ? 'Nenhuma reserva cancelada' : 'Nenhum participante confirmado'}
+      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+        <Users className="h-10 w-10 mb-3 opacity-30" />
+        <p className="text-sm font-medium">
+          {showCancelled ? 'Nenhuma reserva cancelada' : 'Nenhum participante inscrito'}
+        </p>
+        {!showCancelled && (
+          <p className="text-xs mt-1 opacity-70">As inscrições aparecerão aqui assim que realizadas</p>
+        )}
       </div>
     );
   }
 
   return (
     <>
-      {/* Column config and staff button */}
+      {/* Toolbar */}
       <div className="flex flex-wrap justify-between items-center mb-3 gap-2">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
+
+          {/* Grupo: Busca + Atualizar */}
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
@@ -2478,6 +2522,11 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
               Atualizar
             </Button>
           )}
+
+          {/* Separador */}
+          {tourId && <span className="w-px h-5 bg-border" />}
+
+          {/* Grupo: Cadastro */}
           {tourId && (
             <Button
               variant="outline"
@@ -2489,6 +2538,11 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
               Adicionar Equipe
             </Button>
           )}
+
+          {/* Separador */}
+          {tourId && <span className="w-px h-5 bg-border" />}
+
+          {/* Grupo: Tickets + Transporte */}
           {tourId && (
             <Button
               variant="outline"
@@ -2516,6 +2570,11 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
               Mapa de Assentos
             </Button>
           )}
+
+          {/* Separador */}
+          <span className="w-px h-5 bg-border" />
+
+          {/* Grupo: Exportação + Contatos + Análise */}
           <Button
             variant="outline"
             size="sm"
@@ -2532,7 +2591,7 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
             className="flex items-center gap-2 text-xs"
           >
             <Contact className="h-3.5 w-3.5" />
-            Baixar Contatos
+            Contatos
           </Button>
           <Button
             variant="outline"
@@ -2541,7 +2600,7 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
             className="flex items-center gap-2 text-xs"
           >
             <Copy className="h-3.5 w-3.5" />
-            Copiar Contatos
+            Copiar
           </Button>
           {tourId && (
             <Button
@@ -2572,9 +2631,23 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
       {selectedRows.size > 0 && (
         <div className="mb-3 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-primary">
-              {selectedRows.size} selecionado(s)
-            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {selectedBreakdown.titulares > 0 && (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                  {selectedBreakdown.titulares} titular{selectedBreakdown.titulares > 1 ? 'es' : ''}
+                </span>
+              )}
+              {selectedBreakdown.adicionais > 0 && (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
+                  {selectedBreakdown.adicionais} adicional{selectedBreakdown.adicionais > 1 ? 'is' : ''}
+                </span>
+              )}
+              {selectedBreakdown.equipe > 0 && (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700">
+                  {selectedBreakdown.equipe} equipe
+                </span>
+              )}
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -2586,18 +2659,32 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
             </Button>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                fetchAvailableTours();
-                setShowTransferModal(true);
-              }}
-              className="text-xs h-7"
-            >
-              <ArrowRightLeft className="h-3 w-3 mr-1" />
-              Transferir
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        fetchAvailableTours();
+                        setShowTransferModal(true);
+                      }}
+                      disabled={selectedBreakdown.titulares === 0}
+                      className="text-xs h-7"
+                    >
+                      <ArrowRightLeft className="h-3 w-3 mr-1" />
+                      Transferir
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {selectedBreakdown.titulares === 0 && (
+                  <TooltipContent>
+                    <p className="text-xs">Selecione ao menos um titular para transferir</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
             <Button
               variant="destructive"
               size="sm"
@@ -2867,12 +2954,24 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
 
                 const isPending = row.type === 'additional' && !row.additionalData?.nome_completo;
                 const isStaff = row.type === 'staff' || row.isStaff;
+                const isFirstStaff = isStaff && (!prevRow || !(prevRow.type === 'staff' || prevRow.isStaff));
                 const rowKey = getRowKey(row);
                 const isSelected = selectedRows.has(rowKey);
                 const isEven = rowIdx % 2 === 0;
                 return (
+                  <React.Fragment key={`confirmed-${row.reserva.id}-${row.participantIndex}-${row.type}`}>
+                  {isFirstStaff && (
+                    <tr>
+                      <td colSpan={visibleColumns.length + 1} className="py-1.5 px-4 bg-teal-50 border-y border-teal-200">
+                        <span className="text-xs font-semibold text-teal-700 flex items-center gap-1.5">
+                          <UserCog className="h-3 w-3" />
+                          Equipe do passeio
+                        </span>
+                      </td>
+                    </tr>
+                  )}
                   <tr
-                    key={`confirmed-${row.reserva.id}-${row.participantIndex}-${row.type}`}
+                    key={`confirmed-row-${row.reserva.id}-${row.participantIndex}-${row.type}`}
                     className={`transition-colors ${isInMultiGroup ? 'border-l-[3px] border-l-slate-300' : 'border-l-[3px] border-l-transparent'} ${isLastInGroup ? 'border-b border-slate-200' : 'border-b border-slate-50'} ${showCancelled ? 'opacity-50' : ''} ${isSelected ? 'bg-primary/8 hover:bg-primary/10' : isPending ? 'bg-amber-50/60 hover:bg-amber-100/60' : isStaff ? 'bg-teal-50/70 hover:bg-teal-100/60' : isEven ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/40 hover:bg-slate-100/60'}`}
                   >
                     {/* Row checkbox */}
@@ -2900,6 +2999,7 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
                       );
                     })}
                   </tr>
+                  </React.Fragment>
                 );
               })}
             </tbody>
