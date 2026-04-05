@@ -8,9 +8,27 @@ import { Tour } from "@/hooks/useTours";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
-const QUILL_MODULES = {
+// Igual ao TourForm — toolbar completa
+const QUILL_MODULES_FULL = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    [{ size: ['small', false, 'large', 'huge'] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ color: [] }, { background: [] }],
+    [{ align: [] }],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    [{ indent: '-1' }, { indent: '+1' }],
+    ['link', 'video'],
+    ['blockquote'],
+    ['clean'],
+  ],
+};
+
+// Para incluso/não incluso — listas simples
+const QUILL_MODULES_LIST = {
   toolbar: [
     ['bold', 'italic'],
+    [{ color: [] }],
     [{ list: 'ordered' }, { list: 'bullet' }],
     [{ align: [] }],
     ['link'],
@@ -294,7 +312,7 @@ const BulkTourEditor: React.FC<BulkTourEditorProps> = ({ tours, onBack, onSaveSu
 
               {/* Expanded editors */}
               {isExpanded && (
-                <div className="border-t border-slate-100 p-4 space-y-4">
+                <div className="border-t border-slate-100 p-4 space-y-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Sobre o passeio</p>
@@ -302,8 +320,8 @@ const BulkTourEditor: React.FC<BulkTourEditorProps> = ({ tours, onBack, onSaveSu
                         theme="snow"
                         value={tour.about || ''}
                         onChange={value => updateTour(tour.id, 'about', value)}
-                        modules={QUILL_MODULES}
-                        style={{ minHeight: '120px' }}
+                        modules={QUILL_MODULES_FULL}
+                        style={{ minHeight: '150px' }}
                       />
                     </div>
                     <div>
@@ -312,8 +330,8 @@ const BulkTourEditor: React.FC<BulkTourEditorProps> = ({ tours, onBack, onSaveSu
                         theme="snow"
                         value={tour.itinerary || ''}
                         onChange={value => updateTour(tour.id, 'itinerary', value)}
-                        modules={QUILL_MODULES}
-                        style={{ minHeight: '120px' }}
+                        modules={QUILL_MODULES_FULL}
+                        style={{ minHeight: '150px' }}
                       />
                     </div>
                   </div>
@@ -324,7 +342,7 @@ const BulkTourEditor: React.FC<BulkTourEditorProps> = ({ tours, onBack, onSaveSu
                         theme="snow"
                         value={tour.includes || ''}
                         onChange={value => updateTour(tour.id, 'includes', value)}
-                        modules={QUILL_MODULES}
+                        modules={QUILL_MODULES_LIST}
                         style={{ minHeight: '100px' }}
                       />
                     </div>
@@ -334,7 +352,7 @@ const BulkTourEditor: React.FC<BulkTourEditorProps> = ({ tours, onBack, onSaveSu
                         theme="snow"
                         value={tour.not_includes || ''}
                         onChange={value => updateTour(tour.id, 'not_includes', value)}
-                        modules={QUILL_MODULES}
+                        modules={QUILL_MODULES_LIST}
                         style={{ minHeight: '100px' }}
                       />
                     </div>
