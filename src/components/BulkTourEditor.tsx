@@ -511,6 +511,10 @@ const BulkTourEditor: React.FC<BulkTourEditorProps> = ({ tours, onBack, onSaveSu
                           <Input type="time" value={t.start_time || ''} onChange={e => updateField(tour.id, 'start_time', e.target.value)} className="text-sm" />
                         </div>
                         <div>
+                          <p className="text-xs font-medium text-slate-500 mb-1">Horário chegada</p>
+                          <Input type="time" value={t.end_time || ''} onChange={e => updateField(tour.id, 'end_time', e.target.value)} className="text-sm" />
+                        </div>
+                        <div>
                           <p className="text-xs font-medium text-slate-500 mb-1">Vagas</p>
                           <Input type="number" min={1} value={t.vagas ?? ''} onChange={e => updateField(tour.id, 'vagas', e.target.value ? Number(e.target.value) : null)} className="text-sm" />
                         </div>
