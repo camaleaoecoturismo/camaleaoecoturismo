@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tour } from "@/hooks/useTours";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { TourInfoItemsEditor } from '@/components/TourInfoItemsEditor';
 
 // Módulos simples — definidos fora do componente (sem handlers especiais)
 
@@ -410,6 +411,14 @@ const BulkTourEditor: React.FC<BulkTourEditorProps> = ({ tours, onBack, onSaveSu
                         style={{ minHeight: '100px' }}
                       />
                     </div>
+                  </div>
+
+                  {/* Informações Adicionais */}
+                  <div className="pt-2 border-t border-slate-100">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                      Informações Adicionais
+                    </p>
+                    <TourInfoItemsEditor tourId={tour.id} />
                   </div>
                 </div>
               )}

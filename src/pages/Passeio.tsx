@@ -8,7 +8,9 @@ import { WaitlistModal } from "@/components/WaitlistModal";
 import { RoteiroAccessModal } from "@/components/RoteiroAccessModal";
 import { TourGalleryCarousel } from "@/components/TourGalleryCarousel";
 import { TourBoardingPointsDisplay } from "@/components/TourBoardingPointsDisplay";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import * as LucideIcons from "lucide-react";
 import { useTourAvailability } from "@/hooks/useTourAvailability";
 import { Tour } from "@/hooks/useTours";
 import { PixIcon } from "@/components/icons/PixIcon";
@@ -68,6 +70,9 @@ const Passeio = () => {
   const [relatedCoverImages, setRelatedCoverImages] = useState<Map<string, string>>(new Map());
   const [depoimentos, setDepoimentos] = useState<
     Array<{ id: string; nome: string; foto_url: string | null; texto: string; nota: number }>
+  >([]);
+  const [infoItems, setInfoItems] = useState<
+    Array<{ id: string; title: string; icon: string; content: string }>
   >([]);
   const [packageQuantities, setPackageQuantities] = useState<Record<string, number>>({});
   const [showInstallments, setShowInstallments] = useState(false);
@@ -243,6 +248,15 @@ const Passeio = () => {
           })));
         }
       }
+
+      // Fetch info items for this tour
+      const { data: infoData } = await (db as any)
+        .from("tour_info_items")
+        .select("id, title, icon, content")
+        .eq("tour_id", data.id)
+        .eq("active", true)
+        .order("display_order");
+      if (infoData) setInfoItems(infoData);
 
       setLoading(false);
     };
@@ -583,6 +597,33 @@ const Passeio = () => {
           </h2>
           <TourBoardingPointsDisplay tourId={tour.id} departures={tour.departures} />
         </section>
+
+        {/* Informações Adicionais (FAQ accordion) */}
+        {infoItems.length > 0 && (
+          <section id="info-adicional" className="mb-8 scroll-mt-4">
+            <Accordion type="single" collapsible className="w-full divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
+              {infoItems.map(item => {
+                const Icon = (LucideIcons as any)[item.icon] ?? LucideIcons.Info;
+                return (
+                  <AccordionItem key={item.id} value={item.id} className="border-0">
+                    <AccordionTrigger className="px-4 py-3.5 text-sm font-semibold text-gray-800 hover:no-underline hover:bg-gray-50 [&[data-state=open]]:bg-gray-50">
+                      <span className="flex items-center gap-2.5">
+                        <Icon className="h-4 w-4 text-primary shrink-0" />
+                        <span className="text-left">{item.title}</span>
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4 pt-1">
+                      <div
+                        className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.content) }}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
+          </section>
+        )}
 
         {/* Reservar / Valores — mobile only */}
         <section id="valores" className="mb-8 scroll-mt-4 md:hidden">

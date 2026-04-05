@@ -21,6 +21,7 @@ import { TourOptionalItemsManager } from '@/components/TourOptionalItemsManager'
 import { TourPaymentConfig } from '@/components/TourPaymentConfig';
 import { TourTransportConfig } from '@/components/transport/TourTransportConfig';
 import { TourGalleryManager } from '@/components/TourGalleryManager';
+import { TourInfoItemsEditor } from '@/components/TourInfoItemsEditor';
 
 const MONTHS_PT = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
 
@@ -545,13 +546,14 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         </div>
 
         <Tabs defaultValue="geral" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-4 bg-white border shadow-sm rounded-xl">
+          <TabsList className="grid w-full grid-cols-7 mb-4 bg-white border shadow-sm rounded-xl">
             <TabsTrigger value="geral" className="text-xs sm:text-sm">Geral</TabsTrigger>
             <TabsTrigger value="galeria" disabled={!tour} className="text-xs sm:text-sm">Galeria</TabsTrigger>
             <TabsTrigger value="pontos" disabled={!tour} className="text-xs sm:text-sm">Embarque</TabsTrigger>
             <TabsTrigger value="opcionais" disabled={!tour} className="text-xs sm:text-sm">Opcionais</TabsTrigger>
             <TabsTrigger value="transporte" disabled={!tour} className="text-xs sm:text-sm">Transporte</TabsTrigger>
             <TabsTrigger value="pagamento" disabled={!tour} className="text-xs sm:text-sm">Pagamento</TabsTrigger>
+            <TabsTrigger value="info" disabled={!tour} className="text-xs sm:text-sm">Info Extra</TabsTrigger>
           </TabsList>
 
           <TabsContent value="geral">
@@ -1222,6 +1224,22 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
           <TabsContent value="transporte">
             {tour && (
               <TourTransportConfig tourId={tour.id} />
+            )}
+          </TabsContent>
+
+          <TabsContent value="info">
+            {tour && (
+              <Card className="border-0 shadow-sm">
+                <CardHeader className="pb-3 border-b border-border">
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <span className="w-1 h-4 rounded-full bg-purple-400 inline-block" />
+                    Informações Adicionais
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <TourInfoItemsEditor tourId={tour.id} />
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
         </Tabs>
