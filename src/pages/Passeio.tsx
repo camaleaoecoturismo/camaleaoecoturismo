@@ -14,6 +14,7 @@ import * as LucideIcons from "lucide-react";
 import { useTourAvailability } from "@/hooks/useTourAvailability";
 import { Tour } from "@/hooks/useTours";
 import { PixIcon } from "@/components/icons/PixIcon";
+import { normalizeDestinationName } from "@/lib/destinations";
 import DOMPurify from "dompurify";
 import {
   ChevronLeft,
@@ -227,16 +228,18 @@ const Passeio = () => {
         setDepoimentos([...tourDeps, ...generalDeps].slice(0, 12));
       }
 
-      const destName = data.destination_name || data.name;
+      const destName = normalizeDestinationName(data.destination_name || data.name);
       if (destName) {
         const { data: momentsData } = await db
           .from("tour_moments")
-          .select("id, caption, media_url, media_type, cover_url")
+          .select("id, caption, media_url, media_type, cover_url, destination_name")
           .eq("active", true)
-          .eq("destination_name", destName)
           .order("display_order");
-        if (momentsData && momentsData.length > 0) {
-          setTourMoments(momentsData.map((m: any) => ({
+        const filteredMoments = (momentsData || []).filter(
+          (m: any) => normalizeDestinationName(m.destination_name) === destName
+        );
+        if (filteredMoments.length > 0) {
+          setTourMoments(filteredMoments.map((m: any) => ({
             id: m.id,
             title: null,
             caption: m.caption,

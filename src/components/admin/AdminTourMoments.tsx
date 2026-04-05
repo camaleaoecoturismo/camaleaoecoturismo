@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { normalizeDestinationName } from "@/lib/destinations";
 import {
   Plus, Pencil, Trash2, Eye, EyeOff, Loader2, Save, Upload,
   ChevronUp, ChevronDown, Play, Image as ImageIcon, Film,
@@ -82,8 +83,14 @@ export default function AdminTourMoments() {
   // All unique destination names (from both moments and tours)
   const allDestinations = useMemo(() => {
     const seen = new Set<string>();
-    moments.forEach(m => { if (m.destination_name) seen.add(m.destination_name); });
-    tours.forEach(t => { const d = t.destination_name || t.name; if (d) seen.add(d); });
+    moments.forEach(m => {
+      const normalized = normalizeDestinationName(m.destination_name);
+      if (normalized) seen.add(normalized);
+    });
+    tours.forEach(t => {
+      const normalized = normalizeDestinationName(t.destination_name || t.name);
+      if (normalized) seen.add(normalized);
+    });
     return [...seen].sort();
   }, [moments, tours]);
 
@@ -91,13 +98,13 @@ export default function AdminTourMoments() {
   const grouped = useMemo(() => {
     const map = new Map<string, TourMoment[]>();
     moments.forEach(m => {
-      const key = m.destination_name || "Sem destino";
+      const key = normalizeDestinationName(m.destination_name) || "Sem destino";
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(m);
     });
     // Add destinations from tours that have no moments yet (so they appear in list)
     tours.forEach(t => {
-      const d = t.destination_name || t.name;
+      const d = normalizeDestinationName(t.destination_name || t.name);
       if (d && !map.has(d)) map.set(d, []);
     });
     return map;
@@ -109,7 +116,7 @@ export default function AdminTourMoments() {
     allDestinations.forEach((destination) => {
       map.set(destination, {
         destination,
-        tours: tours.filter((tour) => (tour.destination_name || tour.name) === destination),
+        tours: tours.filter((tour) => normalizeDestinationName(tour.destination_name || tour.name) === destination),
       });
     });
 
@@ -134,8 +141,9 @@ export default function AdminTourMoments() {
   const openEdit = (m: TourMoment) => {
     setEditingId(m.id);
     setForm({ media_url: m.media_url, media_type: m.media_type, cover_url: m.cover_url || "", active: m.active });
-    setFormDestination(m.destination_name);
-    setExpandedGroups(prev => new Set(prev).add(m.destination_name));
+    const normalized = normalizeDestinationName(m.destination_name);
+    setFormDestination(normalized);
+    setExpandedGroups(prev => new Set(prev).add(normalized));
   };
 
   const closeForm = () => {
@@ -153,7 +161,7 @@ export default function AdminTourMoments() {
     setSaving(true);
     const destMoments = grouped.get(formDestination) || [];
     const payload = {
-      destination_name: formDestination,
+      destination_name: normalizeDestinationName(formDestination),
       media_url: form.media_url,
       media_type: form.media_type,
       cover_url: form.cover_url || null,
@@ -242,8 +250,9 @@ export default function AdminTourMoments() {
   const handleMultiUpload = async (files: FileList, destination: string) => {
     if (!files.length) return;
     const fileArr = Array.from(files);
+    const normalizedDestination = normalizeDestinationName(destination);
     setUploadProgress({ done: 0, total: fileArr.length });
-    const destMoments = grouped.get(destination) || [];
+    const destMoments = grouped.get(normalizedDestination) || [];
     let baseOrder = destMoments.length;
     let successCount = 0;
     for (const file of fileArr) {
@@ -258,7 +267,7 @@ export default function AdminTourMoments() {
       } else {
         const { data: urlData } = supabase.storage.from("site-config").getPublicUrl(data.path);
         await (supabase as any).from("tour_moments").insert({
-          destination_name: destination,
+          destination_name: normalizedDestination,
           media_url: urlData.publicUrl,
           media_type: isVideo ? "video" : "image",
           cover_url: null,
