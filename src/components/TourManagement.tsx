@@ -1657,102 +1657,36 @@ const TourManagement: React.FC<TourManagementProps> = ({
       description: "O link de reserva foi copiado para a área de transferência."
     });
   };
-  return <div className="space-y-6">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={onBack} className="flex items-center gap-2">
+  return <div className="space-y-4">
+      {/* Cabeçalho — linha 1: título + ações primárias */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={onBack} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
             Voltar
           </Button>
           <div>
-            <h2 className="text-2xl font-bold">{tour.name}</h2>
-            <p className="text-muted-foreground">
+            <h2 className="text-xl font-bold leading-tight">{tour.name}</h2>
+            <p className="text-sm text-muted-foreground">
               {tour.city}, {tour.state} • {new Date(tour.start_date + 'T12:00:00').toLocaleDateString('pt-BR')}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => {
-              fetchReservas();
-              fetchBoardingPoints();
-            }}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Atualizar
+        <div className="flex items-center gap-2 shrink-0">
+          <Button size="sm" onClick={() => setShowAddParticipantModal(true)} className="bg-primary hover:bg-primary/90 flex items-center gap-1.5">
+            <Plus className="h-4 w-4" />
+            Adicionar Participante
           </Button>
-          <div className="flex rounded-lg border overflow-hidden">
-            <Button 
-              variant={viewMode === 'participants' ? 'default' : 'ghost'} 
-              size="sm"
-              onClick={() => setViewMode('participants')}
-              className="rounded-none"
-            >
-              <Users className="h-4 w-4 mr-2" />
-              Participantes
-            </Button>
-            {hasAccommodation && (
-              <Button 
-                variant={viewMode === 'accommodation' ? 'default' : 'ghost'} 
-                size="sm"
-                onClick={() => setViewMode('accommodation')}
-                className="rounded-none"
-              >
-                <Building2 className="h-4 w-4 mr-2" />
-                Hospedagem
-              </Button>
-            )}
-            <Button 
-              variant={viewMode === 'waitlist' ? 'default' : 'ghost'} 
-              size="sm"
-              onClick={() => { setViewMode('waitlist'); fetchWaitlistCount(); }}
-              className="rounded-none"
-            >
-              <Clock className="h-4 w-4 mr-2" />
-              Lista de Espera
-              {waitlistCount > 0 && (
-                <Badge variant="secondary" className="ml-2 bg-orange-100 text-orange-700">
-                  {waitlistCount}
-                </Badge>
-              )}
-            </Button>
-            <Button 
-              variant={viewMode === 'interessados' ? 'default' : 'ghost'} 
-              size="sm"
-              onClick={() => { setViewMode('interessados'); fetchInteressadosCount(); }}
-              className="rounded-none"
-            >
-              <Target className="h-4 w-4 mr-2" />
-              Interessados
-              {interessadosCount > 0 && (
-                <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700">
-                  {interessadosCount}
-                </Badge>
-              )}
-            </Button>
-            <Button 
-              variant={viewMode === 'seguro-roca' ? 'default' : 'ghost'} 
-              size="sm"
-              onClick={() => setViewMode('seguro-roca')}
-              className="rounded-none"
-            >
-              <Shield className="h-4 w-4 mr-2" />
-              Seguro
-            </Button>
-          </div>
-          <Button variant="outline" onClick={handleCopyReservationLink} className="flex items-center gap-2">
+          <BulkParticipantUpload tourId={tour.id} boardingPoints={boardingPoints} onSuccess={fetchReservas} valorPadrao={valorPadrao} />
+          <Button variant="outline" size="sm" onClick={handleCopyReservationLink} className="flex items-center gap-2">
             <Link className="h-4 w-4" />
             Copiar Link
           </Button>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="icon"
                   onClick={toggleVagasFechadas}
                   className={vagasFechadas ? "text-red-600 hover:text-red-700 hover:bg-red-50" : "text-muted-foreground hover:text-foreground"}
@@ -1766,6 +1700,78 @@ const TourManagement: React.FC<TourManagementProps> = ({
             </Tooltip>
           </TooltipProvider>
         </div>
+      </div>
+
+      {/* Cabeçalho — linha 2: abas de navegação + atualizar */}
+      <div className="flex items-center justify-between border-b pb-1">
+        <div className="flex gap-0.5">
+          <Button
+            variant={viewMode === 'participants' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('participants')}
+            className="rounded-b-none h-8 text-xs"
+          >
+            <Users className="h-3.5 w-3.5 mr-1.5" />
+            Participantes
+          </Button>
+          {hasAccommodation && (
+            <Button
+              variant={viewMode === 'accommodation' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('accommodation')}
+              className="rounded-b-none h-8 text-xs"
+            >
+              <Building2 className="h-3.5 w-3.5 mr-1.5" />
+              Hospedagem
+            </Button>
+          )}
+          <Button
+            variant={viewMode === 'waitlist' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => { setViewMode('waitlist'); fetchWaitlistCount(); }}
+            className="rounded-b-none h-8 text-xs"
+          >
+            <Clock className="h-3.5 w-3.5 mr-1.5" />
+            Lista de Espera
+            {waitlistCount > 0 && (
+              <Badge variant="secondary" className="ml-1.5 bg-orange-100 text-orange-700 text-[10px] px-1 py-0">
+                {waitlistCount}
+              </Badge>
+            )}
+          </Button>
+          <Button
+            variant={viewMode === 'interessados' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => { setViewMode('interessados'); fetchInteressadosCount(); }}
+            className="rounded-b-none h-8 text-xs"
+          >
+            <Target className="h-3.5 w-3.5 mr-1.5" />
+            Interessados
+            {interessadosCount > 0 && (
+              <Badge variant="secondary" className="ml-1.5 bg-blue-100 text-blue-700 text-[10px] px-1 py-0">
+                {interessadosCount}
+              </Badge>
+            )}
+          </Button>
+          <Button
+            variant={viewMode === 'seguro-roca' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('seguro-roca')}
+            className="rounded-b-none h-8 text-xs"
+          >
+            <Shield className="h-3.5 w-3.5 mr-1.5" />
+            Seguro
+          </Button>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => { fetchReservas(); fetchBoardingPoints(); }}
+          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground h-8 text-xs mb-1"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          Atualizar
+        </Button>
       </div>
 
       {/* View based on mode */}
@@ -1859,16 +1865,16 @@ const TourManagement: React.FC<TourManagementProps> = ({
           </CardContent>
         </Card>
         
-        <Card className="py-2">
+        <Card className="py-2 border-blue-100 bg-blue-50/40">
           <CardContent className="p-3 pt-0">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Custo Total</p>
-                <div className="text-lg font-bold">
+                <div className="text-lg font-bold text-blue-700">
                   {formatarValor(reservasConfirmadas.reduce((sum, r) => sum + calcularValorTotal(r), 0))}
                 </div>
               </div>
-              <Target className="h-4 w-4 text-muted-foreground" />
+              <Target className="h-4 w-4 text-blue-400" />
             </div>
           </CardContent>
         </Card>
@@ -1903,41 +1909,33 @@ const TourManagement: React.FC<TourManagementProps> = ({
       </div>
 
       {/* Filtros */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="space-y-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar por nome, CPF..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
-              </div>
-            </div>
-            
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Status da Reserva" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Status</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="confirmado">Confirmado</SelectItem>
-                <SelectItem value="cancelado">Cancelado</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Status Pagamento" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pago">Pago</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex gap-3 items-center">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar por nome, CPF..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 h-9" />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-44 h-9">
+            <SelectValue placeholder="Status da Reserva" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os Status</SelectItem>
+            <SelectItem value="pendente">Pendente</SelectItem>
+            <SelectItem value="confirmado">Confirmado</SelectItem>
+            <SelectItem value="cancelado">Cancelado</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+          <SelectTrigger className="w-36 h-9">
+            <SelectValue placeholder="Pagamento" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="pago">Pago</SelectItem>
+            <SelectItem value="pendente">Pendente</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Tabelas de Participantes */}
       {loading ? <div className="text-center py-12">
@@ -1946,23 +1944,24 @@ const TourManagement: React.FC<TourManagementProps> = ({
 
           {/* Tabela de Reservas Confirmadas */}
           <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="bg-white border-b border-slate-100 py-3">
+            <CardHeader className="bg-white border-b border-slate-100 py-2.5">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 text-sm font-bold">
+                  <CardTitle className="text-sm font-semibold text-slate-600 flex items-center gap-2">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 text-xs font-bold">
                       {reservasConfirmadas.length}
                     </span>
+                    reservas confirmadas
                   </CardTitle>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={copyBoardingPointsText}>
-                      <Copy className="h-4 w-4 mr-1" />
-                      Copiar Embarques
+                    <Button size="sm" variant="outline" onClick={copyBoardingPointsText} className="h-7 text-xs">
+                      <Copy className="h-3.5 w-3.5 mr-1" />
+                      Embarques
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="outline">
-                          <Download className="h-4 w-4 mr-1 text-card" />
+                        <Button size="sm" variant="outline" className="h-7 text-xs">
+                          <Download className="h-3.5 w-3.5 mr-1" />
                           Baixar Lista
                         </Button>
                       </DropdownMenuTrigger>
@@ -1978,14 +1977,6 @@ const TourManagement: React.FC<TourManagementProps> = ({
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    <Button size="sm" onClick={() => setShowAddParticipantModal(true)} className="bg-primary hover:bg-primary/90">
-                      <Plus className="h-4 w-4 mr-1" />
-                      Adicionar Participante
-                    </Button>
-                    <BulkParticipantUpload tourId={tour.id} boardingPoints={boardingPoints} onSuccess={fetchReservas} valorPadrao={valorPadrao} />
-                    <Button size="sm" variant="outline" onClick={fetchReservas} title="Atualizar lista">
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
