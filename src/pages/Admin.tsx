@@ -351,6 +351,7 @@ const Admin = () => {
       'financeiro-passeio': 'Financeiro - Por Passeio',
       'financeiro-mensal': 'Financeiro - Mensal',
       'financeiro-balanco': 'Financeiro - Balanço',
+      'financeiro-competencia': 'Financeiro - Por Evento',
       'financeiro-historico': 'Financeiro - Histórico',
       'financeiro-grafica': 'Financeiro - Análise Gráfica',
       'financeiro-dashboard': 'Financeiro - Dashboard',

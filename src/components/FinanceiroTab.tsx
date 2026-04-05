@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Users, Percent, Wallet, Building2, Briefcase, Calculator, ChevronLeft, ChevronRight, Lock, Calendar, BarChart3, LayoutDashboard, Brain, Link2, PieChart as PieChartIcon, Receipt, ChevronDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import BalancoAnual from './BalancoAnual';
+import BalancoCompetencia from './BalancoCompetencia';
 import BalancoAnaliseGrafica from './BalancoAnaliseGrafica';
 import FinanceiroDashboard from './FinanceiroDashboard';
 import FinanceiroAnaliseInteligente from './FinanceiroAnaliseInteligente';
@@ -219,7 +220,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   } = useToast();
   const [isUnlocked, setIsUnlocked] = useState(false);
   // Map prop viewMode to internal viewMode format
-  const viewMode: 'dashboard' | 'passeio' | 'mensal' | 'balanco' | 'grafica' | 'analise' | 'diario' | 'comparacao' | 'historico' = 
+  const viewMode: 'dashboard' | 'passeio' | 'mensal' | 'balanco' | 'grafica' | 'analise' | 'diario' | 'comparacao' | 'historico' | 'competencia' =
     propViewMode === 'passeio' ? 'passeio' :
     propViewMode === 'mensal' ? 'mensal' :
     propViewMode === 'balanco' ? 'balanco' :
@@ -228,7 +229,8 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     propViewMode === 'diario' ? 'diario' :
     propViewMode === 'grafica' ? 'grafica' :
     propViewMode === 'comparacao' ? 'comparacao' :
-    propViewMode === 'historico' ? 'historico' : 'passeio';
+    propViewMode === 'historico' ? 'historico' :
+    propViewMode === 'competencia' ? 'competencia' : 'passeio';
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [allMonthlyGeneralCosts, setAllMonthlyGeneralCosts] = useState<MonthlyGeneralCost[]>([]);
   const [recurringCosts, setRecurringCosts] = useState<RecurringCost[]>([]);
@@ -3181,6 +3183,29 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
       </div>;
   };
 
+  // Balanço por Competência (Mês do Passeio)
+  const CompetenciaView = () => {
+    const availableYears = useMemo(() => {
+      const years = new Set<number>([new Date().getFullYear()]);
+      tours.forEach(t => { if (t.start_date) years.add(new Date(t.start_date).getFullYear()); });
+      allMonthlyGeneralCosts.forEach(c => years.add(c.year));
+      return Array.from(years).sort((a, b) => b - a);
+    }, [tours, allMonthlyGeneralCosts]);
+    return (
+      <div className="space-y-4">
+        <BalancoCompetencia
+          tours={tours}
+          reservations={reservations}
+          allTourCosts={allTourCosts}
+          allMonthlyGeneralCosts={allMonthlyGeneralCosts}
+          recurringCosts={recurringCosts}
+          selectedYear={selectedYear}
+          onYearChange={setSelectedYear}
+        />
+      </div>
+    );
+  };
+
   // Analise Grafica view (separate tab)
   const AnaliseGraficaView = () => {
     const availableYears = useMemo(() => {
@@ -3268,6 +3293,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
          viewMode === 'balanco' ? <BalancoView /> : 
          viewMode === 'grafica' ? <AnaliseGraficaView /> :
          viewMode === 'historico' ? <HistoricoView /> :
+         viewMode === 'competencia' ? <CompetenciaView /> :
          <MonthlyView />}
       </ScrollArea>
     </div>;

@@ -120,6 +120,7 @@ const navGroups: NavGroup[] = [
           { id: 'financeiro-passeio', label: 'Por Passeio', icon: <Calculator className="h-4 w-4" /> },
           { id: 'financeiro-mensal', label: 'Mensal', icon: <CalendarDays className="h-4 w-4" /> },
           { id: 'financeiro-balanco', label: 'Balanço', icon: <BarChart3 className="h-4 w-4" /> },
+          { id: 'financeiro-competencia', label: 'Por Evento', icon: <TrendingUp className="h-4 w-4" /> },
           { id: 'financeiro-historico', label: 'Histórico', icon: <ClipboardList className="h-4 w-4" /> },
           { id: 'financeiro-comparacao', label: 'Comparação', icon: <ArrowLeftRight className="h-4 w-4" /> },
           { id: 'financeiro-grafica', label: 'Análise Gráfica', icon: <BarChart3 className="h-4 w-4" /> },
