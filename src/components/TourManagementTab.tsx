@@ -748,212 +748,156 @@ const TourManagementTab: React.FC<TourManagementTabProps> = ({ tours, onRefresh,
   };
 
   // View for Participantes - focused on selecting tour and managing participants
-  const renderParticipantesView = () => (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <h2 className="text-lg font-semibold text-gray-800">Gerenciar Participantes</h2>
+  const renderParticipantesView = () => {
+    const totalParticipantes = filteredPartTours.reduce((s, t) => s + (tourStats[t.id]?.confirmed || 0), 0);
+    const totalArrecadado = filteredPartTours.reduce((s, t) => s + (tourStats[t.id]?.totalArrecadado || 0), 0);
+    const totalPendente = filteredPartTours.reduce((s, t) => s + (tourStats[t.id]?.saldoPendente || 0), 0);
+
+    const sortLabels: Record<string, string> = {
+      data: "Data",
+      ocupacao: "Ocupação",
+      pendencias: "Pendências",
+      arrecadado: "Arrecadado",
+    };
+
+    const hasActiveFilters = partFilterStatus !== "ativos" || partFilterTime !== "todos" ||
+      partFilterYears.length > 0 || partFilterMonths.length > 0 || partSearchTerm;
+
+    return (
+    <div className="space-y-4">
+      {/* Stats agregados */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white border rounded-lg p-3 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+            <Users className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Participantes</p>
+            <p className="text-base font-bold">{totalParticipantes}</p>
+          </div>
+        </div>
+        <div className="bg-white border rounded-lg p-3 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md bg-emerald-50 flex items-center justify-center shrink-0">
+            <Wallet className="h-4 w-4 text-emerald-600" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Arrecadado</p>
+            <p className="text-base font-bold text-emerald-700">
+              {totalArrecadado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+            </p>
+          </div>
+        </div>
+        <div className="bg-white border rounded-lg p-3 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md bg-amber-50 flex items-center justify-center shrink-0">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Pendente</p>
+            <p className="text-base font-bold text-amber-700">
+              {totalPendente.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Filters Section */}
-      <Card className="bg-gray-50/50">
-        <CardContent className="p-4">
-          <div className="flex flex-wrap items-center gap-4 mb-4">
-            {/* Search */}
-            <div className="relative flex-1 min-w-[200px] max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Buscar passeio..."
-                value={partSearchTerm}
-                onChange={(e) => setPartSearchTerm(e.target.value)}
-                className="pl-9 bg-white"
-              />
-            </div>
+      {/* Filtros */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input placeholder="Buscar passeio..." value={partSearchTerm} onChange={(e) => setPartSearchTerm(e.target.value)} className="pl-9 h-9" />
+        </div>
 
-            {/* Status Filter */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 font-medium">Status:</span>
-              <div className="flex bg-white rounded-lg border p-1 gap-1">
-                <button
-                  onClick={() => setPartFilterStatus("todos")}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    partFilterStatus === "todos" ? "bg-primary text-white" : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  Todos
-                </button>
-                <button
-                  onClick={() => setPartFilterStatus("ativos")}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    partFilterStatus === "ativos" ? "bg-emerald-500 text-white" : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  Ativos
-                </button>
-                <button
-                  onClick={() => setPartFilterStatus("inativos")}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    partFilterStatus === "inativos" ? "bg-gray-500 text-white" : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  Inativos
-                </button>
-              </div>
-            </div>
+        <div className="flex bg-white rounded-lg border p-0.5 gap-0.5">
+          {(["todos", "ativos", "inativos"] as const).map((s) => (
+            <button key={s} onClick={() => setPartFilterStatus(s)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize ${
+                partFilterStatus === s
+                  ? s === "ativos" ? "bg-emerald-500 text-white" : s === "inativos" ? "bg-gray-500 text-white" : "bg-primary text-white"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {s.charAt(0).toUpperCase() + s.slice(1)}
+            </button>
+          ))}
+        </div>
 
-            {/* Time Filter */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 font-medium">Período:</span>
-              <div className="flex bg-white rounded-lg border p-1 gap-1">
-                <button
-                  onClick={() => setPartFilterTime("todos")}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    partFilterTime === "todos" ? "bg-primary text-white" : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  Todos
-                </button>
-                <button
-                  onClick={() => setPartFilterTime("futuros")}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    partFilterTime === "futuros" ? "bg-blue-500 text-white" : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  Futuros
-                </button>
-                <button
-                  onClick={() => setPartFilterTime("passados")}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    partFilterTime === "passados" ? "bg-gray-500 text-white" : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  Passados
-                </button>
-              </div>
-            </div>
-          </div>
+        <div className="flex bg-white rounded-lg border p-0.5 gap-0.5">
+          {(["todos", "futuros", "passados"] as const).map((t) => (
+            <button key={t} onClick={() => setPartFilterTime(t)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                partFilterTime === t
+                  ? t === "futuros" ? "bg-blue-500 text-white" : t === "passados" ? "bg-gray-500 text-white" : "bg-primary text-white"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </button>
+          ))}
+        </div>
 
-          {/* Year and Month Filters - Visual Chips */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="flex items-center gap-6 flex-wrap">
-              {/* Year Filter */}
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-sm text-gray-500 font-medium">Anos:</span>
-                <div className="flex flex-wrap gap-2">
-                  {availableYearsForPart.map(({ year, count }) => {
-                    const isSelected = partFilterYears.includes(year);
-                    return (
-                      <button
-                        key={year}
-                        onClick={() => togglePartYearFilter(year)}
-                        className={`
-                          px-3 py-1.5 rounded-full text-sm font-medium transition-all
-                          flex items-center gap-1.5 border
-                          ${
-                            isSelected
-                              ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                              : "bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:bg-blue-50"
-                          }
-                        `}
-                      >
-                        {year}
-                        <span
-                          className={`
-                          text-xs px-1.5 py-0.5 rounded-full
-                          ${isSelected ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"}
-                        `}
-                        >
-                          {count}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {partFilterYears.length > 0 && (
-                  <button
-                    onClick={() => setPartFilterYears([])}
-                    className="text-xs text-gray-400 hover:text-blue-600 underline"
-                  >
-                    Limpar
-                  </button>
-                )}
-              </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border bg-white text-xs font-medium text-gray-600 hover:bg-gray-50 h-9">
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              {sortLabels[partSortBy]}
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setPartSortBy("data")}>Data do passeio</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setPartSortBy("ocupacao")}>Ocupação</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setPartSortBy("pendencias")}>Maior pendência</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setPartSortBy("arrecadado")}>Maior arrecadado</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-              {/* Divider */}
-              <div className="h-6 w-px bg-gray-200 hidden sm:block" />
+        <span className="text-xs text-muted-foreground ml-1">
+          {filteredPartTours.length} {filteredPartTours.length === 1 ? "passeio" : "passeios"}
+        </span>
 
-              {/* Month Filter */}
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-sm text-gray-500 font-medium">Meses:</span>
-                <div className="flex flex-wrap gap-2">
-                  {availableMonthsForPart.map((month) => {
-                    const isSelected = partFilterMonths.includes(month.key);
-                    return (
-                      <button
-                        key={month.key}
-                        onClick={() => togglePartMonthFilter(month.key)}
-                        className={`
-                          px-3 py-1.5 rounded-full text-sm font-medium transition-all
-                          flex items-center gap-1.5 border
-                          ${
-                            isSelected
-                              ? "bg-primary text-white border-primary shadow-sm"
-                              : "bg-white text-gray-600 border-gray-200 hover:border-primary/50 hover:bg-primary/5"
-                          }
-                        `}
-                      >
-                        {month.short}
-                        <span
-                          className={`
-                          text-xs px-1.5 py-0.5 rounded-full
-                          ${isSelected ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"}
-                        `}
-                        >
-                          {month.count}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {partFilterMonths.length > 0 && (
-                  <button
-                    onClick={() => setPartFilterMonths([])}
-                    className="text-xs text-gray-400 hover:text-primary underline"
-                  >
-                    Limpar
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+        {hasActiveFilters && (
+          <button onClick={() => { setPartFilterStatus("ativos"); setPartFilterTime("todos"); setPartFilterYears([]); setPartFilterMonths([]); setPartSearchTerm(""); }}
+            className="text-xs text-primary hover:underline ml-auto"
+          >
+            Limpar filtros
+          </button>
+        )}
+      </div>
 
-          {/* Results count */}
-          <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-2">
-            <Badge variant="secondary" className="bg-white">
-              {filteredPartTours.length}{" "}
-              {filteredPartTours.length === 1 ? "passeio encontrado" : "passeios encontrados"}
-            </Badge>
-            {(partFilterStatus !== "ativos" ||
-              partFilterTime !== "todos" ||
-              partFilterYears.length > 0 ||
-              partFilterMonths.length > 0 ||
-              partSearchTerm) && (
-              <button
-                onClick={() => {
-                  setPartFilterStatus("ativos");
-                  setPartFilterTime("todos");
-                  setPartFilterYears([]);
-                  setPartFilterMonths([]);
-                  setPartSearchTerm("");
-                }}
-                className="text-xs text-primary hover:underline"
+      {/* Filtros de ano e mês */}
+      <div className="flex items-center gap-4 flex-wrap text-xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-gray-400 font-medium">Anos:</span>
+          {availableYearsForPart.map(({ year, count }) => {
+            const sel = partFilterYears.includes(year);
+            return (
+              <button key={year} onClick={() => togglePartYearFilter(year)}
+                className={`px-2.5 py-1 rounded-full font-medium border transition-all flex items-center gap-1 ${
+                  sel ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:border-blue-400"
+                }`}
               >
-                Limpar todos os filtros
+                {year} <span className={`text-[10px] ${sel ? "opacity-70" : "text-gray-400"}`}>{count}</span>
               </button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            );
+          })}
+        </div>
+        <div className="w-px h-4 bg-gray-200" />
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-gray-400 font-medium">Meses:</span>
+          {availableMonthsForPart.map((month) => {
+            const sel = partFilterMonths.includes(month.key);
+            return (
+              <button key={month.key} onClick={() => togglePartMonthFilter(month.key)}
+                className={`px-2.5 py-1 rounded-full font-medium border transition-all flex items-center gap-1 ${
+                  sel ? "bg-primary text-white border-primary" : "bg-white text-gray-600 border-gray-200 hover:border-primary/50"
+                }`}
+              >
+                {month.short} <span className={`text-[10px] ${sel ? "opacity-70" : "text-gray-400"}`}>{month.count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Tours Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -961,11 +905,7 @@ const TourManagementTab: React.FC<TourManagementTabProps> = ({ tours, onRefresh,
           <Card className="col-span-full border-dashed">
             <CardContent className="py-12 text-center">
               <Users className="h-10 w-10 mx-auto mb-3 text-gray-300" />
-              <p className="text-gray-500">
-                {tours.length === 0
-                  ? "Nenhum passeio cadastrado."
-                  : "Nenhum passeio corresponde aos filtros selecionados."}
-              </p>
+              <p className="text-gray-500">{tours.length === 0 ? "Nenhum passeio cadastrado." : "Nenhum passeio corresponde aos filtros."}</p>
             </CardContent>
           </Card>
         ) : (
@@ -974,135 +914,110 @@ const TourManagementTab: React.FC<TourManagementTabProps> = ({ tours, onRefresh,
             const isPast = daysUntil < 0;
             const isToday = daysUntil === 0;
             const isSoon = daysUntil > 0 && daysUntil <= 7;
+            const stats = tourStats[tour.id];
+            const confirmed = stats?.confirmed || 0;
+            const totalVagas = tour.vagas || 0;
+            const pct = totalVagas > 0 ? Math.round((confirmed / totalVagas) * 100) : null;
+            const vagasDisp = totalVagas > 0 ? Math.max(0, totalVagas - confirmed) : null;
+            const isFull = vagasDisp === 0 && totalVagas > 0;
+            const arrecadado = stats?.totalArrecadado || 0;
+            const pendente = stats?.saldoPendente || 0;
+
+            const occupancyColor = isFull ? "bg-red-500" : pct !== null && pct >= 80 ? "bg-amber-500" : "bg-emerald-500";
 
             return (
               <Card
                 key={tour.id}
-                className={`
-                  overflow-hidden transition-all duration-200 hover:shadow-lg cursor-pointer
-                  ${isPast ? "opacity-70" : ""}
+                className={`overflow-hidden transition-all duration-200 hover:shadow-lg cursor-pointer group
+                  ${isPast ? "opacity-75" : ""}
                   ${isToday ? "ring-2 ring-emerald-500" : ""}
+                  ${pendente > 0 && !isPast ? "border-l-4 border-l-amber-400" : ""}
                 `}
                 onClick={() => setManagingTour(tour)}
               >
-                {/* Tour Image */}
-                <div className="h-36 bg-gray-100 relative">
+                {/* Image */}
+                <div className="h-32 bg-gray-100 relative overflow-hidden">
                   {(tour.image_url || tourCoverImages[tour.id]) ? (
-                    <img src={tourCoverImages[tour.id] || tour.image_url || ''} alt={tour.name} className="w-full h-full object-cover" />
+                    <img src={tourCoverImages[tour.id] || tour.image_url || ''} alt={tour.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <MapPin className="h-10 w-10 text-gray-300" />
                     </div>
                   )}
-
-                  {/* Days Badge - Overlay */}
-                  <div
-                    className={`
-                    absolute top-3 right-3 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg
-                    ${isPast ? "bg-gray-600 text-white" : ""}
-                    ${isToday ? "bg-emerald-500 text-white" : ""}
-                    ${isSoon && !isToday ? "bg-amber-500 text-white" : ""}
-                    ${!isPast && !isToday && !isSoon ? "bg-blue-500 text-white" : ""}
-                  `}
-                  >
+                  <div className={`absolute top-2.5 right-2.5 text-xs font-bold px-2.5 py-1 rounded-full shadow-md
+                    ${isPast ? "bg-gray-700/90 text-white" : isToday ? "bg-emerald-500 text-white" : isSoon ? "bg-amber-500 text-white" : "bg-blue-500/90 text-white"}`}>
                     {isPast ? "Realizado" : isToday ? "Hoje!" : `${daysUntil} dias`}
                   </div>
-
-                  {/* Status Badge - Overlay */}
                   {tour.is_exclusive && (
-                    <div className="absolute top-3 left-3">
-                      <Badge className="bg-teal-500/90 text-white text-xs flex items-center gap-1">
-                        <Star className="h-3 w-3" />
-                        Exclusivo
+                    <div className="absolute top-2.5 left-2.5">
+                      <Badge className="bg-teal-500/90 text-white text-xs flex items-center gap-1 shadow-md">
+                        <Star className="h-3 w-3" />Exclusivo
                       </Badge>
                     </div>
                   )}
                 </div>
 
-                <CardContent className="p-4">
-                  {/* Tour Info */}
-                  <h3 className="font-bold text-gray-800 mb-2 line-clamp-1">{tour.name}</h3>
-
-                  <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      {formatDateRange(tour)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {tour.city}
-                    </span>
+                <CardContent className="p-4 space-y-3">
+                  <div>
+                    <h3 className="font-bold text-gray-800 line-clamp-1 mb-1">{tour.name}</h3>
+                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatDateRange(tour)}</span>
+                      <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{tour.city}</span>
+                    </div>
                   </div>
 
-                  {/* Spots and participant stats */}
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    {/* Vagas Ocupadas - mostra ocupadas/total */}
-                    {tour.vagas !== null && tour.vagas !== undefined && tour.vagas > 0 ? (
-                      (() => {
-                        const confirmed = tourStats[tour.id]?.confirmed || 0;
-                        const totalVagas = tour.vagas;
-                        const percentage = Math.round((confirmed / totalVagas) * 100);
-                        const vagasDisponiveis = Math.max(0, totalVagas - confirmed);
-                        const isFull = vagasDisponiveis === 0;
-                        
-                        return (
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs ${
-                              isFull 
-                                ? "text-red-600 border-red-300 bg-red-50" 
-                                : percentage >= 80 
-                                  ? "text-amber-600 border-amber-300 bg-amber-50"
-                                  : "text-gray-600 border-gray-300 bg-gray-50"
-                            }`}
-                          >
-                            <Users className="h-3 w-3 mr-1" />
-                            {confirmed}/{totalVagas} ({percentage}%) • {vagasDisponiveis} disponíveis
-                          </Badge>
-                        );
-                      })()
-                    ) : (
-                      <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        Sem limite • {tourStats[tour.id]?.confirmed || 0} confirmados
-                      </Badge>
-                    )}
+                  {/* Ocupação com barra visual */}
+                  {totalVagas > 0 ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-500 flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {confirmed}/{totalVagas} participantes
+                        </span>
+                        <span className={`font-semibold ${isFull ? "text-red-600" : pct !== null && pct >= 80 ? "text-amber-600" : "text-emerald-600"}`}>
+                          {pct}%{vagasDisp !== null && vagasDisp > 0 && <span className="font-normal text-gray-400 ml-1">· {vagasDisp} vagas</span>}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${occupancyColor}`} style={{ width: `${Math.min(pct ?? 0, 100)}%` }} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                      <Users className="h-3 w-3" />{confirmed} confirmados (sem limite)
+                    </div>
+                  )}
 
-                    {/* Pending participants - pagamento parcial */}
-                    {tourStats[tour.id]?.pending > 0 && (
-                      <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        {tourStats[tour.id].pending} pagamentos pendentes
-                      </Badge>
-                    )}
-                  </div>
+                  {/* Info financeira */}
+                  {confirmed > 0 && (
+                    <div className="flex items-center gap-3 pt-1 border-t border-gray-100">
+                      <div className="flex items-center gap-1 text-xs text-emerald-700">
+                        <Wallet className="h-3 w-3" />
+                        <span className="font-medium">{arrecadado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                      </div>
+                      {pendente > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-amber-600 ml-auto">
+                          <AlertTriangle className="h-3 w-3" />
+                          <span className="font-medium">{pendente.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} pendente</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setManagingTour(tour);
-                      }}
-                      size="sm"
-                      className="flex-1"
-                    >
-                      <Users className="h-4 w-4 mr-1.5" />
-                      Participantes
+                  {/* Ações */}
+                  <div className="flex gap-2 pt-1">
+                    <Button onClick={(e) => { e.stopPropagation(); setManagingTour(tour); }} size="sm" className="flex-1 h-8 text-xs">
+                      <Users className="h-3.5 w-3.5 mr-1.5" />Participantes
                     </Button>
                     {!tour.is_exclusive && (
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5"
                         onClick={(e) => {
                           e.stopPropagation();
-                          const link = `${window.location.origin}/reserva/${tour.id}`;
-                          navigator.clipboard.writeText(link);
-                          toast({ title: "Link copiado!", description: "Link de cadastro copiado para a área de transferência." });
+                          navigator.clipboard.writeText(`${window.location.origin}/reserva/${tour.id}`);
+                          toast({ title: "Link copiado!" });
                         }}
-                        title="Copiar link de cadastro"
                       >
-                        <Copy className="h-4 w-4" />
+                        <Copy className="h-3.5 w-3.5" />Link
                       </Button>
                     )}
                   </div>
@@ -1113,7 +1028,8 @@ const TourManagementTab: React.FC<TourManagementTabProps> = ({ tours, onRefresh,
         )}
       </div>
     </div>
-  );
+    );
+  };
 
   // View for Catálogo - focused on tour structure management
   const renderCatalogoView = () => {
