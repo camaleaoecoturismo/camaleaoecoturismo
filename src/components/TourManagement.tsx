@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Search, Users, Target, Plus, Settings, CreditCard, Calendar, UserPlus, Download, RefreshCw, Trash2, Link, Check, X, Edit, MessageCircle, Clock, Copy, Lock, LockOpen, Building2, Shield } from 'lucide-react';
+import { ArrowLeft, Search, Users, Target, Plus, Settings, CreditCard, Calendar, UserPlus, Download, RefreshCw, Trash2, Link, Check, X, Edit, MessageCircle, Clock, Copy, Lock, LockOpen, Building2, Shield, ChevronsUp, ChevronsDown } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -65,6 +65,7 @@ const TourManagement: React.FC<TourManagementProps> = ({
   const [vagasTotal, setVagasTotal] = useState<number>(tour.vagas ?? 20);
   const [vagasFechadas, setVagasFechadas] = useState<boolean>(tour.vagas_fechadas ?? false);
   const [editingVagas, setEditingVagas] = useState(false);
+  const [dashboardCollapsed, setDashboardCollapsed] = useState(false);
 
   // Save vagas to database
   const saveVagas = async (newVagas: number) => {
@@ -1763,15 +1764,36 @@ const TourManagement: React.FC<TourManagementProps> = ({
             Seguro
           </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => { fetchReservas(); fetchBoardingPoints(); }}
-          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground h-8 text-xs mb-1"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Atualizar
-        </Button>
+        <div className="flex items-center gap-1 mb-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { fetchReservas(); fetchBoardingPoints(); }}
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground h-8 text-xs"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Atualizar
+          </Button>
+          {viewMode === 'participants' && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => setDashboardCollapsed(v => !v)}
+                  >
+                    {dashboardCollapsed ? <ChevronsDown className="h-4 w-4" /> : <ChevronsUp className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {dashboardCollapsed ? 'Expandir dashboard' : 'Recolher dashboard'}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
       </div>
 
       {/* View based on mode */}
@@ -1794,7 +1816,7 @@ const TourManagement: React.FC<TourManagementProps> = ({
       ) : (
         <>
       {/* Estatísticas do Passeio - Compacto */}
-      <div className="grid gap-2 md:grid-cols-5">
+      {!dashboardCollapsed && <div className="grid gap-2 md:grid-cols-5">
 
         <Card className={`py-2 ${ocupacaoExcedida ? 'border-red-500 bg-red-50' : ''}`}>
           <CardContent className="p-3 pt-0">
@@ -1906,10 +1928,10 @@ const TourManagement: React.FC<TourManagementProps> = ({
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div>}
 
       {/* Filtros */}
-      <div className="flex gap-3 items-center flex-wrap">
+      {!dashboardCollapsed && <div className="flex gap-3 items-center flex-wrap">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-44 h-9">
             <SelectValue placeholder="Status da Reserva" />
@@ -1934,7 +1956,7 @@ const TourManagement: React.FC<TourManagementProps> = ({
         <div className="ml-auto">
           <CustomColumnsManager tourId={tour.id} columns={customColumns} onColumnsChange={setCustomColumns} />
         </div>
-      </div>
+      </div>}
 
       {/* Pagamento em lote (passeios exclusivos) */}
       {tour.is_exclusive && (

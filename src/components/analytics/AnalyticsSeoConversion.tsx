@@ -2,11 +2,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { AlertCircle, FileUp, LineChart, Loader2, MousePointerClick, Search, Sparkles, Target, Upload } from 'lucide-react';
+import { AlertCircle, LineChart, Loader2, MousePointerClick, Search, Sparkles, Target, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -92,14 +91,6 @@ const GOOGLE_REFERER_MATCHERS = ['google.', 'google.com', 'google.com.br'];
 
 const formatPercent = (value: number) => `${value.toFixed(1)}%`;
 const formatNumber = (value: number) => value.toLocaleString('pt-BR');
-const formatSeconds = (seconds: number) => {
-  if (!Number.isFinite(seconds) || seconds <= 0) return '0s';
-  if (seconds < 60) return `${Math.round(seconds)}s`;
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.round(seconds % 60);
-  return `${mins}m ${secs}s`;
-};
-
 const normalizeText = (value: string) =>
   value
     .normalize('NFD')
