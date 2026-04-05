@@ -2929,7 +2929,7 @@ setChatMessages([]);
             </div>
           )}
           <DialogHeader className="shrink-0 p-0 space-y-0">
-            <div className="flex items-center justify-between gap-3 px-4 py-3 bg-gradient-to-r from-teal-600 to-emerald-600">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 bg-gradient-to-r from-purple-700 to-purple-500">
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <img
                   src="/lovable-uploads/4713f0b0-8f15-45fc-b910-a38475e4148a.png"
@@ -3002,7 +3002,7 @@ setChatMessages([]);
                 </div>
 
                 {/* Package selection cards - simplified, no name inputs here */}
-                <Card className="bg-white shadow-md border-teal-100 rounded-2xl overflow-hidden">
+                <Card className="bg-white shadow-md border-purple-100 rounded-2xl overflow-hidden">
                   <CardContent className="p-4 space-y-4">
                     <h3 className="font-semibold text-sm flex items-center gap-2">
                       <ShoppingCart className="h-4 w-4" />
@@ -3074,7 +3074,7 @@ setChatMessages([]);
                     <Button
                       onClick={confirmPackageSelection}
                       disabled={!isPackageSelectionValid()}
-                      className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+                      className="w-full bg-purple-700 hover:bg-purple-800 text-white"
                     >
                       Continuar
                     </Button>
@@ -3120,7 +3120,7 @@ setChatMessages([]);
                     type="button"
                     onClick={nextField}
                     disabled={loading}
-                    className="bg-teal-600 hover:bg-teal-700 text-white"
+                    className="bg-purple-700 hover:bg-purple-800 text-white"
                   >
                     Enviar
                   </Button>
@@ -3147,7 +3147,7 @@ setChatMessages([]);
                     await finalizarReserva();
                     scrollToBottom();
                   }}
-                  className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-4 text-lg h-auto rounded-2xl shadow-md"
+                  className="bg-purple-700 hover:bg-purple-800 text-white px-8 py-4 text-lg h-auto rounded-2xl shadow-md"
                   disabled={loading}
                 >
                   {loading ? (
@@ -3168,7 +3168,7 @@ setChatMessages([]);
             {/* Payment Card integrated in chat */}
             {showPaymentCard && !showPixCheckout && !paymentComplete && (
               <div className="flex justify-start w-full">
-                <Card className="w-full bg-white shadow-md border-teal-100 rounded-2xl overflow-hidden">
+                <Card className="w-full bg-white shadow-md border-purple-100 rounded-2xl overflow-hidden">
                   <CardContent className="p-4 space-y-4">
                     {/* Optional Items */}
                     {optionalItems.length > 0 && (
@@ -3579,36 +3579,36 @@ setChatMessages([]);
                 </div>
 
                 {/* Reservation Summary */}
-                <Card className="bg-gradient-to-br from-teal-50 to-white border-teal-100 rounded-2xl overflow-hidden">
+                <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-100 rounded-2xl overflow-hidden">
                   <CardContent className="p-4 space-y-3">
-                    <h3 className="font-semibold text-sm text-teal-900 flex items-center gap-2">
+                    <h3 className="font-semibold text-sm text-purple-900 flex items-center gap-2">
                       <FileText className="h-4 w-4" />
                       Resumo da sua inscrição
                     </h3>
 
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between py-1 border-b border-teal-100">
+                      <div className="flex justify-between py-1 border-b border-purple-100">
                         <span className="text-muted-foreground">Passeio</span>
                         <span className="font-medium text-right max-w-[60%]">{tour?.name}</span>
                       </div>
                       {tour?.start_date && (
-                        <div className="flex justify-between py-1 border-b border-teal-100">
+                        <div className="flex justify-between py-1 border-b border-purple-100">
                           <span className="text-muted-foreground">Data</span>
                           <span className="font-medium">
                             {format(new Date(tour.start_date + "T12:00:00"), "dd/MM/yyyy")}
                           </span>
                         </div>
                       )}
-                      <div className="flex justify-between py-1 border-b border-teal-100">
+                      <div className="flex justify-between py-1 border-b border-purple-100">
                         <span className="text-muted-foreground">Participante</span>
                         <span className="font-medium">{formData.nome_completo}</span>
                       </div>
-                      <div className="flex justify-between py-1 border-b border-teal-100">
+                      <div className="flex justify-between py-1 border-b border-purple-100">
                         <span className="text-muted-foreground">Nº de pessoas</span>
                         <span className="font-medium">{formData.numero_participantes}</span>
                       </div>
                       {pontosEmbarque.find((p) => p.id === formData.ponto_embarque_id) && (
-                        <div className="flex justify-between py-1 border-b border-teal-100">
+                        <div className="flex justify-between py-1 border-b border-purple-100">
                           <span className="text-muted-foreground">Embarque</span>
                           <span className="font-medium text-right max-w-[60%]">
                             {pontosEmbarque.find((p) => p.id === formData.ponto_embarque_id)?.nome}
