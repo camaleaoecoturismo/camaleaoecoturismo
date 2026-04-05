@@ -1671,7 +1671,7 @@ const TourManagement: React.FC<TourManagementProps> = ({
   };
   const handleCopyReservationLink = () => {
     const baseUrl = window.location.origin;
-    const link = `${baseUrl}/reserva/${tour.id}`;
+    const link = `${baseUrl}/reserva/${tour.slug || tour.id}`;
     navigator.clipboard.writeText(link);
     toast({
       title: "Link copiado!",

@@ -259,7 +259,7 @@ export default function ExportToursModule() {
         NAO_INCLUI: stripHtml(tour.not_includes),
         O_QUE_LEVAR: stripHtml(tour.what_to_bring),
         PONTOS_EMBARQUE: formatBoardingPoints(tour.boarding_points),
-        LINK_PAGAMENTO: `${window.location.origin}/reserva/${tour.id}`,
+        LINK_PAGAMENTO: `${window.location.origin}/reserva/${tour.slug || tour.id}`,
         LINK_ROTEIRO: tour.pdf_file_path ? `${SUPABASE_STORAGE_URL}/${tour.pdf_file_path}` : '',
       };
     });
@@ -361,7 +361,7 @@ export default function ExportToursModule() {
       allSections.push({ key: 'PONTOS_EMBARQUE', label: 'Pontos de Embarque', value: bps });
     }
 
-    allSections.push({ key: 'LINK_PAGAMENTO', label: 'Link de Reserva', value: `${window.location.origin}/reserva/${tour.id}` });
+    allSections.push({ key: 'LINK_PAGAMENTO', label: 'Link de Reserva', value: `${window.location.origin}/reserva/${tour.slug || tour.id}` });
 
     if (tour.pdf_file_path) {
       allSections.push({ key: 'LINK_ROTEIRO', label: 'Link do Roteiro', value: `${SUPABASE_STORAGE_URL}/${tour.pdf_file_path}` });

@@ -17,15 +17,12 @@ const Reserva = () => {
 
     const fetchTour = async () => {
       try {
-        const { data, error } = await supabase
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tourId);
+        const query = supabase
           .from('tours')
-          .select(`
-            *,
-            pricing_options:tour_pricing_options(*)
-          `)
-          .eq('id', tourId)
-          .eq('is_active', true)
-          .single();
+          .select(`*, pricing_options:tour_pricing_options(*)`)
+          .eq('is_active', true);
+        const { data, error } = await (isUuid ? query.eq('id', tourId) : query.eq('slug', tourId)).single();
 
         if (error || !data) {
           setNotFound(true);

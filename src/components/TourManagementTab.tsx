@@ -1013,7 +1013,7 @@ const TourManagementTab: React.FC<TourManagementTabProps> = ({ tours, onRefresh,
                       <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5"
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigator.clipboard.writeText(`${window.location.origin}/reserva/${tour.id}`);
+                          navigator.clipboard.writeText(`${window.location.origin}/reserva/${tour.slug || tour.id}`);
                           toast({ title: "Link copiado!" });
                         }}
                       >

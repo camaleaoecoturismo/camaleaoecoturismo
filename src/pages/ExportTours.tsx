@@ -129,7 +129,7 @@ export default function ExportTours() {
       const duration = calcDuration(tour.start_date, tour.end_date);
       const tipo = duration > 1 ? 'Viagem' : 'Day Use';
 
-      const link = `${window.location.origin}/reserva/${tour.id}`;
+      const link = `${window.location.origin}/reserva/${(tour as any).slug || tour.id}`;
 
       return {
         ID_EVENTO: tour.id,
