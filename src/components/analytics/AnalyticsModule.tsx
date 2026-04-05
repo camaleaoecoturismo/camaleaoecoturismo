@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Globe, FileText, Target, Monitor, MapPin } from 'lucide-react';
+import { BarChart3, Globe, FileText, Target, Monitor, MapPin, SearchCheck } from 'lucide-react';
 import AnalyticsOverview from './AnalyticsOverview';
 import AnalyticsTrafficSources from './AnalyticsTrafficSources';
 import AnalyticsBehavior from './AnalyticsBehavior';
 import AnalyticsFunnel from './AnalyticsFunnel';
 import AnalyticsDevices from './AnalyticsDevices';
 import AnalyticsGeoMap from './AnalyticsGeoMap';
+import AnalyticsSeoConversion from './AnalyticsSeoConversion';
 import FormAbandonmentMetrics from '@/components/FormAbandonmentMetrics';
 
 interface AnalyticsModuleProps {
@@ -33,6 +34,7 @@ const AnalyticsModule: React.FC<AnalyticsModuleProps> = ({ subView }) => {
     { id: 'funnel', label: 'Funil de Conversão', icon: Target },
     { id: 'devices', label: 'Dispositivos', icon: Monitor },
     { id: 'geo', label: 'Localização', icon: MapPin },
+    { id: 'seo', label: 'SEO + Conversão', icon: SearchCheck },
   ];
 
   return (
@@ -47,7 +49,7 @@ const AnalyticsModule: React.FC<AnalyticsModuleProps> = ({ subView }) => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 xl:grid-cols-7 lg:w-auto lg:inline-grid">
           {tabs.map((tab) => (
             <TabsTrigger 
               key={tab.id} 
@@ -82,6 +84,10 @@ const AnalyticsModule: React.FC<AnalyticsModuleProps> = ({ subView }) => {
 
         <TabsContent value="geo" className="mt-6">
           <AnalyticsGeoMap key={`geo-${refreshKey}`} />
+        </TabsContent>
+
+        <TabsContent value="seo" className="mt-6">
+          <AnalyticsSeoConversion key={`seo-${refreshKey}`} />
         </TabsContent>
       </Tabs>
     </div>

@@ -271,6 +271,89 @@ export type Database = {
           },
         ]
       }
+      search_console_import_batches: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          report_end_date: string
+          report_start_date: string
+          rows_imported: number
+          source_file: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          report_end_date: string
+          report_start_date: string
+          rows_imported?: number
+          source_file?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          report_end_date?: string
+          report_start_date?: string
+          rows_imported?: number
+          source_file?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      search_console_metrics: {
+        Row: {
+          batch_id: string
+          clicks: number
+          created_at: string
+          ctr: number
+          id: string
+          impressions: number
+          page_path: string
+          page_url: string
+          position: number
+          query_text: string
+          updated_at: string
+        }
+        Insert: {
+          batch_id: string
+          clicks?: number
+          created_at?: string
+          ctr?: number
+          id?: string
+          impressions?: number
+          page_path: string
+          page_url: string
+          position?: number
+          query_text?: string
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string
+          clicks?: number
+          created_at?: string
+          ctr?: number
+          id?: string
+          impressions?: number
+          page_path?: string
+          page_url?: string
+          position?: number
+          query_text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_console_metrics_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "search_console_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       atendimento_messages: {
         Row: {
           body: string

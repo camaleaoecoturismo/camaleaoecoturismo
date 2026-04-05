@@ -1909,11 +1909,7 @@ const TourManagement: React.FC<TourManagementProps> = ({
       </div>
 
       {/* Filtros */}
-      <div className="flex gap-3 items-center">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por nome, CPF..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 h-9" />
-        </div>
+      <div className="flex gap-3 items-center flex-wrap">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-44 h-9">
             <SelectValue placeholder="Status da Reserva" />
@@ -1935,7 +1931,25 @@ const TourManagement: React.FC<TourManagementProps> = ({
             <SelectItem value="pendente">Pendente</SelectItem>
           </SelectContent>
         </Select>
+        <div className="ml-auto">
+          <CustomColumnsManager tourId={tour.id} columns={customColumns} onColumnsChange={setCustomColumns} />
+        </div>
       </div>
+
+      {/* Pagamento em lote (passeios exclusivos) */}
+      {tour.is_exclusive && (
+        <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <CreditCard className="h-4 w-4 text-green-600 shrink-0" />
+          <span className="text-sm font-medium text-green-700">Pagamento em Lote:</span>
+          <Input type="number" step="0.01" placeholder="Valor total pago" value={bulkPaymentAmount} onChange={e => setBulkPaymentAmount(e.target.value)} className="w-36 h-8" />
+          <Button size="sm" onClick={applyBulkPayment} disabled={applyingBulkPayment || !bulkPaymentAmount} className="bg-green-600 hover:bg-green-700">
+            {applyingBulkPayment ? 'Aplicando...' : 'Aplicar para Todos'}
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            Dividido entre {reservasConfirmadas.length} participantes
+          </span>
+        </div>
+      )}
 
       {/* Tabelas de Participantes */}
       {loading ? <div className="text-center py-12">
@@ -1944,60 +1958,6 @@ const TourManagement: React.FC<TourManagementProps> = ({
 
           {/* Tabela de Reservas Confirmadas */}
           <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="bg-white border-b border-slate-100 py-2.5">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-semibold text-slate-600 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 text-xs font-bold">
-                      {reservasConfirmadas.length}
-                    </span>
-                    reservas confirmadas
-                  </CardTitle>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={copyBoardingPointsText} className="h-7 text-xs">
-                      <Copy className="h-3.5 w-3.5 mr-1" />
-                      Embarques
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="outline" className="h-7 text-xs">
-                          <Download className="h-3.5 w-3.5 mr-1" />
-                          Baixar Lista
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={downloadListaCompleta}>
-                          Lista Completa (todos os dados)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={downloadListaNomesEmbarque}>
-                          Nomes e Pontos de Embarque
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={downloadSeguroAventura}>
-                          Dados do Seguro-Aventura
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CustomColumnsManager tourId={tour.id} columns={customColumns} onColumnsChange={setCustomColumns} />
-                </div>
-                {/* Bulk payment option for exclusive tours */}
-                {tour.is_exclusive && <div className="flex items-center gap-2 pt-2 border-t border-green-200 mt-2">
-                    <div className="flex items-center gap-2 bg-white rounded-lg p-2 shadow-sm">
-                      <CreditCard className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium text-green-700">Pagamento em Lote:</span>
-                      <Input type="number" step="0.01" placeholder="Valor total pago" value={bulkPaymentAmount} onChange={e => setBulkPaymentAmount(e.target.value)} className="w-36 h-8" />
-                      <Button size="sm" onClick={applyBulkPayment} disabled={applyingBulkPayment || !bulkPaymentAmount} className="bg-green-600 hover:bg-green-700">
-                        {applyingBulkPayment ? 'Aplicando...' : 'Aplicar para Todos'}
-                      </Button>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      O valor será dividido igualmente entre os {reservasConfirmadas.length} participantes
-                    </span>
-                  </div>}
-              </div>
-            </CardHeader>
             <CardContent className="p-0">
               <ParticipantsTable
                 reservas={reservasConfirmadas}
@@ -2023,6 +1983,10 @@ const TourManagement: React.FC<TourManagementProps> = ({
                 }}
                 onSaveCustomColumn={saveCustomColumnValue}
                 onRefreshReservas={fetchReservas}
+                onCopyEmbarques={copyBoardingPointsText}
+                onDownloadListaCompleta={downloadListaCompleta}
+                onDownloadNomesEmbarque={downloadListaNomesEmbarque}
+                onDownloadSeguro={downloadSeguroAventura}
               />
             </CardContent>
           </Card>

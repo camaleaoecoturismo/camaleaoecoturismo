@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Check, Trash2, MessageCircle, Eye, UserPlus, AlertCircle, Plus, UserCog, Download, Loader2, Ticket, Bus, ArrowRightLeft, X, CheckSquare, Square, RefreshCw, Search, Contact, Copy, Brain, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { Check, Trash2, MessageCircle, Eye, UserPlus, AlertCircle, Plus, UserCog, Download, Loader2, Ticket, Bus, ArrowRightLeft, X, CheckSquare, Square, RefreshCw, Search, Contact, Copy, Brain, ChevronLeft, ChevronRight, Users, ChevronDown } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -135,6 +136,10 @@ interface ParticipantsTableProps {
   tourState?: string;
   tourVagas?: number | null;
   onRefreshReservas?: () => void;
+  onCopyEmbarques?: () => void;
+  onDownloadListaCompleta?: () => void;
+  onDownloadNomesEmbarque?: () => void;
+  onDownloadSeguro?: () => void;
 }
 
 interface ParticipantRow {
@@ -252,7 +257,11 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
    tourCity,
    tourState,
    tourVagas,
-   onRefreshReservas
+   onRefreshReservas,
+   onCopyEmbarques,
+   onDownloadListaCompleta,
+   onDownloadNomesEmbarque,
+   onDownloadSeguro,
 }) => {
   const { toast } = useToast();
   const [tempInputValues, setTempInputValues] = useState<Record<string, string>>({});
@@ -2576,34 +2585,58 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
           {/* Separador */}
           <span className="w-px h-5 bg-border" />
 
-          {/* Grupo: Exportação + Contatos + Análise */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowFilteredExport(true)}
-            className="flex items-center gap-2 text-xs"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Exportar
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={downloadContactsVCard}
-            className="flex items-center gap-2 text-xs"
-          >
-            <Contact className="h-3.5 w-3.5" />
-            Contatos
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={copyContactsList}
-            className="flex items-center gap-2 text-xs"
-          >
-            <Copy className="h-3.5 w-3.5" />
-            Copiar
-          </Button>
+          {/* Grupo: Exportação + Downloads + Contatos */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="flex items-center gap-1.5 text-xs">
+                <Download className="h-3.5 w-3.5" />
+                Exportar
+                <ChevronDown className="h-3 w-3 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => setShowFilteredExport(true)}>
+                <Download className="h-3.5 w-3.5 mr-2" />
+                Exportar filtrado
+              </DropdownMenuItem>
+              {(onCopyEmbarques || onDownloadListaCompleta || onDownloadNomesEmbarque || onDownloadSeguro) && (
+                <DropdownMenuSeparator />
+              )}
+              {onCopyEmbarques && (
+                <DropdownMenuItem onClick={onCopyEmbarques}>
+                  <Copy className="h-3.5 w-3.5 mr-2" />
+                  Copiar embarques
+                </DropdownMenuItem>
+              )}
+              {onDownloadListaCompleta && (
+                <DropdownMenuItem onClick={onDownloadListaCompleta}>
+                  <Download className="h-3.5 w-3.5 mr-2" />
+                  Baixar lista completa
+                </DropdownMenuItem>
+              )}
+              {onDownloadNomesEmbarque && (
+                <DropdownMenuItem onClick={onDownloadNomesEmbarque}>
+                  <Download className="h-3.5 w-3.5 mr-2" />
+                  Baixar nomes + embarques
+                </DropdownMenuItem>
+              )}
+              {onDownloadSeguro && (
+                <DropdownMenuItem onClick={onDownloadSeguro}>
+                  <Download className="h-3.5 w-3.5 mr-2" />
+                  Baixar seguro-aventura
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={downloadContactsVCard}>
+                <Contact className="h-3.5 w-3.5 mr-2" />
+                Baixar contatos (.vcf)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={copyContactsList}>
+                <Copy className="h-3.5 w-3.5 mr-2" />
+                Copiar lista de contatos
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {tourId && (
             <Button
               variant="outline"
