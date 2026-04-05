@@ -24,6 +24,10 @@ interface TourGalleryCarouselProps {
   fill?: boolean;
 }
 
+function toTransformUrl(url: string, width: number, quality = 80): string {
+  return url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') + `?width=${width}&quality=${quality}`;
+}
+
 export function TourGalleryCarousel({
   tourId,
   coverImage,
@@ -115,7 +119,7 @@ export function TourGalleryCarousel({
                 <CarouselItem key={image.id} className="flex items-center justify-center">
                   <div className="flex flex-col items-center justify-center w-full px-4">
                     <img
-                      src={image.image_url}
+                      src={toTransformUrl(image.image_url, 1920, 85)}
                       alt={`${tourName} - Foto ${index + 1}`}
                       className="max-h-[70vh] max-w-full w-auto h-auto object-contain rounded-lg"
                     />
@@ -136,7 +140,7 @@ export function TourGalleryCarousel({
                 className={`flex-shrink-0 w-16 h-12 rounded overflow-hidden border-2 transition-all ${index === lightboxIndex ? 'border-primary opacity-100' : 'border-transparent opacity-60 hover:opacity-100'}`}
                 onClick={() => setLightboxIndex(index)}
               >
-                <img src={image.image_url} alt={`Miniatura ${index + 1}`} className="w-full h-full object-cover" />
+                <img src={toTransformUrl(image.image_url, 200, 70)} alt={`Miniatura ${index + 1}`} className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
@@ -163,7 +167,7 @@ export function TourGalleryCarousel({
     <>
       <div className={containerClass}>
         <img
-          src={currentImage.image_url}
+          src={toTransformUrl(currentImage.image_url, 1400)}
           alt={`${tourName} - Foto ${currentIndex + 1}`}
           className="w-full h-full object-cover transition-opacity duration-500"
           onClick={() => fill ? undefined : openLightbox(currentIndex)}

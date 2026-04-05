@@ -29,6 +29,11 @@ interface GalleryImageCardProps {
   onMove: (fromIndex: number, toIndex: number) => void;
 }
 
+function toPreviewUrl(url: string): string {
+  // Use Supabase image transform API for compressed previews (works for jpg, png, webp, heic)
+  return url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') + '?width=800&quality=75';
+}
+
 export function GalleryImageCard({
   image,
   index,
@@ -73,7 +78,7 @@ export function GalleryImageCard({
           </div>
         ) : (
           <img
-            src={image.image_url}
+            src={toPreviewUrl(image.image_url)}
             alt={`Foto ${index + 1}`}
             className="w-full h-full object-cover"
             onError={() => setImageError(true)}
