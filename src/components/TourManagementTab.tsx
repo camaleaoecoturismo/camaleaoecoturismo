@@ -36,6 +36,7 @@ import {
   ChevronDown,
   ArrowUpDown,
   TrendingDown,
+  FileEdit,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import TourManagement from "@/components/TourManagement";
@@ -45,6 +46,7 @@ import TourForm from "@/components/TourForm";
 import PaymentsManagement from "@/components/PaymentsManagement";
 import MovimentacaoFinanceira from "@/components/MovimentacaoFinanceira";
 import { BulkPaymentConfigManager } from "@/components/BulkPaymentConfigManager";
+import BulkTourEditor from "@/components/BulkTourEditor";
 import { CatalogCalendarView } from "@/components/CatalogCalendarView";
 import { CatalogAnnualView } from "@/components/CatalogAnnualView";
 import { CatalogDateAnalysis } from "@/components/CatalogDateAnalysis";
@@ -94,6 +96,7 @@ const TourManagementTab: React.FC<TourManagementTabProps> = ({ tours, onRefresh,
   const [showForm, setShowForm] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
   const [showBulkPaymentConfig, setShowBulkPaymentConfig] = useState(false);
+  const [showBulkEditor, setShowBulkEditor] = useState(false);
   
   // Catálogo view mode: 'cards', 'calendar', 'annual', or 'analysis'
   const [catalogViewMode, setCatalogViewMode] = useState<'cards' | 'calendar' | 'annual' | 'analysis' | 'list'>('annual');
@@ -726,6 +729,17 @@ const TourManagementTab: React.FC<TourManagementTabProps> = ({ tours, onRefresh,
     );
   }
 
+  // If editing tour content in bulk, render BulkTourEditor
+  if (showBulkEditor) {
+    return (
+      <BulkTourEditor
+        tours={tours}
+        onBack={() => setShowBulkEditor(false)}
+        onSaveSuccess={() => { onRefresh?.(); }}
+      />
+    );
+  }
+
   // Render content based on viewMode
   const renderViewContent = () => {
     switch (viewMode) {
@@ -857,11 +871,19 @@ const TourManagementTab: React.FC<TourManagementTabProps> = ({ tours, onRefresh,
 
         {hasActiveFilters && (
           <button onClick={() => { setPartFilterStatus("ativos"); setPartFilterTime("todos"); setPartFilterYears([]); setPartFilterMonths([]); setPartSearchTerm(""); }}
-            className="text-xs text-primary hover:underline ml-auto"
+            className="text-xs text-primary hover:underline"
           >
             Limpar filtros
           </button>
         )}
+
+        <button
+          onClick={() => setShowBulkEditor(true)}
+          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg border bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-primary/50 hover:text-primary transition-colors"
+        >
+          <FileEdit className="h-3.5 w-3.5" />
+          Editar Conteúdo
+        </button>
       </div>
 
       {/* Filtros de ano e mês */}

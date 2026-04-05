@@ -1,13 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, ChevronDown, ChevronUp, Search, AlertCircle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Tour } from "@/hooks/useTours";
-import RichTextEditor from "./RichTextEditor";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+
+const QUILL_MODULES = {
+  toolbar: [
+    ['bold', 'italic'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    [{ align: [] }],
+    ['link'],
+    ['clean'],
+  ],
+};
 
 interface BulkTourEditorProps {
   tours: Tour[];
@@ -19,287 +28,254 @@ interface TourEdit extends Tour {
   hasChanges?: boolean;
 }
 
+function formatDateBR(dateStr: string): string {
+  if (!dateStr) return '';
+  const [, m, d] = dateStr.split('-');
+  return `${d}/${m}`;
+}
+
 const BulkTourEditor: React.FC<BulkTourEditorProps> = ({ tours, onBack, onSaveSuccess }) => {
-  console.log('BulkTourEditor renderizado com', tours.length, 'tours');
   const [editableTours, setEditableTours] = useState<TourEdit[]>([]);
-  const [saving, setSaving] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+  const [savingAll, setSavingAll] = useState(false);
+  const [filterActive, setFilterActive] = useState(true);
+  const [search, setSearch] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
-    console.log('Configurando tours editáveis');
-    setEditableTours(tours.map(tour => ({ ...tour, hasChanges: false })));
+    const sorted = [...tours].sort((a, b) =>
+      (a.start_date || '').localeCompare(b.start_date || '')
+    );
+    setEditableTours(sorted.map(tour => ({ ...tour, hasChanges: false })));
   }, [tours]);
 
-  const updateTour = (tourId: string, field: keyof Tour, value: any) => {
-    setEditableTours(prev => prev.map(tour => 
-      tour.id === tourId 
-        ? { ...tour, [field]: value, hasChanges: true }
-        : tour
+  const visibleTours = useMemo(() =>
+    editableTours
+      .filter(t => filterActive ? (t.is_active && !t.is_exclusive) : true)
+      .filter(t => t.name.toLowerCase().includes(search.toLowerCase())),
+    [editableTours, filterActive, search]
+  );
+
+  const hasAnyChanges = editableTours.some(t => t.hasChanges);
+  const changesCount = editableTours.filter(t => t.hasChanges).length;
+
+  const updateTour = useCallback((tourId: string, field: 'about' | 'itinerary' | 'includes' | 'not_includes', value: string) => {
+    setEditableTours(prev => prev.map(t =>
+      t.id === tourId ? { ...t, [field]: value, hasChanges: true } : t
     ));
+  }, []);
+
+  const toggleExpanded = (tourId: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(tourId)) next.delete(tourId);
+      else next.add(tourId);
+      return next;
+    });
   };
+
+  const saveTour = useCallback(async (tourId: string) => {
+    const tour = editableTours.find(t => t.id === tourId);
+    if (!tour) return;
+    setSavingIds(prev => new Set(prev).add(tourId));
+    try {
+      const { error } = await supabase.from('tours').update({
+        about: tour.about ?? null,
+        itinerary: tour.itinerary ?? null,
+        includes: tour.includes ?? null,
+        not_includes: tour.not_includes ?? null,
+      }).eq('id', tourId);
+      if (error) throw error;
+      setEditableTours(prev => prev.map(t =>
+        t.id === tourId ? { ...t, hasChanges: false } : t
+      ));
+      toast({ title: 'Salvo!', description: tour.name });
+    } catch (e: any) {
+      toast({ title: 'Erro ao salvar', description: e.message, variant: 'destructive' });
+    } finally {
+      setSavingIds(prev => { const s = new Set(prev); s.delete(tourId); return s; });
+    }
+  }, [editableTours, toast]);
 
   const saveAllChanges = async () => {
-    try {
-      setSaving(true);
-      const toursToUpdate = editableTours.filter(tour => tour.hasChanges);
-      
-      if (toursToUpdate.length === 0) {
-        toast({
-          title: "Nenhuma alteração",
-          description: "Não há alterações para salvar.",
-          variant: "default"
-        });
-        return;
-      }
-
-      // Atualizar todos os tours em paralelo
-      const updatePromises = toursToUpdate.map(tour => {
-        const { hasChanges, pricing_options, ...tourData } = tour;
-        return supabase
-          .from('tours')
-          .update(tourData)
-          .eq('id', tour.id);
-      });
-
-      const results = await Promise.all(updatePromises);
-      
-      // Verificar se alguma atualização falhou
-      const errors = results.filter(result => result.error);
-      if (errors.length > 0) {
-        throw new Error(`Falha ao atualizar ${errors.length} passeio(s)`);
-      }
-
-      toast({
-        title: "Sucesso!",
-        description: `${toursToUpdate.length} passeio(s) atualizado(s) com sucesso.`,
-      });
-
-      // Marcar todos como salvos
-      setEditableTours(prev => prev.map(tour => ({ ...tour, hasChanges: false })));
-      onSaveSuccess();
-      
-    } catch (error: any) {
-      console.error('Erro ao salvar:', error);
-      toast({
-        title: "Erro ao salvar",
-        description: error.message || "Ocorreu um erro inesperado.",
-        variant: "destructive"
-      });
-    } finally {
-      setSaving(false);
-    }
+    setSavingAll(true);
+    const ids = editableTours.filter(t => t.hasChanges).map(t => t.id);
+    await Promise.all(ids.map(saveTour));
+    setSavingAll(false);
+    onSaveSuccess();
   };
 
-  const hasAnyChanges = editableTours.some(tour => tour.hasChanges);
-
   return (
-    <div className="space-y-6">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={onBack} className="flex items-center gap-2">
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-white border-b shadow-sm px-4 py-3 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={onBack} className="h-8 w-8 p-0">
             <ArrowLeft className="h-4 w-4" />
-            Voltar
           </Button>
           <div>
-            <h2 className="text-2xl font-bold">Edição em Massa dos Passeios</h2>
-            <p className="text-muted-foreground">
-              Edite múltiplos passeios simultaneamente
-            </p>
+            <h2 className="text-base font-semibold text-slate-800">Editar Conteúdo dos Passeios</h2>
+            <p className="text-xs text-muted-foreground">{visibleTours.length} passeios visíveis</p>
           </div>
         </div>
-        
-        <Button 
-          onClick={saveAllChanges} 
-          disabled={!hasAnyChanges || saving}
-          className="flex items-center gap-2"
+        <Button
+          onClick={saveAllChanges}
+          disabled={!hasAnyChanges || savingAll}
+          className="gap-2 text-sm"
         >
-          {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-          Salvar Todas as Alterações
+          {savingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          {hasAnyChanges ? `Salvar Tudo (${changesCount})` : 'Salvar Tudo'}
         </Button>
       </div>
 
-      {/* Tabela Editável */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Passeios ({editableTours.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[200px]">Nome</TableHead>
-                  <TableHead className="min-w-[150px]">Cidade</TableHead>
-                  <TableHead className="min-w-[100px]">Estado</TableHead>
-                  <TableHead className="min-w-[120px]">Data Início</TableHead>
-                  <TableHead className="min-w-[120px]">Data Fim</TableHead>
-                  <TableHead className="min-w-[100px]">Mês</TableHead>
-                  <TableHead className="min-w-[200px]">URL da Imagem</TableHead>
-                  <TableHead className="min-w-[400px]">Sobre</TableHead>
-                  <TableHead className="min-w-[400px]">Roteiro</TableHead>
-                  <TableHead className="min-w-[300px]">Incluso</TableHead>
-                  <TableHead className="min-w-[300px]">Não Incluso</TableHead>
-                  <TableHead className="min-w-[300px]">O que Levar</TableHead>
-                  <TableHead className="min-w-[300px]">Política</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {editableTours.map((tour) => (
-                  <TableRow key={tour.id} className={tour.hasChanges ? "bg-muted/30" : ""}>
-                    <TableCell>
-                      <Input
-                        value={tour.name}
-                        onChange={(e) => updateTour(tour.id, 'name', e.target.value)}
-                        className="min-w-[180px]"
-                      />
-                    </TableCell>
-                    
-                    <TableCell>
-                      <Input
-                        value={tour.city}
-                        onChange={(e) => updateTour(tour.id, 'city', e.target.value)}
-                        className="min-w-[130px]"
-                      />
-                    </TableCell>
-                    
-                    <TableCell>
-                      <Input
-                        value={tour.state}
-                        onChange={(e) => updateTour(tour.id, 'state', e.target.value)}
-                        className="min-w-[80px]"
-                      />
-                    </TableCell>
-                    
-                    <TableCell>
-                      <Input
-                        type="date"
-                        value={tour.start_date}
-                        onChange={(e) => updateTour(tour.id, 'start_date', e.target.value)}
-                        className="min-w-[120px]"
-                      />
-                    </TableCell>
-                    
-                    <TableCell>
-                      <Input
-                        type="date"
-                        value={tour.end_date || ''}
-                        onChange={(e) => updateTour(tour.id, 'end_date', e.target.value || null)}
-                        className="min-w-[120px]"
-                      />
-                    </TableCell>
-                    
-                    <TableCell>
-                      <Input
-                        value={tour.month}
-                        onChange={(e) => updateTour(tour.id, 'month', e.target.value)}
-                        className="min-w-[80px]"
-                      />
-                    </TableCell>
-                    
-                    <TableCell>
-                      <Input
-                        value={tour.image_url || ''}
-                        onChange={(e) => updateTour(tour.id, 'image_url', e.target.value || null)}
-                        placeholder="URL da imagem"
-                        className="min-w-[180px]"
-                      />
-                    </TableCell>
-                    
-                    <TableCell>
-                      <div className="min-w-[380px]">
-                        <RichTextEditor
-                          value={tour.about || ''}
-                          onChange={(value) => updateTour(tour.id, 'about', value)}
-                          label=""
-                          placeholder="Descrição sobre o passeio..."
-                        />
-                      </div>
-                    </TableCell>
-                    
-                    <TableCell>
-                      <div className="min-w-[380px]">
-                        <RichTextEditor
-                          value={tour.itinerary || ''}
-                          onChange={(value) => updateTour(tour.id, 'itinerary', value)}
-                          label=""
-                          placeholder="Roteiro do passeio..."
-                        />
-                      </div>
-                    </TableCell>
-                    
-                    <TableCell>
-                      <div className="min-w-[280px]">
-                        <RichTextEditor
-                          value={tour.includes || ''}
-                          onChange={(value) => updateTour(tour.id, 'includes', value)}
-                          label=""
-                          placeholder="O que está incluso..."
-                        />
-                      </div>
-                    </TableCell>
-                    
-                    <TableCell>
-                      <div className="min-w-[280px]">
-                        <RichTextEditor
-                          value={tour.not_includes || ''}
-                          onChange={(value) => updateTour(tour.id, 'not_includes', value)}
-                          label=""
-                          placeholder="O que não está incluso..."
-                        />
-                      </div>
-                    </TableCell>
-                    
-                    <TableCell>
-                      <div className="min-w-[280px]">
-                        <RichTextEditor
-                          value={tour.what_to_bring || ''}
-                          onChange={(value) => updateTour(tour.id, 'what_to_bring', value)}
-                          label=""
-                          placeholder="O que levar..."
-                        />
-                      </div>
-                    </TableCell>
-                    
-                    <TableCell>
-                      <div className="min-w-[280px]">
-                        <RichTextEditor
-                          value={tour.policy || ''}
-                          onChange={(value) => updateTour(tour.id, 'policy', value)}
-                          label=""
-                          placeholder="Política de cancelamento..."
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Filters */}
+      <div className="px-4 py-3 bg-white border-b flex items-center gap-3 flex-wrap">
+        <div className="flex bg-slate-100 rounded-lg p-0.5 gap-0.5">
+          <button
+            onClick={() => setFilterActive(true)}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${filterActive ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Ativos
+          </button>
+          <button
+            onClick={() => setFilterActive(false)}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${!filterActive ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Todos
+          </button>
+        </div>
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+          <Input
+            placeholder="Buscar passeio..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-8 h-8 text-sm"
+          />
+        </div>
+        {hasAnyChanges && (
+          <span className="flex items-center gap-1 text-xs text-amber-600 font-medium ml-auto">
+            <AlertCircle className="h-3.5 w-3.5" />
+            {changesCount} com alterações não salvas
+          </span>
+        )}
+      </div>
 
-      {/* Rodapé com informações */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
-              Total de passeios: {editableTours.length} | 
-              Com alterações: {editableTours.filter(t => t.hasChanges).length}
-            </div>
-            
-            {hasAnyChanges && (
-              <div className="text-sm text-amber-600 font-medium">
-                ⚠️ Há alterações não salvas
-              </div>
-            )}
+      {/* Tour list */}
+      <div className="p-4 space-y-2 max-w-5xl mx-auto">
+        {visibleTours.length === 0 && (
+          <div className="text-center py-16 text-muted-foreground text-sm">
+            Nenhum passeio encontrado
           </div>
-        </CardContent>
-      </Card>
+        )}
+
+        {visibleTours.map(tour => {
+          const isExpanded = expandedIds.has(tour.id);
+          const isSaving = savingIds.has(tour.id);
+
+          return (
+            <div key={tour.id} className="bg-white rounded-xl border shadow-sm overflow-hidden">
+              {/* Tour header row */}
+              <div
+                className={`flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-slate-50 transition-colors ${tour.hasChanges ? 'border-l-[3px] border-l-amber-400' : ''}`}
+                onClick={() => toggleExpanded(tour.id)}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-800 truncate">{tour.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDateBR(tour.start_date)}
+                    {tour.end_date && tour.end_date !== tour.start_date ? ` – ${formatDateBR(tour.end_date)}` : ''}
+                    {' · '}{tour.city}{tour.state ? `, ${tour.state}` : ''}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {tour.hasChanges ? (
+                    <span className="flex items-center gap-1 text-xs text-amber-600 font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                      não salvo
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs text-slate-400">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />
+                      salvo
+                    </span>
+                  )}
+
+                  {tour.hasChanges && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={e => { e.stopPropagation(); saveTour(tour.id); }}
+                      disabled={isSaving}
+                      className="h-7 px-2 text-xs gap-1"
+                    >
+                      {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                      Salvar
+                    </Button>
+                  )}
+
+                  {isExpanded
+                    ? <ChevronUp className="h-4 w-4 text-slate-400" />
+                    : <ChevronDown className="h-4 w-4 text-slate-400" />
+                  }
+                </div>
+              </div>
+
+              {/* Expanded editors */}
+              {isExpanded && (
+                <div className="border-t border-slate-100 p-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Sobre o passeio</p>
+                      <ReactQuill
+                        theme="snow"
+                        value={tour.about || ''}
+                        onChange={value => updateTour(tour.id, 'about', value)}
+                        modules={QUILL_MODULES}
+                        style={{ minHeight: '120px' }}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Roteiro</p>
+                      <ReactQuill
+                        theme="snow"
+                        value={tour.itinerary || ''}
+                        onChange={value => updateTour(tour.id, 'itinerary', value)}
+                        modules={QUILL_MODULES}
+                        style={{ minHeight: '120px' }}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">O que está incluso</p>
+                      <ReactQuill
+                        theme="snow"
+                        value={tour.includes || ''}
+                        onChange={value => updateTour(tour.id, 'includes', value)}
+                        modules={QUILL_MODULES}
+                        style={{ minHeight: '100px' }}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Não incluso</p>
+                      <ReactQuill
+                        theme="snow"
+                        value={tour.not_includes || ''}
+                        onChange={value => updateTour(tour.id, 'not_includes', value)}
+                        modules={QUILL_MODULES}
+                        style={{ minHeight: '100px' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
