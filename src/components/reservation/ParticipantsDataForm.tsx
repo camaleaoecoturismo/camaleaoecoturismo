@@ -858,8 +858,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                         }}
                         className="w-full bg-purple-700 hover:bg-purple-800 text-white"
                       >
-                        Continuar para etapa 2
-                        <ArrowRight className="w-4 h-4 ml-2" />
+                        Continuar
                       </Button>
                     </div>
                       </>
