@@ -33,7 +33,11 @@ import {
   LayoutGrid,
   CalendarDays,
   List,
+  ChevronDown,
+  ArrowUpDown,
+  TrendingDown,
 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import TourManagement from "@/components/TourManagement";
 import ToursDashboard from "@/components/ToursDashboard";
 import AtendimentoMessagesModule from "@/components/AtendimentoMessagesModule";
@@ -52,6 +56,8 @@ import { useToast } from "@/hooks/use-toast";
 interface TourParticipantStats {
   confirmed: number;
   pending: number;
+  totalArrecadado: number;
+  saldoPendente: number;
 }
 
 // Interface for gallery cover images
@@ -106,6 +112,7 @@ const TourManagementTab: React.FC<TourManagementTabProps> = ({ tours, onRefresh,
   const [partFilterYears, setPartFilterYears] = useState<number[]>([]);
   const [partFilterMonths, setPartFilterMonths] = useState<string[]>([]);
   const [partSearchTerm, setPartSearchTerm] = useState("");
+  const [partSortBy, setPartSortBy] = useState<"data" | "ocupacao" | "pendencias" | "arrecadado">("data");
 
   // Participant stats per tour
   const [tourStats, setTourStats] = useState<Record<string, TourParticipantStats>>({});
@@ -133,32 +140,29 @@ const TourManagementTab: React.FC<TourManagementTabProps> = ({ tours, onRefresh,
 
     const stats: Record<string, TourParticipantStats> = {};
     tourIds.forEach((id) => {
-      stats[id] = { confirmed: 0, pending: 0 };
+      stats[id] = { confirmed: 0, pending: 0, totalArrecadado: 0, saldoPendente: 0 };
     });
 
     data?.forEach((reserva) => {
       const participants = reserva.numero_participantes || 1;
 
-      // Check if canceled/refunded/transferred - these should NOT count
       const isCancelado = reserva.status === "cancelado" || reserva.status === "cancelada";
       const isReembolsado = reserva.payment_status === "reembolsado" || reserva.payment_status === "reembolso_parcial";
       const isTransferido = reserva.status === "transferido";
 
-      if (isCancelado || isReembolsado || isTransferido) {
-        return; // Skip these entirely
-      }
+      if (isCancelado || isReembolsado || isTransferido) return;
 
-      // Count as confirmed if status is confirmed OR payment is complete
       const isConfirmed =
         reserva.status === "confirmado" || reserva.status === "confirmada" || reserva.payment_status === "pago";
       if (isConfirmed) {
         stats[reserva.tour_id].confirmed += participants;
 
-        // "Pendentes" = confirmados que NÃO pagaram 100% do valor
         const valorPago = reserva.valor_pago || 0;
         const valorPasseio = reserva.valor_passeio || 0;
+        stats[reserva.tour_id].totalArrecadado += valorPago;
         if (valorPasseio > 0 && valorPago < valorPasseio) {
           stats[reserva.tour_id].pending += participants;
+          stats[reserva.tour_id].saldoPendente += (valorPasseio - valorPago);
         }
       }
     });
@@ -660,24 +664,31 @@ const TourManagementTab: React.FC<TourManagementTabProps> = ({ tours, onRefresh,
       result = result.filter((t) => t.name.toLowerCase().includes(term) || t.city.toLowerCase().includes(term));
     }
 
-    result.sort((a, b) => {
-      const dateA = new Date(a.start_date + "T12:00:00");
-      const dateB = new Date(b.start_date + "T12:00:00");
-      const isFutureA = dateA >= today;
-      const isFutureB = dateB >= today;
-
-      if (isFutureA && !isFutureB) return -1;
-      if (!isFutureA && isFutureB) return 1;
-
-      if (isFutureA && isFutureB) {
-        return dateA.getTime() - dateB.getTime();
-      }
-
-      return dateB.getTime() - dateA.getTime();
-    });
+    if (partSortBy === "data") {
+      result.sort((a, b) => {
+        const dateA = new Date(a.start_date + "T12:00:00");
+        const dateB = new Date(b.start_date + "T12:00:00");
+        const isFutureA = dateA >= today;
+        const isFutureB = dateB >= today;
+        if (isFutureA && !isFutureB) return -1;
+        if (!isFutureA && isFutureB) return 1;
+        if (isFutureA && isFutureB) return dateA.getTime() - dateB.getTime();
+        return dateB.getTime() - dateA.getTime();
+      });
+    } else if (partSortBy === "ocupacao") {
+      result.sort((a, b) => {
+        const pctA = a.vagas ? (tourStats[a.id]?.confirmed || 0) / a.vagas : 0;
+        const pctB = b.vagas ? (tourStats[b.id]?.confirmed || 0) / b.vagas : 0;
+        return pctB - pctA;
+      });
+    } else if (partSortBy === "pendencias") {
+      result.sort((a, b) => (tourStats[b.id]?.saldoPendente || 0) - (tourStats[a.id]?.saldoPendente || 0));
+    } else if (partSortBy === "arrecadado") {
+      result.sort((a, b) => (tourStats[b.id]?.totalArrecadado || 0) - (tourStats[a.id]?.totalArrecadado || 0));
+    }
 
     return result;
-  }, [tours, partFilterStatus, partFilterTime, partFilterYears, partFilterMonths, partSearchTerm]);
+  }, [tours, partFilterStatus, partFilterTime, partFilterYears, partFilterMonths, partSearchTerm, partSortBy, tourStats]);
 
   // If showing form, render it
   if (showForm) {
