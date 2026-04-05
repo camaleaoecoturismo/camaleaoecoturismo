@@ -589,21 +589,6 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                 {/* Participant Form - Expandable */}
                 {isExpanded && (
                   <div className="p-4 space-y-4 bg-white">
-                    <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/30 px-3 py-2">
-                      <div>
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                          Etapa do participante
-                        </p>
-                        <p className="text-xs font-medium text-foreground">
-                          {currentStep === 1
-                            ? 'Dados principais e embarque'
-                            : 'Saúde, emergência e origem'}
-                        </p>
-                      </div>
-                      <Badge variant="outline" className="text-[11px]">
-                        {currentStep} de 2
-                      </Badge>
-                    </div>
 
                     {currentStep === 1 && (
                       <>
