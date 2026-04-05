@@ -1921,6 +1921,7 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
         const condicionamentoMap: Record<string, { label: string; color: string }> = {
           'sedentario': { label: 'Sedentário', color: 'bg-red-100 text-red-800' },
           'iniciante': { label: 'Iniciante', color: 'bg-orange-100 text-orange-800' },
+          'moderado': { label: 'Moderado', color: 'bg-amber-100 text-amber-800' },
           'intermediario': { label: 'Intermediário', color: 'bg-yellow-100 text-yellow-800' },
           'avancado': { label: 'Avançado', color: 'bg-green-100 text-green-800' },
           'atleta': { label: 'Atleta', color: 'bg-blue-100 text-blue-800' },
@@ -1934,6 +1935,7 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
           // Check if label starts with one of the keys
           if (lowerVal.startsWith('sedentário') || lowerVal.startsWith('sedentario')) return 'sedentario';
           if (lowerVal.startsWith('iniciante')) return 'iniciante';
+          if (lowerVal.startsWith('moderado')) return 'moderado';
           if (lowerVal.startsWith('intermediário') || lowerVal.startsWith('intermediario')) return 'intermediario';
           if (lowerVal.startsWith('avançado') || lowerVal.startsWith('avancado')) return 'avancado';
           if (lowerVal.startsWith('atleta')) return 'atleta';
