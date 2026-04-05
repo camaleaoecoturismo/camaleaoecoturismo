@@ -6,6 +6,7 @@ import { useTourAvailability } from "@/hooks/useTourAvailability";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { getCoverImageStyle } from "@/lib/tourImageStyles";
 
 interface TourCardProps {
   tour: Tour;
@@ -196,6 +197,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
                 src={toCardUrl(imageUrl) ?? undefined}
                 alt={tour.name}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                style={getCoverImageStyle(preloadedCover?.cropPosition)}
                 loading="lazy"
                 decoding="async"
               />

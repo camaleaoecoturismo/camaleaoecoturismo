@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselApi } from '@/components/ui/carousel';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { getCoverImageStyle, type CropPosition } from '@/lib/tourImageStyles';
 
 interface GalleryImage {
   id: string;
   image_url: string;
   order_index: number;
   caption?: string;
+  crop_position?: CropPosition | null;
 }
 
 interface TourGalleryCarouselProps {
@@ -45,7 +47,7 @@ export function TourGalleryCarousel({
     const fetchImages = async () => {
       const { data } = await supabase
         .from('tour_gallery_images')
-        .select('id, image_url, order_index, caption')
+        .select('id, image_url, order_index, caption, crop_position')
         .eq('tour_id', tourId)
         .order('order_index');
 
@@ -140,7 +142,12 @@ export function TourGalleryCarousel({
                 className={`flex-shrink-0 w-16 h-12 rounded overflow-hidden border-2 transition-all ${index === lightboxIndex ? 'border-primary opacity-100' : 'border-transparent opacity-60 hover:opacity-100'}`}
                 onClick={() => setLightboxIndex(index)}
               >
-                <img src={toTransformUrl(image.image_url, 200, 70)} alt={`Miniatura ${index + 1}`} className="w-full h-full object-cover" />
+                <img
+                  src={toTransformUrl(image.image_url, 200, 70)}
+                  alt={`Miniatura ${index + 1}`}
+                  className="w-full h-full object-cover"
+                  style={getCoverImageStyle(image.crop_position)}
+                />
               </button>
             ))}
           </div>
@@ -170,8 +177,11 @@ export function TourGalleryCarousel({
           src={toTransformUrl(currentImage.image_url, 1400)}
           alt={`${tourName} - Foto ${currentIndex + 1}`}
           className="w-full h-full object-cover transition-opacity duration-500"
+          style={{
+            ...getCoverImageStyle(currentImage.crop_position),
+            cursor: fill ? 'default' : 'zoom-in',
+          }}
           onClick={() => fill ? undefined : openLightbox(currentIndex)}
-          style={{ cursor: fill ? 'default' : 'zoom-in' }}
         />
 
         {/* Arrows — only if more than 1 image */}

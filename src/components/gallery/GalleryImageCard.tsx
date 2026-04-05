@@ -2,12 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Trash2, Star, Crop, MessageSquare, Check, X } from 'lucide-react';
-
-interface CropPosition {
-  x: number;
-  y: number;
-  scale: number;
-}
+import { getCoverImageStyle, type CropPosition } from '@/lib/tourImageStyles';
 
 interface GalleryImage {
   id: string;
@@ -81,6 +76,7 @@ export function GalleryImageCard({
             src={toPreviewUrl(image.image_url)}
             alt={`Foto ${index + 1}`}
             className="w-full h-full object-cover"
+            style={getCoverImageStyle(image.crop_position)}
             onError={() => setImageError(true)}
           />
         )}
