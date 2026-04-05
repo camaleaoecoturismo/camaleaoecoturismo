@@ -1,6 +1,7 @@
 // App entry point
 import { lazy, Suspense } from "react";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
+import { AIChatWidget } from "@/components/AIChatWidget";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -91,6 +92,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          <AIChatWidget />
           </ChunkErrorBoundary>
         </AnalyticsProvider>
       </BrowserRouter>
