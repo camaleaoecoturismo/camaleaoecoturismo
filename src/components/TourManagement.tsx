@@ -2130,31 +2130,51 @@ const TourManagement: React.FC<TourManagementProps> = ({
 
                 {/* Resumo dos Pagamentos */}
                 <div className="border-t pt-4 space-y-2">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                      <span className="text-xs text-emerald-700 font-medium uppercase tracking-wide">Total Pago</span>
-                      <div className="text-base font-bold text-emerald-800 mt-0.5">
-                        {formatarValor(calcularTotalPago(showPaymentModal))}
-                      </div>
-                      <div className="text-xs text-emerald-600">
-                        {(pagamentos[showPaymentModal] || []).length} parcela(s)
-                      </div>
-                    </div>
+                  {(() => {
+                    const reservaAtual = filteredReservas.find(r => r.id === showPaymentModal)!;
+                    const valorTotal = calcularValorTotal(reservaAtual);
+                    const valorPagoLiquido = calcularValorPagoBruto(reservaAtual);
+                    const saldo = valorTotal - valorPagoLiquido;
+                    const totalParcelasComTaxas = calcularTotalPago(showPaymentModal!);
+                    const temTaxas = Math.abs(totalParcelasComTaxas - valorPagoLiquido) > 0.01 && totalParcelasComTaxas > 0;
+                    return (
+                      <>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                            <span className="text-xs text-emerald-700 font-medium uppercase tracking-wide">Total Pago</span>
+                            <div className="text-base font-bold text-emerald-800 mt-0.5">
+                              {formatarValor(valorPagoLiquido)}
+                            </div>
+                            <div className="text-xs text-emerald-600">
+                              {(pagamentos[showPaymentModal!] || []).length} parcela(s)
+                            </div>
+                          </div>
 
-                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <span className="text-xs text-blue-700 font-medium uppercase tracking-wide">Valor Total</span>
-                      <div className="text-base font-bold text-blue-800 mt-0.5">
-                        {formatarValor(calcularValorTotal(filteredReservas.find(r => r.id === showPaymentModal)!))}
-                      </div>
-                    </div>
-                    
-                    <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                      <span className="text-xs text-red-700 font-medium uppercase tracking-wide">Saldo Restante</span>
-                      <div className="text-base font-bold text-red-800 mt-0.5">
-                        {formatarValor(calcularValorTotal(filteredReservas.find(r => r.id === showPaymentModal)!) - calcularTotalPago(showPaymentModal))}
-                      </div>
-                    </div>
-                  </div>
+                          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <span className="text-xs text-blue-700 font-medium uppercase tracking-wide">Valor Total</span>
+                            <div className="text-base font-bold text-blue-800 mt-0.5">
+                              {formatarValor(valorTotal)}
+                            </div>
+                          </div>
+
+                          <div className={`p-3 rounded-lg border ${saldo <= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                            <span className={`text-xs font-medium uppercase tracking-wide ${saldo <= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                              {saldo <= 0 ? 'Quitado' : 'Saldo Restante'}
+                            </span>
+                            <div className={`text-base font-bold mt-0.5 ${saldo <= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
+                              {saldo <= 0 ? 'R$ 0,00' : formatarValor(saldo)}
+                            </div>
+                          </div>
+                        </div>
+
+                        {temTaxas && (
+                          <p className="text-xs text-muted-foreground text-right">
+                            Cobrado ao cliente (com taxas): {formatarValor(totalParcelasComTaxas)}
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
