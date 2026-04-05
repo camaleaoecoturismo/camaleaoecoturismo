@@ -513,14 +513,17 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6">
       <div className="max-w-3xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 bg-white rounded-xl px-4 py-3 shadow-sm border border-slate-100">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={onCancel}>
+            <Button variant="ghost" size="sm" onClick={onCancel} className="h-8 w-8 p-0 rounded-lg">
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-xl font-semibold text-slate-800">
-              {tour ? 'Editar Passeio' : 'Novo Passeio'}
-            </h1>
+            <div>
+              <h1 className="text-base font-semibold text-slate-800 leading-tight">
+                {tour ? 'Editar Passeio' : 'Novo Passeio'}
+              </h1>
+              {tour && <p className="text-xs text-muted-foreground truncate max-w-[280px]">{tour.name}</p>}
+            </div>
           </div>
           
           {/* Auto-save status indicator */}
@@ -542,7 +545,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
         </div>
 
         <Tabs defaultValue="geral" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-6 bg-white border">
+          <TabsList className="grid w-full grid-cols-6 mb-4 bg-white border shadow-sm rounded-xl">
             <TabsTrigger value="geral" className="text-xs sm:text-sm">Geral</TabsTrigger>
             <TabsTrigger value="galeria" disabled={!tour} className="text-xs sm:text-sm">Galeria</TabsTrigger>
             <TabsTrigger value="pontos" disabled={!tour} className="text-xs sm:text-sm">Embarque</TabsTrigger>
@@ -557,8 +560,11 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                 
                 {/* Informações Básicas */}
                 <Card className="border-0 shadow-sm">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base font-medium text-slate-700">Informações Básicas</CardTitle>
+                  <CardHeader className="pb-3 border-b border-slate-100">
+                    <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
+                      <span className="w-1 h-4 rounded-full bg-primary inline-block" />
+                      Informações Básicas
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <FormField
@@ -873,8 +879,11 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
 
                 {/* Categorias */}
                 <Card className="border-0 shadow-sm">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base font-medium text-slate-700">Categorias</CardTitle>
+                  <CardHeader className="pb-3 border-b border-slate-100">
+                    <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
+                      <span className="w-1 h-4 rounded-full bg-primary inline-block" />
+                      Categorias
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-xs text-muted-foreground mb-3">
@@ -942,8 +951,11 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
 
                 {/* Preços */}
                 <Card className="border-0 shadow-sm">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base font-medium text-slate-700">Pacotes e Preços</CardTitle>
+                  <CardHeader className="pb-3 border-b border-slate-100">
+                    <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
+                      <span className="w-1 h-4 rounded-full bg-green-500 inline-block" />
+                      Pacotes e Preços
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <FormField
@@ -1047,8 +1059,11 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
 
                 {/* Detalhes */}
                 <Card className="border-0 shadow-sm">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base font-medium text-slate-700">Detalhes do Passeio</CardTitle>
+                  <CardHeader className="pb-3 border-b border-slate-100">
+                    <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
+                      <span className="w-1 h-4 rounded-full bg-blue-400 inline-block" />
+                      Detalhes do Passeio
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <FormField
@@ -1056,7 +1071,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                       name="about"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-slate-600 text-sm">Sobre</FormLabel>
+                          <FormLabel className="text-slate-600 text-sm">Sobre o passeio</FormLabel>
                           <FormControl>
                             <ReactQuill
                               theme="snow"
@@ -1077,7 +1092,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                       name="itinerary"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-slate-600 text-sm">Itinerário</FormLabel>
+                          <FormLabel className="text-slate-600 text-sm">Roteiro</FormLabel>
                           <FormControl>
                             <ReactQuill
                               theme="snow"
@@ -1099,7 +1114,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                         name="includes"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-600 text-sm">Incluído</FormLabel>
+                            <FormLabel className="text-slate-600 text-sm">O que está incluso</FormLabel>
                             <FormControl>
                               <ReactQuill
                                 theme="snow"
@@ -1119,7 +1134,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                         name="not_includes"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-600 text-sm">Não Incluído</FormLabel>
+                            <FormLabel className="text-slate-600 text-sm">Não incluso</FormLabel>
                             <FormControl>
                               <ReactQuill
                                 theme="snow"
@@ -1172,12 +1187,14 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                   </CardContent>
                 </Card>
 
-                <div className="flex gap-3 pt-2">
-                  <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+                <div className="flex gap-3 pt-2 pb-4">
+                  <Button type="button" variant="outline" onClick={onCancel} className="flex-1 h-10">
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={loading} className="flex-1 bg-purple-600 hover:bg-purple-700">
-                    {loading ? 'Salvando...' : tour ? 'Atualizar' : 'Criar Passeio'}
+                  <Button type="submit" disabled={loading} className="flex-1 h-10 bg-primary hover:bg-primary/90 font-semibold">
+                    {loading ? (
+                      <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Salvando...</span>
+                    ) : tour ? 'Salvar alterações' : 'Criar Passeio'}
                   </Button>
                 </div>
               </form>
