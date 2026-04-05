@@ -182,50 +182,103 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
     name: 'pricing_options',
   });
 
+  // Always fetch fresh data from DB when opening an existing tour — prevents stale prop data
+  // from overwriting changes made in other editors (e.g. BulkTourEditor).
   useEffect(() => {
-    if (tour) {
+    if (!tour?.id) return;
+
+    const fetchFresh = async () => {
+      const { data, error } = await supabase
+        .from('tours')
+        .select('*, pricing_options:tour_pricing_options(*)')
+        .eq('id', tour.id)
+        .single();
+
+      if (error || !data) {
+        // Fallback to prop data if fetch fails
+        const t = tour as any;
+        isInitialLoadRef.current = true;
+        form.reset({
+          name: t.name || '',
+          city: t.city || '',
+          state: t.state || '',
+          start_date: t.start_date || '',
+          end_date: t.end_date || '',
+          start_time: t.start_time || '',
+          end_time: t.end_time || '',
+          month: t.month || '',
+          about: t.about || '',
+          itinerary: t.itinerary || '',
+          includes: t.includes || '',
+          not_includes: t.not_includes || '',
+          departures: t.departures || '',
+          pdf_file_path: t.pdf_file_path || '',
+          whatsapp_group_link: t.whatsapp_group_link || '',
+          etiqueta: t.etiqueta || '',
+          description: t.description || '',
+          card_name_prefix: t.card_name_prefix || '',
+          card_name_main: t.card_name_main || '',
+          card_prefix_size: t.card_prefix_size || 'xs',
+          card_main_size: t.card_main_size || '2xl',
+          card_prefix_font: t.card_prefix_font || '',
+          card_main_font: t.card_main_font || 'rubik',
+          is_exclusive: t.is_exclusive || false,
+          is_featured: t.is_featured || false,
+          has_accommodation: t.has_accommodation || false,
+          valor_padrao: t.valor_padrao || 0,
+          vagas: t.vagas ?? null,
+          pix_discount_percent: t.pix_discount_percent || 0,
+          pricing_options: t.pricing_options?.length > 0
+            ? t.pricing_options.map((o: any) => ({ option_name: o.option_name, description: o.description || '', pix_price: o.pix_price }))
+            : [{ option_name: 'Padrão', description: '', pix_price: 0 }],
+        });
+        setCurrentPdfPath(t.pdf_file_path);
+        return;
+      }
+
+      const t = data as any;
+      // Reset isInitialLoadRef so the upcoming form.reset() doesn't trigger auto-save
+      isInitialLoadRef.current = true;
       form.reset({
-        name: tour.name || '',
-        city: tour.city || '',
-        state: tour.state || '',
-        start_date: tour.start_date || '',
-        end_date: tour.end_date || '',
-        start_time: (tour as any).start_time || '',
-        end_time: (tour as any).end_time || '',
-        month: tour.month || '',
-        
-        about: tour.about || '',
-        itinerary: tour.itinerary || '',
-        includes: tour.includes || '',
-        not_includes: tour.not_includes || '',
-        departures: tour.departures || '',
-        pdf_file_path: tour.pdf_file_path || '',
-        whatsapp_group_link: (tour as any).whatsapp_group_link || '',
-        etiqueta: tour.etiqueta || '',
-        description: tour.description || '',
-        card_name_prefix: tour.card_name_prefix || '',
-        card_name_main: tour.card_name_main || '',
-        card_prefix_size: tour.card_prefix_size || 'xs',
-        card_main_size: tour.card_main_size || '2xl',
-        card_prefix_font: tour.card_prefix_font || '',
-        card_main_font: tour.card_main_font || 'rubik',
-        is_exclusive: tour.is_exclusive || false,
-        is_featured: (tour as any).is_featured || false,
-        has_accommodation: (tour as any).has_accommodation || false,
-        valor_padrao: tour.valor_padrao || 0,
-        vagas: tour.vagas ?? null,
-        pix_discount_percent: (tour as any).pix_discount_percent || 0,
-        pricing_options: tour.pricing_options?.length > 0 
-          ? tour.pricing_options.map(option => ({
-              option_name: option.option_name,
-              description: option.description || '',
-              pix_price: option.pix_price,
-            }))
+        name: t.name || '',
+        city: t.city || '',
+        state: t.state || '',
+        start_date: t.start_date || '',
+        end_date: t.end_date || '',
+        start_time: t.start_time || '',
+        end_time: t.end_time || '',
+        month: t.month || '',
+        about: t.about || '',
+        itinerary: t.itinerary || '',
+        includes: t.includes || '',
+        not_includes: t.not_includes || '',
+        departures: t.departures || '',
+        pdf_file_path: t.pdf_file_path || '',
+        whatsapp_group_link: t.whatsapp_group_link || '',
+        etiqueta: t.etiqueta || '',
+        description: t.description || '',
+        card_name_prefix: t.card_name_prefix || '',
+        card_name_main: t.card_name_main || '',
+        card_prefix_size: t.card_prefix_size || 'xs',
+        card_main_size: t.card_main_size || '2xl',
+        card_prefix_font: t.card_prefix_font || '',
+        card_main_font: t.card_main_font || 'rubik',
+        is_exclusive: t.is_exclusive || false,
+        is_featured: t.is_featured || false,
+        has_accommodation: t.has_accommodation || false,
+        valor_padrao: t.valor_padrao || 0,
+        vagas: t.vagas ?? null,
+        pix_discount_percent: t.pix_discount_percent || 0,
+        pricing_options: t.pricing_options?.length > 0
+          ? t.pricing_options.map((o: any) => ({ option_name: o.option_name, description: o.description || '', pix_price: o.pix_price }))
           : [{ option_name: 'Padrão', description: '', pix_price: 0 }],
       });
-      setCurrentPdfPath(tour.pdf_file_path);
-    }
-  }, [tour, form]);
+      setCurrentPdfPath(t.pdf_file_path);
+    };
+
+    fetchFresh();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tour?.id]);
 
   // Load all active categories
   useEffect(() => {
