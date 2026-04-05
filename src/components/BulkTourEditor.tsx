@@ -40,6 +40,9 @@ const BulkTourEditor: React.FC<BulkTourEditorProps> = ({ tours, onBack, onSaveSu
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const [savingAll, setSavingAll] = useState(false);
   const [filterActive, setFilterActive] = useState(true);
+  const [filterTime, setFilterTime] = useState<'futuros' | 'passados' | 'todos'>('futuros');
+  const [filterYear, setFilterYear] = useState<number | null>(null);
+  const [filterMonth, setFilterMonth] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const { toast } = useToast();
 
@@ -50,12 +53,40 @@ const BulkTourEditor: React.FC<BulkTourEditorProps> = ({ tours, onBack, onSaveSu
     setEditableTours(sorted.map(tour => ({ ...tour, hasChanges: false })));
   }, [tours]);
 
-  const visibleTours = useMemo(() =>
-    editableTours
+  const today = new Date().toISOString().slice(0, 10);
+
+  const visibleTours = useMemo(() => {
+    return editableTours
       .filter(t => filterActive ? (t.is_active && !t.is_exclusive) : true)
-      .filter(t => t.name.toLowerCase().includes(search.toLowerCase())),
-    [editableTours, filterActive, search]
-  );
+      .filter(t => {
+        if (filterTime === 'futuros') return (t.start_date || '') >= today;
+        if (filterTime === 'passados') return (t.start_date || '') < today;
+        return true;
+      })
+      .filter(t => filterYear ? t.start_date?.startsWith(String(filterYear)) : true)
+      .filter(t => filterMonth ? t.start_date?.slice(5, 7) === filterMonth : true)
+      .filter(t => t.name.toLowerCase().includes(search.toLowerCase()));
+  }, [editableTours, filterActive, filterTime, filterYear, filterMonth, search, today]);
+
+  const availableYears = useMemo(() => {
+    const years = new Set(editableTours.map(t => Number(t.start_date?.slice(0, 4))).filter(Boolean));
+    return [...years].sort();
+  }, [editableTours]);
+
+  const availableMonths = useMemo(() => {
+    const MONTH_NAMES: Record<string, string> = {
+      '01': 'Jan', '02': 'Fev', '03': 'Mar', '04': 'Abr',
+      '05': 'Mai', '06': 'Jun', '07': 'Jul', '08': 'Ago',
+      '09': 'Set', '10': 'Out', '11': 'Nov', '12': 'Dez',
+    };
+    const months = new Set(
+      editableTours
+        .filter(t => filterYear ? t.start_date?.startsWith(String(filterYear)) : true)
+        .map(t => t.start_date?.slice(5, 7))
+        .filter(Boolean) as string[]
+    );
+    return [...months].sort().map(m => ({ key: m, label: MONTH_NAMES[m] || m }));
+  }, [editableTours, filterYear]);
 
   const hasAnyChanges = editableTours.some(t => t.hasChanges);
   const changesCount = editableTours.filter(t => t.hasChanges).length;
@@ -130,35 +161,73 @@ const BulkTourEditor: React.FC<BulkTourEditorProps> = ({ tours, onBack, onSaveSu
       </div>
 
       {/* Filters */}
-      <div className="px-4 py-3 bg-white border-b flex items-center gap-3 flex-wrap">
-        <div className="flex bg-slate-100 rounded-lg p-0.5 gap-0.5">
-          <button
-            onClick={() => setFilterActive(true)}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${filterActive ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Ativos
-          </button>
-          <button
-            onClick={() => setFilterActive(false)}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${!filterActive ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Todos
-          </button>
-        </div>
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-          <Input
-            placeholder="Buscar passeio..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-8 h-8 text-sm"
-          />
-        </div>
-        {hasAnyChanges && (
-          <span className="flex items-center gap-1 text-xs text-amber-600 font-medium ml-auto">
-            <AlertCircle className="h-3.5 w-3.5" />
-            {changesCount} com alterações não salvas
+      <div className="px-4 py-3 bg-white border-b space-y-2.5">
+        {/* Row 1: search + status + time */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative min-w-[200px] max-w-xs flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <Input
+              placeholder="Buscar passeio..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-8 h-8 text-sm"
+            />
+          </div>
+
+          {/* Status */}
+          <div className="flex bg-slate-100 rounded-lg p-0.5 gap-0.5">
+            {([['ativos', 'Ativos'], ['todos', 'Todos']] as const).map(([val, label]) => {
+              const active = val === 'ativos' ? filterActive : !filterActive;
+              return (
+                <button key={val} onClick={() => setFilterActive(val === 'ativos')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${active ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >{label}</button>
+              );
+            })}
+          </div>
+
+          {/* Time */}
+          <div className="flex bg-slate-100 rounded-lg p-0.5 gap-0.5">
+            {([['futuros', 'Futuros'], ['passados', 'Passados'], ['todos', 'Todos']] as const).map(([val, label]) => (
+              <button key={val} onClick={() => setFilterTime(val)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${filterTime === val ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >{label}</button>
+            ))}
+          </div>
+
+          <span className="text-xs text-muted-foreground">
+            {visibleTours.length} {visibleTours.length === 1 ? 'passeio' : 'passeios'}
           </span>
+
+          {hasAnyChanges && (
+            <span className="flex items-center gap-1 text-xs text-amber-600 font-medium ml-auto">
+              <AlertCircle className="h-3.5 w-3.5" />
+              {changesCount} não {changesCount === 1 ? 'salvo' : 'salvos'}
+            </span>
+          )}
+        </div>
+
+        {/* Row 2: year + month chips */}
+        {availableYears.length > 1 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-slate-400 font-medium">Ano:</span>
+            {availableYears.map(y => (
+              <button key={y} onClick={() => { setFilterYear(filterYear === y ? null : y); setFilterMonth(null); }}
+                className={`px-2.5 py-0.5 rounded-full text-xs font-medium border transition-all ${filterYear === y ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-400'}`}
+              >{y}</button>
+            ))}
+            {availableMonths.length > 0 && (
+              <>
+                <span className="w-px h-4 bg-slate-200 mx-1" />
+                <span className="text-xs text-slate-400 font-medium">Mês:</span>
+                {availableMonths.map(({ key, label }) => (
+                  <button key={key} onClick={() => setFilterMonth(filterMonth === key ? null : key)}
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-medium border transition-all ${filterMonth === key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-400'}`}
+                  >{label}</button>
+                ))}
+              </>
+            )}
+          </div>
         )}
       </div>
 
