@@ -362,6 +362,7 @@ const ChapadaDiamantina = () => {
     { id: string; nome: string; foto_url: string | null; texto: string; nota: number }[]
   >([]);
   const [faqRouteiro, setFaqRouteiro] = useState("lencois");
+  const [selectedRoute, setSelectedRoute] = useState<string>("lencois");
   const [routeMedia, setRouteMedia] = useState<Record<string, string[]>>({
     lencois: [],
     valedopati: [],
@@ -548,66 +549,66 @@ const ChapadaDiamantina = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {roteiros.map((r) => (
-              <Card
-                key={r.id}
-                className={`relative border-2 hover:shadow-lg transition-all duration-300 overflow-hidden ${r.destaque ? "border-primary" : "border-border"}`}
-              >
-                {r.destaque && (
-                  <div className="absolute top-0 left-0 right-0 bg-primary text-primary-foreground text-xs font-bold text-center py-1.5 tracking-wide">
-                    {r.destaque}
-                  </div>
-                )}
-                <CardContent className={`p-6 ${r.destaque ? "pt-10" : "pt-6"}`}>
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${r.cor} flex items-center justify-center mb-4`}>
-                    <Mountain className="h-6 w-6 text-white" />
-                  </div>
-
-                  <h3 className="text-xl font-bold text-foreground mb-1">{r.nome}</h3>
-                  <p className="text-sm text-muted-foreground mb-4 italic">{r.tagline}</p>
-
-                  <div className="space-y-2 mb-5 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Flame className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <DiffBadge level={r.nivel} />
+            {roteiros.map((r) => {
+              const isActive = selectedRoute === r.id;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => { setSelectedRoute(r.id); scrollTo("roteiro-detalhe"); }}
+                  className={`relative text-left rounded-2xl border-2 transition-all duration-300 overflow-hidden hover:shadow-lg focus:outline-none ${isActive ? "border-primary shadow-lg shadow-primary/10" : "border-border hover:border-primary/40"}`}
+                >
+                  {r.destaque && (
+                    <div className="absolute top-0 left-0 right-0 bg-primary text-primary-foreground text-xs font-bold text-center py-1.5 tracking-wide">
+                      {r.destaque}
                     </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Calendar className="h-4 w-4 shrink-0" />
-                      <span>{r.dias} dias</span>
+                  )}
+                  <div className={`p-6 ${r.destaque ? "pt-10" : "pt-6"}`}>
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${r.cor} flex items-center justify-center mb-4`}>
+                      <Mountain className="h-6 w-6 text-white" />
                     </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Users className="h-4 w-4 shrink-0" />
-                      <span>{r.perfil}</span>
+
+                    <h3 className="text-xl font-bold text-foreground mb-1">{r.nome}</h3>
+                    <p className="text-sm text-muted-foreground mb-4 italic">{r.tagline}</p>
+
+                    <div className="space-y-2 mb-5 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Flame className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <DiffBadge level={r.nivel} />
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Calendar className="h-4 w-4 shrink-0" />
+                        <span>{r.dias} dias</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Users className="h-4 w-4 shrink-0" />
+                        <span>{r.perfil}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="h-4 w-4 shrink-0" />
+                        <span>{r.hospedagem}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MapPin className="h-4 w-4 shrink-0" />
-                      <span>{r.hospedagem}</span>
+
+                    <div className="mb-5 rounded-xl bg-muted/40 border border-border/60 p-3">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
+                        Leitura rápida
+                      </p>
+                      <p className="text-sm text-foreground font-medium mb-2">{r.idealPara}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {toursByRoute[r.id].length > 0
+                          ? `${toursByRoute[r.id].length} saída(s) ativa(s) relacionada(s) a esse formato hoje.`
+                          : "Sem saída ativa agora, mas o roteiro segue disponível para próximas temporadas."}
+                      </p>
+                    </div>
+
+                    <div className={`w-full rounded-lg py-2.5 px-4 text-sm font-medium text-center transition-colors ${isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                      {isActive ? "Roteiro selecionado ✓" : "Ver detalhes do roteiro"}
                     </div>
                   </div>
-
-                  <div className="mb-5 rounded-xl bg-muted/40 border border-border/60 p-3">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-                      Leitura rápida
-                    </p>
-                    <p className="text-sm text-foreground font-medium mb-2">{r.idealPara}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {toursByRoute[r.id].length > 0
-                        ? `${toursByRoute[r.id].length} saída(s) ativa(s) relacionada(s) a esse formato hoje.`
-                        : "Sem saída ativa agora, mas o roteiro segue disponível para próximas temporadas."}
-                    </p>
-                  </div>
-
-                  <Button
-                    variant={r.destaque ? "default" : "outline"}
-                    className="w-full"
-                    onClick={() => scrollTo(r.id)}
-                  >
-                    Ver roteiro completo
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -643,11 +644,12 @@ const ChapadaDiamantina = () => {
       </section>
 
       {/* ── 4-6. BLOCOS DETALHADOS POR ROTEIRO ── */}
-      {roteiros.map((r, rIdx) => (
+      {(() => {
+        const r = roteiros.find(r => r.id === selectedRoute) ?? roteiros[0];
+        return (
         <section
-          key={r.id}
-          id={r.id}
-          className={`py-20 px-4 ${rIdx % 2 === 0 ? "bg-background" : "bg-muted/20"}`}
+          id="roteiro-detalhe"
+          className="py-20 px-4 bg-background"
         >
           <div className="max-w-6xl mx-auto">
             {/* Header */}
@@ -960,7 +962,8 @@ const ChapadaDiamantina = () => {
             </div>
           </div>
         </section>
-      ))}
+        );
+      })()}
 
       {/* ── 7. COMPARADOR FINAL LADO A LADO ── */}
       <section className="py-20 px-4 bg-muted/30">
