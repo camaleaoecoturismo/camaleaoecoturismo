@@ -1017,15 +1017,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                         />
                       )}
                     </div>
-                    <div className="pt-2 flex flex-col gap-2 sm:flex-row sm:justify-between">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setParticipantStep(prev => ({ ...prev, [index]: 1 }))}
-                        className="border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300"
-                      >
-                        Voltar para etapa 1
-                      </Button>
+                    <div className="pt-2">
                     {index < participants.length - 1 && (
                       <div className="sm:ml-auto space-y-2">
                         {showMissingMessage === index && (
