@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Send, MessageCircle, ExternalLink } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 const WHATSAPP_NUMBER = "5582993649454";
 const SUPABASE_URL = "https://guwplwuwriixgvkjlutg.supabase.co";
@@ -239,12 +240,26 @@ export function AIChatWidget() {
                       : "bg-emerald-500 text-white rounded-tr-sm"
                   }`}
                 >
-                  {msg.content || (
+                  {!msg.content ? (
                     <span className="flex gap-1 items-center py-0.5">
                       <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
                       <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
                       <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                     </span>
+                  ) : msg.role === "assistant" ? (
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+                        strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
+                        ol: ({ children }) => <ol className="list-decimal pl-4 space-y-1 my-1">{children}</ol>,
+                        ul: ({ children }) => <ul className="list-disc pl-4 space-y-1 my-1">{children}</ul>,
+                        li: ({ children }) => <li className="leading-snug">{children}</li>,
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  ) : (
+                    msg.content
                   )}
                 </div>
               </div>
