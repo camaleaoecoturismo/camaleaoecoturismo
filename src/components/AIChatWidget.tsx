@@ -265,18 +265,27 @@ export function AIChatWidget() {
               </div>
             ))}
 
-            {/* WhatsApp button after last assistant message */}
-            {!isStreaming && messages.length > 1 && messages[messages.length - 1].role === "assistant" && messages[messages.length - 1].content && (
-              <div className="flex justify-start pl-8">
-                <button
-                  onClick={() => openWhatsApp(lastUserMessage ? `Olá! Estava conversando com a Cami sobre: "${lastUserMessage}"` : "Olá! Gostaria de falar com a equipe da Camaleão Ecoturismo.")}
-                  className="flex items-center gap-1.5 text-xs text-emerald-700 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full transition-colors"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                  Falar com a equipe
-                </button>
-              </div>
-            )}
+            {/* WhatsApp button — only when AI mentions WhatsApp in its response */}
+            {(() => {
+              const last = messages[messages.length - 1];
+              const showWA = !isStreaming &&
+                messages.length > 1 &&
+                last?.role === "assistant" &&
+                last?.content &&
+                /whatsapp/i.test(last.content);
+              if (!showWA) return null;
+              return (
+                <div className="flex justify-start pl-8">
+                  <button
+                    onClick={() => openWhatsApp(lastUserMessage ? `Olá! Estava conversando com a Cami sobre: "${lastUserMessage}"` : "Olá! Gostaria de falar com a equipe da Camaleão Ecoturismo.")}
+                    className="flex items-center gap-1.5 text-xs text-emerald-700 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Falar com a equipe
+                  </button>
+                </div>
+              );
+            })()}
 
             <div ref={messagesEndRef} />
           </div>
