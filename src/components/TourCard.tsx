@@ -191,12 +191,15 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
                 alt={tour.name}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 loading="eager"
+                onError={e => {
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                  (e.currentTarget.nextElementSibling as HTMLElement | null)?.style.setProperty('display', 'flex');
+                }}
               />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                <MapPin className="w-12 h-12 text-primary/30" />
-              </div>
-            )}
+            ) : null}
+            <div className={`w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 items-center justify-center ${imageUrl ? 'hidden' : 'flex'}`}>
+              <MapPin className="w-12 h-12 text-primary/30" />
+            </div>
 
             {/* Top-left gradient */}
             <div className="absolute inset-0 z-[1]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.45) 35%, transparent 60%)" }} />
