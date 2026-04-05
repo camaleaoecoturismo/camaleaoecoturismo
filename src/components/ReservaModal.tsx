@@ -2899,7 +2899,7 @@ setChatMessages([]);
     <>
       <Dialog open={isOpen}>
         <DialogContent
-          className="max-w-2xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-0 [&>button:last-child]:hidden"
+          className="max-w-2xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-0 [&>button:last-child]:hidden rounded-2xl"
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => { e.preventDefault(); handleCloseRequest(); }}
         >
@@ -2928,42 +2928,50 @@ setChatMessages([]);
               </div>
             </div>
           )}
-          <DialogHeader className="p-4 pb-2 border-b shrink-0">
-            <div className="flex items-center justify-between gap-2">
-              <DialogTitle className="flex items-center gap-2 text-lg min-w-0 flex-1">
-                <Calendar className="h-5 w-5 shrink-0" />
-                <span className="truncate">Reservar: {tour.name}</span>
-              </DialogTitle>
+          <DialogHeader className="shrink-0 p-0">
+            <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-teal-600 to-emerald-600">
               <button
                 type="button"
                 onClick={handleCloseRequest}
-                className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors text-white"
                 aria-label="Fechar"
               >
                 <X className="h-5 w-5" />
               </button>
+              <img
+                src="/lovable-uploads/4713f0b0-8f15-45fc-b910-a38475e4148a.png"
+                alt="Camaleão"
+                className="w-10 h-10 rounded-full object-cover border-2 border-white/30 shrink-0"
+              />
+              <div className="flex flex-col min-w-0 flex-1">
+                <DialogTitle className="text-white font-semibold text-base leading-tight truncate">
+                  Camaleão Ecoturismo
+                </DialogTitle>
+                <p className="text-white/80 text-xs truncate">{tour.name}</p>
+              </div>
             </div>
           </DialogHeader>
 
           {/* Chat Container */}
           <div
             ref={chatContainerRef}
-            className="flex-1 overflow-y-auto bg-gradient-to-b from-purple-50 to-white p-4 space-y-3"
+            className="flex-1 overflow-y-auto p-3 space-y-2"
+            style={{ backgroundColor: '#e5ddd5' }}
           >
             {/* Welcome message - always show at the beginning */}
-            <div className="flex justify-start">
-              <div className="bg-purple-600 text-white rounded-2xl rounded-tl-md p-3 max-w-[85%] shadow-sm">
-                <div className="flex items-center gap-2 mb-1">
-                  <img
-                    src="/lovable-uploads/4713f0b0-8f15-45fc-b910-a38475e4148a.png"
-                    alt="Camaleão"
-                    className="w-6 h-6 rounded-full object-cover"
-                  />
-                  <span className="text-xs font-medium">Camaleão</span>
-                </div>
-                <p className="text-sm">
+            <div className="flex justify-start px-1">
+              <img
+                src="/lovable-uploads/4713f0b0-8f15-45fc-b910-a38475e4148a.png"
+                alt="Camaleão"
+                className="w-7 h-7 rounded-full object-cover self-end mr-1.5 shrink-0 shadow-sm"
+              />
+              <div className="bg-white rounded-t-2xl rounded-br-2xl rounded-bl-sm px-3 py-2 max-w-[78%] shadow-sm">
+                <p className="text-sm text-gray-800 leading-relaxed">
                   Olá! 👋 Vamos fazer sua reserva para <strong>{tour.name}</strong>. Responda algumas perguntas rápidas!
                 </p>
+                <div className="text-[10px] text-gray-400 text-right mt-0.5">
+                  {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </div>
               </div>
             </div>
 
@@ -2977,22 +2985,22 @@ setChatMessages([]);
             {/* Package Selection Step - shows after CPF, replaces numero_participantes */}
             {showPackageSelection && tour?.pricing_options && tour.pricing_options.length > 0 && (
               <div className="space-y-4">
-                <div className="flex justify-start">
-                  <div className="bg-purple-600 text-white rounded-2xl rounded-tl-md p-3 max-w-[85%] shadow-sm">
-                    <div className="flex items-center gap-2 mb-1">
-                      <img
-                        src="/lovable-uploads/4713f0b0-8f15-45fc-b910-a38475e4148a.png"
-                        alt="Camaleão"
-                        className="w-6 h-6 rounded-full object-cover"
-                      />
-                      <span className="text-xs font-medium">Camaleão</span>
+                <div className="flex justify-start px-1">
+                  <img
+                    src="/lovable-uploads/4713f0b0-8f15-45fc-b910-a38475e4148a.png"
+                    alt="Camaleão"
+                    className="w-7 h-7 rounded-full object-cover self-end mr-1.5 shrink-0 shadow-sm"
+                  />
+                  <div className="bg-white rounded-t-2xl rounded-br-2xl rounded-bl-sm px-3 py-2 max-w-[78%] shadow-sm">
+                    <p className="text-sm text-gray-800 leading-relaxed">Quantas vagas deseja reservar? Selecione os pacotes:</p>
+                    <div className="text-[10px] text-gray-400 text-right mt-0.5">
+                      {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                     </div>
-                    <p className="text-sm">Quantas vagas deseja reservar? Selecione os pacotes:</p>
                   </div>
                 </div>
 
                 {/* Package selection cards - simplified, no name inputs here */}
-                <Card className="bg-white shadow-lg border-purple-200">
+                <Card className="bg-white shadow-md border-teal-100 rounded-2xl overflow-hidden">
                   <CardContent className="p-4 space-y-4">
                     <h3 className="font-semibold text-sm flex items-center gap-2">
                       <ShoppingCart className="h-4 w-4" />
@@ -3064,7 +3072,7 @@ setChatMessages([]);
                     <Button
                       onClick={confirmPackageSelection}
                       disabled={!isPackageSelectionValid()}
-                      className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                      className="w-full bg-teal-600 hover:bg-teal-700 text-white"
                     >
                       Continuar
                     </Button>
@@ -3095,7 +3103,7 @@ setChatMessages([]);
                 <div className="flex justify-end">
                   <div className="w-[85%]">{renderInputField(currentQuestion)}</div>
                 </div>
-                <div className="flex justify-between items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg">
+                <div className="flex justify-between items-center gap-3 px-4 py-3 bg-white/60 rounded-2xl shadow-sm">
                   <Button
                     type="button"
                     variant="outline"
@@ -3110,7 +3118,7 @@ setChatMessages([]);
                     type="button"
                     onClick={nextField}
                     disabled={loading}
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    className="bg-teal-600 hover:bg-teal-700 text-white"
                   >
                     Enviar
                   </Button>
@@ -3137,7 +3145,7 @@ setChatMessages([]);
                     await finalizarReserva();
                     scrollToBottom();
                   }}
-                  className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg h-auto"
+                  className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-4 text-lg h-auto rounded-2xl shadow-md"
                   disabled={loading}
                 >
                   {loading ? (
@@ -3158,7 +3166,7 @@ setChatMessages([]);
             {/* Payment Card integrated in chat */}
             {showPaymentCard && !showPixCheckout && !paymentComplete && (
               <div className="flex justify-start w-full">
-                <Card className="w-full bg-white shadow-lg border-purple-200">
+                <Card className="w-full bg-white shadow-md border-teal-100 rounded-2xl overflow-hidden">
                   <CardContent className="p-4 space-y-4">
                     {/* Optional Items */}
                     {optionalItems.length > 0 && (
@@ -3569,36 +3577,36 @@ setChatMessages([]);
                 </div>
 
                 {/* Reservation Summary */}
-                <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-100">
+                <Card className="bg-gradient-to-br from-teal-50 to-white border-teal-100 rounded-2xl overflow-hidden">
                   <CardContent className="p-4 space-y-3">
-                    <h3 className="font-semibold text-sm text-purple-900 flex items-center gap-2">
+                    <h3 className="font-semibold text-sm text-teal-900 flex items-center gap-2">
                       <FileText className="h-4 w-4" />
                       Resumo da sua inscrição
                     </h3>
 
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between py-1 border-b border-purple-100">
+                      <div className="flex justify-between py-1 border-b border-teal-100">
                         <span className="text-muted-foreground">Passeio</span>
                         <span className="font-medium text-right max-w-[60%]">{tour?.name}</span>
                       </div>
                       {tour?.start_date && (
-                        <div className="flex justify-between py-1 border-b border-purple-100">
+                        <div className="flex justify-between py-1 border-b border-teal-100">
                           <span className="text-muted-foreground">Data</span>
                           <span className="font-medium">
                             {format(new Date(tour.start_date + "T12:00:00"), "dd/MM/yyyy")}
                           </span>
                         </div>
                       )}
-                      <div className="flex justify-between py-1 border-b border-purple-100">
+                      <div className="flex justify-between py-1 border-b border-teal-100">
                         <span className="text-muted-foreground">Participante</span>
                         <span className="font-medium">{formData.nome_completo}</span>
                       </div>
-                      <div className="flex justify-between py-1 border-b border-purple-100">
+                      <div className="flex justify-between py-1 border-b border-teal-100">
                         <span className="text-muted-foreground">Nº de pessoas</span>
                         <span className="font-medium">{formData.numero_participantes}</span>
                       </div>
                       {pontosEmbarque.find((p) => p.id === formData.ponto_embarque_id) && (
-                        <div className="flex justify-between py-1 border-b border-purple-100">
+                        <div className="flex justify-between py-1 border-b border-teal-100">
                           <span className="text-muted-foreground">Embarque</span>
                           <span className="font-medium text-right max-w-[60%]">
                             {pontosEmbarque.find((p) => p.id === formData.ponto_embarque_id)?.nome}

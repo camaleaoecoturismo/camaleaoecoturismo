@@ -7,33 +7,36 @@ interface ChatMessageProps {
 }
 
 export function ChatMessage({ type, text, animate = false }: ChatMessageProps) {
+  const isBot = type === 'question';
+
   return (
-    <div 
-      className={`flex ${type === 'question' ? 'justify-start' : 'justify-end'} ${animate ? 'animate-fade-in' : ''}`}
+    <div
+      className={`flex ${isBot ? 'justify-start' : 'justify-end'} ${animate ? 'animate-fade-in' : ''} px-1`}
     >
-      <div 
-        className={`rounded-2xl p-3 max-w-[85%] shadow-sm ${
-          type === 'question' 
-            ? 'bg-purple-600 text-white rounded-tl-md' 
-            : 'bg-white text-gray-800 border border-gray-200 rounded-tr-md'
+      {isBot && (
+        <img
+          src="/lovable-uploads/4713f0b0-8f15-45fc-b910-a38475e4148a.png"
+          alt="Camaleão"
+          className="w-7 h-7 rounded-full object-cover self-end mr-1.5 shrink-0 shadow-sm"
+        />
+      )}
+      <div
+        className={`relative max-w-[78%] px-3 py-2 shadow-sm text-sm leading-relaxed ${
+          isBot
+            ? 'bg-white text-gray-800 rounded-t-2xl rounded-br-2xl rounded-bl-sm'
+            : 'bg-[#dcf8c6] text-gray-900 rounded-t-2xl rounded-bl-2xl rounded-br-sm'
         }`}
       >
-        {type === 'question' && (
-          <div className="flex items-center gap-2 mb-1">
-            <img 
-              src="/lovable-uploads/4713f0b0-8f15-45fc-b910-a38475e4148a.png" 
-              alt="Camaleão" 
-              className="w-5 h-5 rounded-full object-cover" 
-            />
-            <span className="text-xs font-medium opacity-90">Camaleão</span>
-          </div>
-        )}
-        <p className="text-sm leading-relaxed">{text}</p>
-        <div className={`text-xs mt-1 ${type === 'question' ? 'text-white/70' : 'text-gray-500'}`}>
-          {new Date().toLocaleTimeString('pt-BR', {
-            hour: '2-digit',
-            minute: '2-digit'
-          })}
+        <p className="whitespace-pre-wrap">{text}</p>
+        <div className="flex items-center justify-end gap-1 mt-0.5">
+          <span className={`text-[10px] ${isBot ? 'text-gray-400' : 'text-emerald-700/70'}`}>
+            {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+          {!isBot && (
+            <svg viewBox="0 0 16 11" className="w-3.5 h-3 fill-emerald-600/70">
+              <path d="M11.071.653a.45.45 0 0 0-.641 0l-5.5 5.5L2.57 3.784a.45.45 0 1 0-.638.637l2.68 2.68a.45.45 0 0 0 .638 0l5.82-5.82a.45.45 0 0 0 0-.628zM15.071.653a.45.45 0 0 0-.641 0l-5.5 5.5a.45.45 0 0 0 .638.637l5.503-5.509a.45.45 0 0 0 0-.628z"/>
+            </svg>
+          )}
         </div>
       </div>
     </div>

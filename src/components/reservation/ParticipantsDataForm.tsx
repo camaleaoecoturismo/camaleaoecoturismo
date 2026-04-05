@@ -493,7 +493,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
 
   return (
     <>
-    <Card className="bg-white shadow-lg border-purple-200">
+    <Card className="bg-white shadow-md border-teal-100 rounded-2xl overflow-hidden">
       <CardContent className="p-4 space-y-4">
         <div className="space-y-1">
           <h3 className="font-semibold text-sm flex items-center gap-2">
@@ -537,8 +537,8 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
-                      isValid ? 'bg-green-500 text-white' : 
-                      isLocked ? 'bg-gray-200 text-gray-400' : 'bg-purple-100 text-purple-700'
+                      isValid ? 'bg-green-500 text-white' :
+                      isLocked ? 'bg-gray-200 text-gray-400' : 'bg-teal-100 text-teal-700'
                     )}>
                       {isValid ? '✓' : isLocked ? '🔒' : index + 1}
                     </div>
@@ -996,7 +996,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                           type="button"
                           variant="outline"
                           onClick={() => handleContinueToNext(index)}
-                          className="w-full border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300"
+                          className="w-full border-teal-200 text-teal-700 hover:bg-teal-50 hover:border-teal-300"
                         >
                           Continuar para Participante {index + 2}
                           <ArrowRight className="w-4 h-4 ml-2" />
@@ -1055,7 +1055,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
               onConfirm();
             }}
             disabled={isLoading}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+            className="w-full bg-teal-600 hover:bg-teal-700 text-white"
           >
             {isLoading ? (
               <>
