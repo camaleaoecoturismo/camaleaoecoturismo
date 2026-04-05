@@ -146,6 +146,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
   optionalItems = []
 }) => {
   const [expandedParticipants, setExpandedParticipants] = useState<Set<number>>(new Set([0]));
+  const [participantStep, setParticipantStep] = useState<Record<number, 1 | 2>>({ 0: 1 });
   const [lookingUpCpf, setLookingUpCpf] = useState<number | null>(null);
   const [healthTouched, setHealthTouched] = useState<Set<number>>(new Set());
   const participantRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -259,11 +260,23 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
     const nextIndex = currentIndex + 1;
     if (nextIndex < participants.length) {
       setExpandedParticipants(new Set([nextIndex]));
+      setParticipantStep(prev => ({ ...prev, [nextIndex]: 1 }));
       setScrollToIndex(nextIndex);
     }
   };
 
   const allParticipantsValid = participants.every(isParticipantValid);
+
+  const isParticipantStepOneValid = (p: ParticipantFormData): boolean => {
+    if (!p.nome_completo.trim() || p.nome_completo.trim().length < 3) return false;
+    if (!p.cpf || p.cpf.replace(/\D/g, '').length !== 11 || !validarCPF(p.cpf)) return false;
+    if (!p.data_nascimento) return false;
+    if (!p.whatsapp || !validarTelefone(p.whatsapp)) return false;
+    if (!p.email || !p.email.includes('@') || !p.email.includes('.')) return false;
+    if (!p.ponto_embarque_id) return false;
+    if (p.ponto_embarque_id === 'outro' && !p.ponto_embarque_personalizado.trim()) return false;
+    return true;
+  };
 
   // Check if a participant can be expanded (previous must be valid)
   const canExpandParticipant = (index: number): boolean => {
@@ -292,6 +305,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
       }
       // Otherwise, open only this one (accordion behavior) and scroll to it
       setScrollToIndex(index);
+      setParticipantStep(prev => ({ ...prev, [index]: prev[index] || 1 }));
       return new Set([index]);
     });
   };
@@ -508,6 +522,7 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
         <div className="space-y-3">
           {participants.map((participant, index) => {
             const isExpanded = expandedParticipants.has(index);
+            const currentStep = participantStep[index] || 1;
             const progress = getParticipantProgress(participant);
             const isValid = isParticipantValid(participant);
             const canExpand = canExpandParticipant(index);
@@ -574,6 +589,24 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                 {/* Participant Form - Expandable */}
                 {isExpanded && (
                   <div className="p-4 space-y-4 bg-white">
+                    <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/30 px-3 py-2">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                          Etapa do participante
+                        </p>
+                        <p className="text-xs font-medium text-foreground">
+                          {currentStep === 1
+                            ? 'Dados principais e embarque'
+                            : 'Saúde, emergência e origem'}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="text-[11px]">
+                        {currentStep} de 2
+                      </Badge>
+                    </div>
+
+                    {currentStep === 1 && (
+                      <>
                     {/* CPF and Name */}
                     <div className="grid gap-3 md:grid-cols-2">
                       <div className="space-y-1">
@@ -811,7 +844,29 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                         </div>
                       )}
                     </div>
+                    <div className="pt-2 border-t">
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          if (!isParticipantStepOneValid(participant)) {
+                            setShowMissingMessage(index);
+                            setTimeout(() => setShowMissingMessage(null), 5000);
+                            return;
+                          }
+                          setShowMissingMessage(null);
+                          setParticipantStep(prev => ({ ...prev, [index]: 2 }));
+                        }}
+                        className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+                      >
+                        Continuar para etapa 2
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </div>
+                      </>
+                    )}
 
+                    {currentStep === 2 && (
+                      <>
                     {/* Physical conditioning - Select */}
                     <div className="space-y-2">
                       <Label className="text-xs">Nível de Condicionamento Físico *</Label>
@@ -977,8 +1032,17 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                         />
                       )}
                     </div>
+                    <div className="pt-2 flex flex-col gap-2 sm:flex-row sm:justify-between">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setParticipantStep(prev => ({ ...prev, [index]: 1 }))}
+                        className="border-teal-200 text-teal-700 hover:bg-teal-50 hover:border-teal-300"
+                      >
+                        Voltar para etapa 1
+                      </Button>
                     {index < participants.length - 1 && (
-                      <div className="pt-4 border-t space-y-2">
+                      <div className="sm:ml-auto space-y-2">
                         {showMissingMessage === index && (
                           <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg animate-in fade-in slide-in-from-top-2 duration-200">
                             <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
@@ -1003,7 +1067,9 @@ export const ParticipantsDataForm: React.FC<ParticipantsDataFormProps> = ({
                         </Button>
                       </div>
                     )}
-
+                    </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

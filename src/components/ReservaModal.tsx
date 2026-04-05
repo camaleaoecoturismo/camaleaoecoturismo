@@ -2899,7 +2899,7 @@ setChatMessages([]);
     <>
       <Dialog open={isOpen}>
         <DialogContent
-          className="max-w-2xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col p-0 [&>button:last-child]:hidden rounded-2xl"
+          className="max-w-2xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col gap-0 p-0 [&>button:last-child]:hidden rounded-2xl"
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => { e.preventDefault(); handleCloseRequest(); }}
         >
@@ -2928,8 +2928,21 @@ setChatMessages([]);
               </div>
             </div>
           )}
-          <DialogHeader className="shrink-0 p-0">
-            <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-teal-600 to-emerald-600">
+          <DialogHeader className="shrink-0 p-0 space-y-0">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 bg-gradient-to-r from-teal-600 to-emerald-600">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <img
+                  src="/lovable-uploads/4713f0b0-8f15-45fc-b910-a38475e4148a.png"
+                  alt="Camaleão"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-white/30 shrink-0"
+                />
+                <div className="flex flex-col min-w-0 items-start text-left">
+                  <DialogTitle className="text-white font-semibold text-base leading-tight truncate text-left w-full">
+                    Camaleão Ecoturismo
+                  </DialogTitle>
+                  <p className="text-white/80 text-xs truncate text-left w-full">{tour.name}</p>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={handleCloseRequest}
@@ -2938,17 +2951,6 @@ setChatMessages([]);
               >
                 <X className="h-5 w-5" />
               </button>
-              <img
-                src="/lovable-uploads/4713f0b0-8f15-45fc-b910-a38475e4148a.png"
-                alt="Camaleão"
-                className="w-10 h-10 rounded-full object-cover border-2 border-white/30 shrink-0"
-              />
-              <div className="flex flex-col min-w-0 flex-1">
-                <DialogTitle className="text-white font-semibold text-base leading-tight truncate">
-                  Camaleão Ecoturismo
-                </DialogTitle>
-                <p className="text-white/80 text-xs truncate">{tour.name}</p>
-              </div>
             </div>
           </DialogHeader>
 
