@@ -20,12 +20,6 @@ interface TourCardProps {
   } | null;
 }
 
-function toCardUrl(url: string | null | undefined, width = 600): string | null | undefined {
-  if (!url) return url;
-  if (!url.includes('/storage/v1/object/public/')) return url;
-  return url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') + `?width=${width}&quality=80`;
-}
-
 const WEEKDAYS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
 const MONTH_NAMES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 
@@ -194,7 +188,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
           <div className="relative aspect-[4/3] overflow-hidden">
             {imageUrl ? (
               <img
-                src={toCardUrl(imageUrl) ?? undefined}
+                src={imageUrl ?? undefined}
                 alt={tour.name}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 style={getCoverImageStyle(preloadedCover?.cropPosition)}
@@ -354,7 +348,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
                     {(nextDateCovers.get(related.id) || related.image_url) && (
                       <div className="aspect-[4/3] overflow-hidden">
                         <img
-                          src={toCardUrl(nextDateCovers.get(related.id) || related.image_url, 200) ?? undefined}
+                          src={nextDateCovers.get(related.id) || related.image_url!}
                           alt={related.name}
                           className="w-full h-full object-cover"
                           loading="lazy"
@@ -421,7 +415,7 @@ function TourCardComponent({ tour, preloadedCover }: TourCardProps) {
                     {(nextDateCovers.get(related.id) || related.image_url) && (
                       <div className="aspect-[4/3] overflow-hidden">
                         <img
-                          src={toCardUrl(nextDateCovers.get(related.id) || related.image_url, 300) ?? undefined}
+                          src={nextDateCovers.get(related.id) || related.image_url!}
                           alt={related.name}
                           className="w-full h-full object-cover"
                           loading="lazy"

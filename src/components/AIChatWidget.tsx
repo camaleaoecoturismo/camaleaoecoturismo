@@ -466,7 +466,15 @@ export function AIChatWidget() {
               </button>
             </div>
             <p className="text-[10px] text-gray-400 text-center mt-1.5">
-              Assistente com IA · dados reais do site
+              Assistente da Camaleão · datas, destinos e dúvidas em geral.{" "}
+              <a
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Olá! Gostaria de falar com a equipe da Camaleão Ecoturismo.")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-green-500 hover:text-green-600"
+              >
+                Falar com atendente humano
+              </a>
             </p>
           </div>
         </div>
