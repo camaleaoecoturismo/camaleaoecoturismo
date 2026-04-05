@@ -122,6 +122,7 @@ export function AIChatWidget() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [quickActionsUsed, setQuickActionsUsed] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -151,9 +152,12 @@ export function AIChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  // Focus input on open
+  // Focus input on open + clear unread badge
   useEffect(() => {
-    if (isOpen) setTimeout(() => inputRef.current?.focus(), 150);
+    if (isOpen) {
+      setUnreadCount(0);
+      setTimeout(() => inputRef.current?.focus(), 150);
+    }
   }, [isOpen]);
 
   const sendMessage = useCallback(
@@ -199,6 +203,7 @@ export function AIChatWidget() {
           }
           return next;
         });
+        if (!isOpen) setUnreadCount((n) => n + 1);
       } catch {
         setMessages((prev) => [
           ...prev,
@@ -234,19 +239,40 @@ export function AIChatWidget() {
   return (
     <>
       {/* ── Floating button ─────────────────────────────────────────────────── */}
-      <div className="fixed bottom-6 left-6 z-50 flex items-end gap-2">
+      <div className="fixed bottom-6 left-6 z-50">
         <button
           onClick={() => setIsOpen((o) => !o)}
-          className="w-14 h-14 rounded-full text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600"
+          className="relative w-14 h-14 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 overflow-visible"
           aria-label={isOpen ? "Fechar chat" : "Falar com a Camila"}
         >
-          {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-7 h-7" />}
+          {isOpen ? (
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white">
+              <X className="w-6 h-6" />
+            </div>
+          ) : (
+            <>
+              <img
+                src="/lovable-uploads/camila-avatar.png"
+                alt="Camila"
+                className="w-14 h-14 rounded-full object-cover border-2 border-white shadow"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = "flex";
+                }}
+              />
+              <div
+                className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 items-center justify-center text-white hidden absolute inset-0"
+              >
+                <MessageCircle className="w-7 h-7" />
+              </div>
+            </>
+          )}
+          {!isOpen && unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
         </button>
-        {!isOpen && (
-          <span className="mb-4 bg-white text-gray-700 text-xs font-medium px-3 py-1.5 rounded-full shadow-md border border-gray-100 whitespace-nowrap animate-fade-in">
-            Tire suas dúvidas com a Camila ✨
-          </span>
-        )}
       </div>
 
       {/* ── Chat window ──────────────────────────────────────────────────────── */}
@@ -264,7 +290,7 @@ export function AIChatWidget() {
           <div className="bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-3 flex items-center gap-3 shrink-0">
             <div className="relative shrink-0">
               <img
-                src="/lovable-uploads/4713f0b0-8f15-45fc-b910-a38475e4148a.png"
+                src="/lovable-uploads/camila-avatar.png"
                 alt="Camila"
                 className="w-9 h-9 rounded-full object-cover border-2 border-white/40"
               />
@@ -289,7 +315,7 @@ export function AIChatWidget() {
             {/* Welcome */}
             <div className="flex items-start gap-2">
               <img
-                src="/lovable-uploads/4713f0b0-8f15-45fc-b910-a38475e4148a.png"
+                src="/lovable-uploads/camila-avatar.png"
                 alt="Camila"
                 className="w-6 h-6 rounded-full object-cover mt-0.5 shrink-0"
               />
@@ -329,7 +355,7 @@ export function AIChatWidget() {
                 return (
                   <div key={msg.id} className="flex items-start gap-2">
                     <img
-                      src="/lovable-uploads/4713f0b0-8f15-45fc-b910-a38475e4148a.png"
+                      src="/lovable-uploads/camila-avatar.png"
                       alt="Camila"
                       className="w-6 h-6 rounded-full object-cover mt-0.5 shrink-0"
                     />
@@ -362,7 +388,7 @@ export function AIChatWidget() {
             {isLoading && (
               <div className="flex items-start gap-2">
                 <img
-                  src="/lovable-uploads/4713f0b0-8f15-45fc-b910-a38475e4148a.png"
+                  src="/lovable-uploads/camila-avatar.png"
                   alt="Camila"
                   className="w-6 h-6 rounded-full object-cover mt-0.5 shrink-0"
                 />
