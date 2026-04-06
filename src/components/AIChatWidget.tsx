@@ -219,7 +219,7 @@ export function AIChatWidget() {
   const QUICK_ACTIONS = currentTourSlug ? QUICK_ACTIONS_TOUR : QUICK_ACTIONS_DEFAULT;
 
   // On passeio pages, stay above the bottom tab bar (~64px); elsewhere, sit at normal bottom margin
-  const drag = useFloatingDrag(EDGE_MARGIN, currentTourSlug ? 100 : EDGE_MARGIN);
+  const drag = useFloatingDrag(EDGE_MARGIN, currentTourSlug ? 60 : EDGE_MARGIN);
 
   // Show greeting bubble on load, then swap to badge
   useEffect(() => {
