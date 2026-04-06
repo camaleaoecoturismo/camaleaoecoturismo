@@ -315,6 +315,8 @@ const Passeio = () => {
 
   const formatCurrency = (v: number) =>
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
+  const formatCurrencyFull = (v: number) =>
+    v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const sanitize = (html: string | null) =>
     DOMPurify.sanitize(html || "", {
@@ -732,8 +734,8 @@ const Passeio = () => {
                           return (
                             <div key={n} className="grid grid-cols-3 px-3 py-2 border-t border-border/40 items-center">
                               <span className="font-medium text-foreground">{n === 1 ? "À vista" : `${n}x`}</span>
-                              <span className="text-center font-semibold text-primary">{formatCurrency(monthly)}</span>
-                              <span className="text-right text-muted-foreground">{formatCurrency(total)}</span>
+                              <span className="text-center font-semibold text-primary">{formatCurrencyFull(monthly)}</span>
+                              <span className="text-right text-muted-foreground">{formatCurrencyFull(total)}</span>
                             </div>
                           );
                         })}
@@ -780,8 +782,8 @@ const Passeio = () => {
                           return (
                             <div key={n} className="grid grid-cols-3 px-3 py-2 border-t border-border/40 items-center">
                               <span className="font-medium text-foreground">{n === 1 ? "À vista" : `${n}x`}</span>
-                              <span className="text-center font-semibold text-primary">{formatCurrency(monthly)}</span>
-                              <span className="text-right text-muted-foreground">{formatCurrency(total)}</span>
+                              <span className="text-center font-semibold text-primary">{formatCurrencyFull(monthly)}</span>
+                              <span className="text-right text-muted-foreground">{formatCurrencyFull(total)}</span>
                             </div>
                           );
                         })}
@@ -1020,13 +1022,13 @@ const Passeio = () => {
                             <span className="text-right">Total</span>
                           </div>
                           {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
-                            const total = installmentBase * (1 + INSTALLMENT_FEES[n] / 100);
-                            const monthly = total / n;
+                            const total = Math.round((installmentBase / (1 - INSTALLMENT_FEES[n] / 100) + Number.EPSILON) * 100) / 100;
+                            const monthly = Math.round((total / n + Number.EPSILON) * 100) / 100;
                             return (
                               <div key={n} className="grid grid-cols-3 px-3 py-2 border-t border-border/40 items-center">
                                 <span className="font-medium text-foreground">{n === 1 ? "À vista" : `${n}x`}</span>
-                                <span className="text-center font-semibold text-primary">{formatCurrency(monthly)}</span>
-                                <span className="text-right text-muted-foreground">{formatCurrency(total)}</span>
+                                <span className="text-center font-semibold text-primary">{formatCurrencyFull(monthly)}</span>
+                                <span className="text-right text-muted-foreground">{formatCurrencyFull(total)}</span>
                               </div>
                             );
                           })}
@@ -1067,13 +1069,13 @@ const Passeio = () => {
                             <span className="text-right">Total</span>
                           </div>
                           {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
-                            const total = minPrice * (1 + INSTALLMENT_FEES[n] / 100);
-                            const monthly = total / n;
+                            const total = Math.round((minPrice / (1 - INSTALLMENT_FEES[n] / 100) + Number.EPSILON) * 100) / 100;
+                            const monthly = Math.round((total / n + Number.EPSILON) * 100) / 100;
                             return (
                               <div key={n} className="grid grid-cols-3 px-3 py-2 border-t border-border/40 items-center">
                                 <span className="font-medium text-foreground">{n === 1 ? "À vista" : `${n}x`}</span>
-                                <span className="text-center font-semibold text-primary">{formatCurrency(monthly)}</span>
-                                <span className="text-right text-muted-foreground">{formatCurrency(total)}</span>
+                                <span className="text-center font-semibold text-primary">{formatCurrencyFull(monthly)}</span>
+                                <span className="text-right text-muted-foreground">{formatCurrencyFull(total)}</span>
                               </div>
                             );
                           })}
