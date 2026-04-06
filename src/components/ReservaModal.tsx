@@ -3388,109 +3388,95 @@ setChatMessages([]);
                     </div>
 
                     {/* Payment Methods */}
-                    <RadioGroup
-                      value={formData.payment_method}
-                      onValueChange={(v) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          payment_method: v as any,
-                        }))
-                      }
-                    >
+                    <div className="space-y-3">
                       {(tour.payment_mode === "mercadopago" || tour.payment_mode === "both") && (
                         <>
-                          <div
-                            className={cn(
-                              "flex items-center space-x-3 p-3 border rounded-lg cursor-pointer",
-                              formData.payment_method === "pix" ? "border-primary bg-primary/5" : "hover:bg-muted/50",
-                            )}
-                          >
-                            <RadioGroupItem value="pix" id="pix" />
-                            <Label htmlFor="pix" className="flex items-center gap-2 cursor-pointer flex-1">
+                          {/* PIX + Cartão side by side */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setFormData((prev) => ({ ...prev, payment_method: "pix" }))}
+                              className={cn(
+                                "flex flex-col items-center gap-1 p-3 border rounded-lg cursor-pointer text-center transition-colors",
+                                formData.payment_method === "pix" ? "border-primary bg-primary/5" : "hover:bg-muted/50",
+                              )}
+                            >
                               <PixIcon size={20} className="text-emerald-600" />
-                              <div>
-                                <p className="font-medium">PIX</p>
-                                <p className="text-xs text-muted-foreground">Pagamento instantaneo</p>
-                              </div>
-                              <span className="ml-auto font-bold text-emerald-600">
+                              <p className="font-semibold text-sm">PIX</p>
+                              <p className="text-[11px] text-muted-foreground">Pagamento instantâneo</p>
+                              <span className="font-bold text-emerald-600 text-sm mt-0.5">
                                 {formatCurrency(afterDiscount)}
                               </span>
-                            </Label>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFormData((prev) => ({ ...prev, payment_method: "credit_card" }))}
+                              className={cn(
+                                "flex flex-col items-center gap-1 p-3 border rounded-lg cursor-pointer text-center transition-colors",
+                                formData.payment_method === "credit_card" ? "border-primary bg-primary/5" : "hover:bg-muted/50",
+                              )}
+                            >
+                              <CreditCard className="h-5 w-5 text-blue-600" />
+                              <p className="font-semibold text-sm">Cartão de Crédito</p>
+                              <p className="text-[11px] text-muted-foreground">Parcele em até 12x</p>
+                              <span className="font-bold text-blue-600 text-sm mt-0.5">
+                                {formatCurrency(afterDiscount)} + juros
+                              </span>
+                            </button>
                           </div>
-                          <div
-                            className={cn(
-                              "flex flex-col border rounded-lg cursor-pointer",
-                              formData.payment_method === "credit_card"
-                                ? "border-primary bg-primary/5"
-                                : "hover:bg-muted/50",
-                            )}
-                          >
-                            <div className="flex items-center space-x-3 p-3">
-                              <RadioGroupItem value="credit_card" id="credit_card" />
-                              <Label htmlFor="credit_card" className="flex items-center gap-2 cursor-pointer flex-1">
-                                <CreditCard className="h-5 w-5 text-blue-600" />
-                                <div>
-                                  <p className="font-medium">Cartão de Crédito</p>
-                                  <p className="text-xs text-muted-foreground">Parcele em até 12x</p>
-                                </div>
-                                <span className="ml-auto font-bold text-blue-600">{formatCurrency(cardAfterDiscount)}</span>
-                              </Label>
-                            </div>
-                            {formData.payment_method === "credit_card" && cardAfterDiscount > 0 && (
-                              <div className="px-3 pb-3">
-                                <button
-                                  type="button"
-                                  onClick={() => setShowInstallmentsModal(v => !v)}
-                                  className="flex items-center gap-1 text-xs text-primary font-medium hover:text-primary/80 transition-colors"
-                                >
-                                  {showInstallmentsModal ? "▲" : "▼"} Ver parcelamento
-                                </button>
-                                {showInstallmentsModal && (
-                                  <div className="mt-2 border border-border rounded-xl overflow-hidden text-xs">
-                                    <div className="grid grid-cols-3 bg-muted/60 px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                                      <span>Parcelas</span>
-                                      <span className="text-center">Valor/mês</span>
-                                      <span className="text-right">Total</span>
-                                    </div>
-                                    {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
-                                      const totalCard = cardAfterDiscount * (1 + INSTALLMENT_FEES[n] / 100);
-                                      const monthly = totalCard / n;
-                                      return (
-                                        <div key={n} className="grid grid-cols-3 px-3 py-1.5 border-t border-border/40 items-center">
-                                          <span className="font-medium">{n === 1 ? "À vista" : `${n}x`}</span>
-                                          <span className="text-center font-semibold text-primary">{formatCurrency(monthly)}</span>
-                                          <span className="text-right text-muted-foreground">{formatCurrency(totalCard)}</span>
-                                        </div>
-                                      );
-                                    })}
-                                    <p className="text-muted-foreground text-[10px] px-3 py-2 border-t border-border/50 bg-muted/30">Juros InfinitePay.</p>
+
+                          {/* Installments simulation - shown when credit card selected */}
+                          {formData.payment_method === "credit_card" && cardAfterDiscount > 0 && (
+                            <div>
+                              <button
+                                type="button"
+                                onClick={() => setShowInstallmentsModal(v => !v)}
+                                className="flex items-center gap-1 text-xs text-primary font-medium hover:text-primary/80 transition-colors"
+                              >
+                                {showInstallmentsModal ? "▲" : "▼"} Ver simulação de parcelamento
+                              </button>
+                              {showInstallmentsModal && (
+                                <div className="mt-2 border border-border rounded-xl overflow-hidden text-xs">
+                                  <div className="grid grid-cols-3 bg-muted/60 px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                                    <span>Parcelas</span>
+                                    <span className="text-center">Valor/mês</span>
+                                    <span className="text-right">Total</span>
                                   </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
+                                  {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
+                                    const totalCard = cardAfterDiscount * (1 + INSTALLMENT_FEES[n] / 100);
+                                    const monthly = totalCard / n;
+                                    return (
+                                      <div key={n} className="grid grid-cols-3 px-3 py-1.5 border-t border-border/40 items-center">
+                                        <span className="font-medium">{n === 1 ? "À vista" : `${n}x`}</span>
+                                        <span className="text-center font-semibold text-primary">{formatCurrency(monthly)}</span>
+                                        <span className="text-right text-muted-foreground">{formatCurrency(totalCard)}</span>
+                                      </div>
+                                    );
+                                  })}
+                                  <p className="text-muted-foreground text-[10px] px-3 py-2 border-t border-border/50 bg-muted/30">Juros InfinitePay.</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </>
                       )}
                       {(tour.payment_mode === "whatsapp" || tour.payment_mode === "both") && (
-                        <div
+                        <button
+                          type="button"
+                          onClick={() => setFormData((prev) => ({ ...prev, payment_method: "whatsapp" }))}
                           className={cn(
-                            "flex items-center space-x-3 p-3 border rounded-lg cursor-pointer",
-                            formData.payment_method === "whatsapp"
-                              ? "border-primary bg-primary/5"
-                              : "hover:bg-muted/50",
+                            "w-full flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors",
+                            formData.payment_method === "whatsapp" ? "border-primary bg-primary/5" : "hover:bg-muted/50",
                           )}
                         >
-                          <RadioGroupItem value="whatsapp" id="whatsapp" />
-                          <Label htmlFor="whatsapp" className="flex items-center gap-2 cursor-pointer flex-1">
-                            <WhatsAppIcon className="h-5 w-5 text-green-600" />
-                            <div>
-                              <p className="font-medium">Combinar pagamento pelo WhatsApp</p>
-                              <p className="text-xs text-muted-foreground">opção de pix parcelado</p>
-                            </div>
-                          </Label>
-                        </div>
+                          <WhatsAppIcon className="h-5 w-5 text-green-600 shrink-0" />
+                          <div className="text-left">
+                            <p className="font-medium text-sm">Combinar pagamento pelo WhatsApp</p>
+                            <p className="text-xs text-muted-foreground">opção de pix parcelado</p>
+                          </div>
+                        </button>
                       )}
-                    </RadioGroup>
+                    </div>
 
                     <Button
                       onClick={processarPagamento}
