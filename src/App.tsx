@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
+import { MaintenanceGuard } from "@/components/MaintenanceGuard";
 const Home = lazy(() => import("./pages/Home"));
 const Index = lazy(() => import("./pages/Index"));
 
@@ -58,6 +59,7 @@ const App = () => (
         <AnalyticsProvider>
           <ChunkErrorBoundary>
           <Suspense fallback={<PageLoader />}>
+          <MaintenanceGuard>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/agenda" element={<Index />} />
@@ -91,6 +93,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+          </MaintenanceGuard>
           </Suspense>
           <AIChatWidget />
           </ChunkErrorBoundary>

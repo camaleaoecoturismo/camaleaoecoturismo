@@ -1,93 +1,72 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, Lock, KeyRound, Eye, EyeOff, Settings, AlertTriangle, List, Calendar, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Shield, Lock, KeyRound, Eye, EyeOff, Settings, AlertTriangle, WrenchIcon, MonitorSmartphone, LogOut, Trash2, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useTours } from '@/hooks/useTours';
 
 interface AdminSettingsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const ALL_MONTHS = [
-  { key: 'JAN', name: 'Janeiro' },
-  { key: 'FEV', name: 'Fevereiro' },
-  { key: 'MAR', name: 'Março' },
-  { key: 'ABR', name: 'Abril' },
-  { key: 'MAI', name: 'Maio' },
-  { key: 'JUN', name: 'Junho' },
-  { key: 'JUL', name: 'Julho' },
-  { key: 'AGO', name: 'Agosto' },
-  { key: 'SET', name: 'Setembro' },
-  { key: 'OUT', name: 'Outubro' },
-  { key: 'NOV', name: 'Novembro' },
-  { key: 'DEZ', name: 'Dezembro' },
-];
+interface ActiveSession {
+  id: string;
+  device_fingerprint: string | null;
+  ip_address: string | null;
+  created_at: string;
+  expires_at: string;
+  user_id: string;
+}
+
+function formatRelative(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'agora mesmo';
+  if (mins < 60) return `há ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `há ${hrs}h`;
+  return `há ${Math.floor(hrs / 24)} dias`;
+}
 
 const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenChange }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [accessPassword, setAccessPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Get tours to determine available month-year combinations
-  const { tours } = useTours();
-  
+
   // Settings states
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [financeiroPasswordEnabled, setFinanceiroPasswordEnabled] = useState(false);
-  const [listViewEnabled, setListViewEnabled] = useState(false);
-  const [hiddenMonthYears, setHiddenMonthYears] = useState<string[]>([]); // Format: "JAN-2025"
-  const [newFinanceiroPassword, setNewFinanceiroPassword] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
+
+  // Change admin password
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [confirmAdminPassword, setConfirmAdminPassword] = useState('');
+  const [showNewAdminPassword, setShowNewAdminPassword] = useState(false);
+
+  // Change modal access password
   const [newAccessPassword, setNewAccessPassword] = useState('');
   const [confirmAccessPassword, setConfirmAccessPassword] = useState('');
   const [showNewAccessPassword, setShowNewAccessPassword] = useState(false);
-  
-  // Available month-year combinations from tours
-  const availableMonthYears = useMemo(() => {
-    if (!tours.length) return [];
-    
-    const activeTours = tours.filter(tour => tour.is_active && tour.start_date && !tour.is_exclusive);
-    const monthYearSet = new Map<string, { month: string; year: number; firstDate: Date }>();
-    
-    activeTours.forEach(tour => {
-      const date = new Date(tour.start_date);
-      const year = date.getFullYear();
-      const month = tour.month;
-      const key = `${month}-${year}`;
-      
-      if (!monthYearSet.has(key)) {
-        monthYearSet.set(key, { month, year, firstDate: date });
-      }
-    });
-    
-    return Array.from(monthYearSet.entries())
-      .sort((a, b) => a[1].firstDate.getTime() - b[1].firstDate.getTime())
-      .map(([key, value]) => ({
-        key,
-        month: value.month,
-        year: value.year,
-        label: `${ALL_MONTHS.find(m => m.key === value.month)?.name || value.month} ${value.year}`
-      }));
-  }, [tours]);
-  
-  // Load current settings
+
+  // Active sessions
+  const [sessions, setSessions] = useState<ActiveSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentDeviceFp, setCurrentDeviceFp] = useState<string | null>(null);
+
   useEffect(() => {
     if (isAuthenticated) {
       loadSettings();
+      loadSessions();
     }
   }, [isAuthenticated]);
 
-  // Reset authentication when modal closes
   useEffect(() => {
     if (!open) {
       setIsAuthenticated(false);
@@ -97,50 +76,58 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
 
   const loadSettings = async () => {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('site_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['admin_2fa_enabled', 'financeiro_password_enabled', 'financeiro_password', 'list_view_enabled', 'hidden_month_years']);
-      
-      if (error) throw error;
-      
-      const settings = data?.reduce((acc, item) => {
+        .in('setting_key', ['admin_2fa_enabled', 'maintenance_mode']);
+
+      const settings = (data || []).reduce((acc, item) => {
         acc[item.setting_key] = item.setting_value;
         return acc;
       }, {} as Record<string, string | null>);
-      
-      setTwoFactorEnabled(settings?.['admin_2fa_enabled'] === 'true');
-      setFinanceiroPasswordEnabled(settings?.['financeiro_password_enabled'] === 'true' || !!settings?.['financeiro_password']);
-      setListViewEnabled(settings?.['list_view_enabled'] === 'true');
-      
-      // Parse hidden month-years
-      try {
-        const parsed = settings?.['hidden_month_years'] ? JSON.parse(settings['hidden_month_years']) : [];
-        setHiddenMonthYears(Array.isArray(parsed) ? parsed : []);
-      } catch {
-        setHiddenMonthYears([]);
-      }
+
+      setTwoFactorEnabled(settings['admin_2fa_enabled'] === 'true');
+      setMaintenanceEnabled(settings['maintenance_mode'] === 'true');
     } catch (error) {
       console.error('Error loading settings:', error);
+    }
+  };
+
+  const loadSessions = async () => {
+    setSessionsLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user.id ?? null;
+      setCurrentUserId(uid);
+      setCurrentDeviceFp(localStorage.getItem('admin_device_fp'));
+
+      const { data } = await (supabase.from('admin_2fa_sessions' as any) as any)
+        .select('id, device_fingerprint, ip_address, created_at, expires_at, user_id')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false });
+
+      setSessions(data || []);
+    } catch (error) {
+      console.error('Error loading sessions:', error);
+    } finally {
+      setSessionsLoading(false);
     }
   };
 
   const handleAccessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
     try {
-      // Check admin settings password
       const { data, error } = await supabase
         .from('site_settings')
         .select('setting_value')
         .eq('setting_key', 'admin_settings_password')
         .single();
-      
+
       if (error && error.code !== 'PGRST116') throw error;
 
       if (!data?.setting_value) {
-        toast.error('Nenhuma senha configurada. Defina admin_settings_password em site_settings no Supabase.');
+        toast.error('Nenhuma senha configurada.');
         return;
       }
 
@@ -151,7 +138,6 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
         toast.error('Senha incorreta');
       }
     } catch (error) {
-      console.error('Error checking password:', error);
       toast.error('Erro ao verificar senha');
     } finally {
       setIsLoading(false);
@@ -162,7 +148,6 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
     const { error } = await supabase
       .from('site_settings')
       .upsert({ setting_key: key, setting_value: value }, { onConflict: 'setting_key' });
-    
     if (error) throw error;
   };
 
@@ -171,71 +156,42 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
       await updateSetting('admin_2fa_enabled', enabled.toString());
       setTwoFactorEnabled(enabled);
       toast.success(`Verificação em duas etapas ${enabled ? 'ativada' : 'desativada'}`);
-    } catch (error) {
-      console.error('Error updating 2FA:', error);
+    } catch {
       toast.error('Erro ao atualizar configuração');
     }
   };
 
-  const handleToggleListView = async (enabled: boolean) => {
+  const handleToggleMaintenance = async (enabled: boolean) => {
     try {
-      await updateSetting('list_view_enabled', enabled.toString());
-      setListViewEnabled(enabled);
-      toast.success(`Visualização em lista ${enabled ? 'ativada' : 'desativada'}`);
-    } catch (error) {
-      console.error('Error updating list view:', error);
+      await updateSetting('maintenance_mode', enabled.toString());
+      setMaintenanceEnabled(enabled);
+      toast.success(`Modo manutenção ${enabled ? 'ativado' : 'desativado'}`);
+    } catch {
       toast.error('Erro ao atualizar configuração');
     }
   };
 
-  const handleToggleFinanceiroPassword = async (enabled: boolean) => {
-    try {
-      await updateSetting('financeiro_password_enabled', enabled.toString());
-      setFinanceiroPasswordEnabled(enabled);
-      if (!enabled) {
-        await updateSetting('financeiro_password', '');
-      }
-      toast.success(`Senha do financeiro ${enabled ? 'ativada' : 'desativada'}`);
-    } catch (error) {
-      console.error('Error updating financeiro password:', error);
-      toast.error('Erro ao atualizar configuração');
-    }
-  };
-
-  const handleToggleMonthYear = async (monthYearKey: string) => {
-    try {
-      let newHiddenMonthYears: string[];
-      if (hiddenMonthYears.includes(monthYearKey)) {
-        // Remove from hidden (show the month-year)
-        newHiddenMonthYears = hiddenMonthYears.filter(m => m !== monthYearKey);
-      } else {
-        // Add to hidden (hide the month-year)
-        newHiddenMonthYears = [...hiddenMonthYears, monthYearKey];
-      }
-      
-      await updateSetting('hidden_month_years', JSON.stringify(newHiddenMonthYears));
-      setHiddenMonthYears(newHiddenMonthYears);
-    } catch (error) {
-      console.error('Error updating hidden month-years:', error);
-      toast.error('Erro ao atualizar meses');
-    }
-  };
-
-  const handleSaveFinanceiroPassword = async () => {
-    if (!newFinanceiroPassword.trim()) {
+  const handleSaveAdminPassword = async () => {
+    if (!newAdminPassword.trim()) {
       toast.error('Digite uma senha válida');
       return;
     }
-    
+    if (newAdminPassword !== confirmAdminPassword) {
+      toast.error('As senhas não coincidem');
+      return;
+    }
+    if (newAdminPassword.length < 6) {
+      toast.error('A senha deve ter no mínimo 6 caracteres');
+      return;
+    }
     try {
-      await updateSetting('financeiro_password', newFinanceiroPassword);
-      await updateSetting('financeiro_password_enabled', 'true');
-      setNewFinanceiroPassword('');
-      setFinanceiroPasswordEnabled(true);
-      toast.success('Senha do financeiro atualizada');
-    } catch (error) {
-      console.error('Error saving financeiro password:', error);
-      toast.error('Erro ao salvar senha');
+      const { error } = await supabase.auth.updateUser({ password: newAdminPassword });
+      if (error) throw error;
+      setNewAdminPassword('');
+      setConfirmAdminPassword('');
+      toast.success('Senha do administrador alterada com sucesso');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao alterar senha');
     }
   };
 
@@ -244,30 +200,50 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
       toast.error('Digite uma senha válida');
       return;
     }
-    
     if (newAccessPassword !== confirmAccessPassword) {
       toast.error('As senhas não coincidem');
       return;
     }
-    
-    if (newAccessPassword.length < 6) {
-      toast.error('A senha deve ter no mínimo 6 caracteres');
+    if (newAccessPassword.length < 4) {
+      toast.error('A senha deve ter no mínimo 4 caracteres');
       return;
     }
-    
     try {
       await updateSetting('admin_settings_password', newAccessPassword);
       setNewAccessPassword('');
       setConfirmAccessPassword('');
       toast.success('Senha de acesso às configurações atualizada');
-    } catch (error) {
-      console.error('Error saving access password:', error);
+    } catch {
       toast.error('Erro ao salvar senha');
     }
   };
 
-  // Count visible month-years
-  const visibleCount = availableMonthYears.filter(my => !hiddenMonthYears.includes(my.key)).length;
+  const handleRevokeSession = async (sessionId: string) => {
+    try {
+      await (supabase.from('admin_2fa_sessions' as any) as any).delete().eq('id', sessionId);
+      setSessions(prev => prev.filter(s => s.id !== sessionId));
+      toast.success('Sessão encerrada');
+    } catch {
+      toast.error('Erro ao encerrar sessão');
+    }
+  };
+
+  const handleRevokeAllSessions = async () => {
+    if (!currentUserId) return;
+    try {
+      await (supabase.from('admin_2fa_sessions' as any) as any)
+        .delete()
+        .eq('user_id', currentUserId);
+      setSessions([]);
+      localStorage.removeItem('admin_device_fp');
+      toast.success('Todas as sessões foram encerradas');
+    } catch {
+      toast.error('Erro ao encerrar sessões');
+    }
+  };
+
+  const isCurrentSession = (s: ActiveSession) =>
+    s.device_fingerprint && s.device_fingerprint === currentDeviceFp;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -283,7 +259,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
                 Digite a senha para acessar as configurações de administrador
               </DialogDescription>
             </DialogHeader>
-            
+
             <form onSubmit={handleAccessSubmit} className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="accessPassword">Senha de Acesso</Label>
@@ -306,7 +282,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
                   </button>
                 </div>
               </div>
-              
+
               <Button type="submit" className="w-full" disabled={isLoading || !accessPassword}>
                 {isLoading ? 'Verificando...' : 'Acessar'}
               </Button>
@@ -323,8 +299,9 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
                 Gerencie as configurações de segurança do sistema
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="space-y-6 py-4">
+
               {/* 2FA Toggle */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
@@ -336,139 +313,156 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
                     Exigir código de verificação por e-mail ao fazer login
                   </p>
                 </div>
-                <Switch
-                  checked={twoFactorEnabled}
-                  onCheckedChange={handleToggle2FA}
-                />
+                <Switch checked={twoFactorEnabled} onCheckedChange={handleToggle2FA} />
               </div>
-              
+
               <Separator />
-              
-              {/* Financeiro Password Toggle */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <Lock className="h-4 w-4 text-muted-foreground" />
-                      <Label className="text-sm font-medium">Senha do Financeiro</Label>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Exigir senha para acessar a área financeira
-                    </p>
-                  </div>
-                  <Switch
-                    checked={financeiroPasswordEnabled}
-                    onCheckedChange={handleToggleFinanceiroPassword}
-                  />
-                </div>
-                
-                {financeiroPasswordEnabled && (
-                  <div className="space-y-2 pl-6">
-                    <Label htmlFor="financeiroPassword" className="text-xs">Nova senha do financeiro</Label>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Input
-                          id="financeiroPassword"
-                          type={showNewPassword ? 'text' : 'password'}
-                          value={newFinanceiroPassword}
-                          onChange={(e) => setNewFinanceiroPassword(e.target.value)}
-                          placeholder="Digite a nova senha"
-                          className="pr-10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                      <Button size="sm" onClick={handleSaveFinanceiroPassword} disabled={!newFinanceiroPassword}>
-                        Salvar
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <Separator />
-              
-              {/* List View Toggle */}
+
+              {/* Maintenance Mode */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <List className="h-4 w-4 text-muted-foreground" />
-                    <Label className="text-sm font-medium">Visualização em Lista</Label>
+                    <WrenchIcon className="h-4 w-4 text-muted-foreground" />
+                    <Label className="text-sm font-medium">Modo Manutenção</Label>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Exibir opção de alternar entre cards e lista na página inicial
+                    Exibir página de manutenção para visitantes do site
                   </p>
                 </div>
-                <Switch
-                  checked={listViewEnabled}
-                  onCheckedChange={handleToggleListView}
-                />
+                <Switch checked={maintenanceEnabled} onCheckedChange={handleToggleMaintenance} />
               </div>
-              
+
               <Separator />
-              
-              {/* Hidden Months Configuration */}
+
+              {/* Change Admin Password */}
               <div className="space-y-4">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <Label className="text-sm font-medium">Meses Visíveis na Página Inicial</Label>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Selecione quais meses/anos devem aparecer nos cards principais ({visibleCount} de {availableMonthYears.length} visíveis)
-                  </p>
+                <div className="flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm font-medium">Alterar Senha do Admin</Label>
                 </div>
-                
-                {availableMonthYears.length === 0 ? (
-                  <p className="text-xs text-muted-foreground pl-6">
-                    Nenhum passeio ativo encontrado.
-                  </p>
+                <p className="text-xs text-muted-foreground">
+                  Altera a senha de acesso ao painel administrativo
+                </p>
+
+                <div className="space-y-3 pl-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="newAdminPassword" className="text-xs">Nova senha</Label>
+                    <div className="relative">
+                      <Input
+                        id="newAdminPassword"
+                        type={showNewAdminPassword ? 'text' : 'password'}
+                        value={newAdminPassword}
+                        onChange={(e) => setNewAdminPassword(e.target.value)}
+                        placeholder="Mínimo 6 caracteres"
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewAdminPassword(!showNewAdminPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showNewAdminPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmAdminPassword" className="text-xs">Confirmar nova senha</Label>
+                    <Input
+                      id="confirmAdminPassword"
+                      type="password"
+                      value={confirmAdminPassword}
+                      onChange={(e) => setConfirmAdminPassword(e.target.value)}
+                      placeholder="Repita a nova senha"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveAdminPassword}
+                    disabled={!newAdminPassword || !confirmAdminPassword}
+                  >
+                    Alterar Senha
+                  </Button>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Active Sessions */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MonitorSmartphone className="h-4 w-4 text-muted-foreground" />
+                    <Label className="text-sm font-medium">Sessões Ativas</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={loadSessions} title="Atualizar">
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </Button>
+                    {sessions.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-destructive hover:text-destructive"
+                        onClick={handleRevokeAllSessions}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Encerrar todas
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Dispositivos autorizados com verificação em duas etapas
+                </p>
+
+                {sessionsLoading ? (
+                  <p className="text-xs text-muted-foreground pl-6">Carregando...</p>
+                ) : sessions.length === 0 ? (
+                  <p className="text-xs text-muted-foreground pl-6">Nenhuma sessão ativa encontrada.</p>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2 pl-6">
-                    {availableMonthYears.map((monthYear) => {
-                      const isVisible = !hiddenMonthYears.includes(monthYear.key);
-                      return (
-                        <div
-                          key={monthYear.key}
-                          className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors ${
-                            isVisible 
-                              ? 'bg-primary/10 border-primary/30 hover:bg-primary/20' 
-                              : 'bg-muted/50 border-muted hover:bg-muted'
-                          }`}
-                          onClick={() => handleToggleMonthYear(monthYear.key)}
-                        >
-                          <Checkbox 
-                            checked={isVisible}
-                            onCheckedChange={() => handleToggleMonthYear(monthYear.key)}
-                            className="pointer-events-none"
-                          />
-                          <span className={`text-xs ${isVisible ? 'font-medium' : 'text-muted-foreground'}`}>
-                            {monthYear.label}
-                          </span>
+                  <div className="space-y-2 pl-6">
+                    {sessions.map((s) => (
+                      <div key={s.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-xs">
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium truncate">
+                              {s.ip_address || 'IP desconhecido'}
+                            </span>
+                            {isCurrentSession(s) && (
+                              <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4">
+                                este dispositivo
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-muted-foreground">Criada {formatRelative(s.created_at)}</p>
                         </div>
-                      );
-                    })}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRevokeSession(s.id)}
+                          title="Encerrar sessão"
+                        >
+                          <LogOut className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
-              
+
               <Separator />
-              
-              {/* Change Access Password */}
+
+              {/* Change Modal Access Password */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-500" />
                   <Label className="text-sm font-medium">Alterar Senha de Acesso</Label>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Altere a senha usada para acessar estas configurações
+                  Senha usada para abrir este painel de configurações
                 </p>
-                
+
                 <div className="space-y-3 pl-6">
                   <div className="space-y-2">
                     <Label htmlFor="newAccessPassword" className="text-xs">Nova senha</Label>
@@ -490,7 +484,6 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
                       </button>
                     </div>
                   </div>
-                  
                   <div className="space-y-2">
                     <Label htmlFor="confirmAccessPassword" className="text-xs">Confirmar nova senha</Label>
                     <Input
@@ -501,9 +494,8 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
                       placeholder="Confirme a nova senha"
                     />
                   </div>
-                  
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     onClick={handleSaveAccessPassword}
                     disabled={!newAccessPassword || !confirmAccessPassword}
                   >
@@ -511,6 +503,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
                   </Button>
                 </div>
               </div>
+
             </div>
           </>
         )}
