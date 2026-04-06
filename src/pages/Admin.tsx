@@ -31,8 +31,7 @@ import AdminHomeSections from "@/components/admin/AdminHomeSections";
 import AdminCategorias from "@/components/admin/AdminCategorias";
 import AdminStories from "@/components/admin/AdminStories";
 import AdminTourMoments from "@/components/admin/AdminTourMoments";
-import ChatConversasTab from "@/components/admin/ChatConversasTab";
-import AITrainingTab from "@/components/admin/AITrainingTab";
+import ConversasPage from "@/components/admin/ConversasPage";
 import { useToast } from "@/hooks/use-toast";
 import { Tour } from "@/hooks/useTours";
 import { useNoIndex } from '@/hooks/useNoIndex';
@@ -413,9 +412,7 @@ const Admin = () => {
       case 'categorias':
         return <AdminCategorias />;
       case 'conversas':
-        return <ChatConversasTab />;
-      case 'treinamento':
-        return <AITrainingTab />;
+        return <ConversasPage />;
       case 'usuarios':
         return staffPerms.isAdmin ? <AdminUsuariosTab /> : null;
       default:
@@ -488,8 +485,7 @@ const Admin = () => {
       'analytics-abandono': 'Analytics - Abandono de Formulario',
       'analytics-visitantes': 'Analytics - Visitantes',
       'exportar': 'Exportar Passeios',
-      'conversas': 'Conversas IA',
-      'treinamento': 'Treinamento da Camila',
+      'conversas': 'Conversas',
       'usuarios': 'Usuários',
     };
     return titles[activeTab] || 'Painel Administrativo';

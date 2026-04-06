@@ -9,7 +9,7 @@ export const SECTION_TO_TABS: Record<string, string[]> = {
   financeiro:    ['financeiro', 'financeiro-dashboard', 'financeiro-diario', 'financeiro-passeio', 'financeiro-mensal', 'financeiro-balanco', 'financeiro-competencia', 'financeiro-historico', 'financeiro-comparacao', 'financeiro-grafica', 'financeiro-analise'],
   clientes:      ['clientes', 'clientes-lista', 'clientes-interessados', 'clientes-atendimento', 'clientes-creditos', 'clientes-cadastro', 'clientes-planilha', 'clientes-analytics'],
   fidelidade:    ['fidelidade', 'fidelidade-clientes', 'fidelidade-pontos', 'fidelidade-selos', 'fidelidade-niveis', 'fidelidade-mensagens'],
-  chat_ia:       ['conversas', 'treinamento', 'analytics-visitantes'],
+  chat_ia:       ['conversas'],
   marketing:     ['marketing', 'jornada', 'conteudo-calendario', 'paginas-institucionais', 'paginas', 'home-sections', 'stories', 'tour-moments', 'depoimentos', 'formularios', 'categorias'],
   configuracoes: ['funcionalidades', 'func-menu', 'func-banners', 'func-mensagens', 'func-cupons', 'func-emails', 'func-politica', 'func-templates', 'func-tickets', 'func-transporte', 'func-pagina-sucesso', 'func-processos', 'func-seguro-roca', 'analytics', 'analytics-acessos', 'analytics-abandono', 'loja', 'mapa-processos'],
   guias:         ['guias'],

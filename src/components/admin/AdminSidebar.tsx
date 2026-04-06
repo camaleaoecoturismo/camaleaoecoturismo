@@ -159,16 +159,7 @@ const navGroups: NavGroup[] = [
           { id: 'clientes-analytics', label: 'Análise', icon: <BarChart3 className="h-4 w-4" /> },
         ],
       },
-      {
-        id: 'conversas',
-        label: 'Conversas',
-        icon: <MessageCircle className="h-5 w-5" />,
-        subItems: [
-          { id: 'conversas', label: 'Histórico', icon: <MessageSquare className="h-4 w-4" /> },
-          { id: 'treinamento', label: 'Treinamento', icon: <Brain className="h-4 w-4" /> },
-          { id: 'analytics-visitantes', label: 'Visitantes', icon: <Users className="h-4 w-4" /> },
-        ],
-      },
+      { id: 'conversas', label: 'Conversas', icon: <MessageCircle className="h-5 w-5" /> },
       {
         id: 'fidelidade',
         label: 'Fidelidade',
