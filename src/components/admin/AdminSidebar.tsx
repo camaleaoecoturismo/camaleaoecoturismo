@@ -738,6 +738,17 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
       {/* Footer */}
       <div className="border-t border-border p-2">
+        {isAdmin && (
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="w-full flex items-center gap-3 py-2 px-2 rounded-xl text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors text-sm mb-1"
+          >
+            <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-muted/60 shrink-0">
+              <Settings className="h-4 w-4" />
+            </span>
+            <span>Configurações</span>
+          </button>
+        )}
         <button
           onClick={onSignOut}
           className="w-full flex items-center gap-3 py-2 px-2 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors text-sm"
