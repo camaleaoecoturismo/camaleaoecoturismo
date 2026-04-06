@@ -582,7 +582,7 @@ const Admin = () => {
 
       {/* Online visitors floating widget */}
       <div className="fixed top-4 right-4 z-40">
-        <OnlineVisitorsWidget />
+        <OnlineVisitorsWidget onOpenChat={setFloatingChatSessionId} />
       </div>
     </div>
   );

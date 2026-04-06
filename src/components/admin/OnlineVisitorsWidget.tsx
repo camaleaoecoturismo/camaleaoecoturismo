@@ -8,6 +8,17 @@ import { Button } from '@/components/ui/button';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+interface ActiveChatSession {
+  session_id: string;
+  last_activity: string;
+  message_count: number;
+  browser: string | null;
+  os: string | null;
+  device_type: string | null;
+  first_page: string | null;
+  is_manual_mode: boolean;
+}
+
 interface OnlineSession {
   id: string;
   user_id_anon: string;
@@ -355,6 +366,45 @@ function VisitorDetail({
   );
 }
 
+// ─── Chat session row ─────────────────────────────────────────────────────────
+
+function ChatSessionRow({ session, onClick }: { session: ActiveChatSession; onClick: () => void }) {
+  const isRecent = Date.now() - new Date(session.last_activity).getTime() < 5 * 60 * 1000;
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors text-left border-b border-border/50 last:border-0"
+    >
+      <div className="relative shrink-0">
+        <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center">
+          <MessageCircle className="w-4 h-4 text-indigo-500" />
+        </div>
+        {isRecent && (
+          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-background" />
+        )}
+        {session.is_manual_mode && (
+          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-purple-500 border-2 border-background" />
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate text-gray-800">
+          #{session.session_id.slice(-8)}
+          {session.is_manual_mode && (
+            <span className="ml-1.5 text-[9px] bg-purple-100 text-purple-600 rounded-full px-1.5 py-0.5">manual</span>
+          )}
+        </p>
+        <p className="text-xs text-muted-foreground truncate">
+          {session.first_page || '/'} · {session.message_count} msg
+        </p>
+      </div>
+      <div className="flex items-center gap-1 text-muted-foreground shrink-0">
+        <DeviceIcon type={session.device_type} />
+        <span className="text-xs">{timeAgo(session.last_activity)}</span>
+      </div>
+    </button>
+  );
+}
+
 // ─── Visitor row ──────────────────────────────────────────────────────────────
 
 function VisitorRow({ session, onClick }: { session: OnlineSession; onClick: () => void }) {
@@ -388,12 +438,14 @@ function VisitorRow({ session, onClick }: { session: OnlineSession; onClick: () 
 
 // ─── Main widget ──────────────────────────────────────────────────────────────
 
-export function OnlineVisitorsWidget() {
+export function OnlineVisitorsWidget({ onOpenChat }: { onOpenChat?: (sessionId: string) => void }) {
   const [open, setOpen] = useState(false);
   const [sessions, setSessions] = useState<OnlineSession[]>([]);
+  const [chatSessions, setChatSessions] = useState<ActiveChatSession[]>([]);
   const [selected, setSelected] = useState<OnlineSession | null>(null);
 
   const fetchOnline = useCallback(async () => {
+    // Analytics visitors (browsing now — heartbeat < 2min)
     const cutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
     const { data } = await (supabase.from('analytics_sessions' as any) as any)
       .select('*')
@@ -401,13 +453,22 @@ export function OnlineVisitorsWidget() {
       .order('last_heartbeat', { ascending: false })
       .limit(50);
 
-    // Deduplicate by user_id_anon
     const seen = new Set<string>();
     const unique: OnlineSession[] = [];
     for (const s of (data || [])) {
       if (!seen.has(s.user_id_anon)) { seen.add(s.user_id_anon); unique.push(s); }
     }
     setSessions(unique);
+
+    // Chat sessions (active in last 15min)
+    const chatCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { data: chatData } = await supabase
+      .from('chat_sessions')
+      .select('session_id, last_activity, message_count, browser, os, device_type, first_page, is_manual_mode')
+      .gte('last_activity', chatCutoff)
+      .order('last_activity', { ascending: false })
+      .limit(30);
+    setChatSessions((chatData as ActiveChatSession[]) ?? []);
   }, []);
 
   useEffect(() => {
@@ -415,6 +476,7 @@ export function OnlineVisitorsWidget() {
     const interval = setInterval(fetchOnline, 30_000);
     const ch = supabase.channel('widget-online-visitors')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'analytics_sessions' }, fetchOnline)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_sessions' }, fetchOnline)
       .subscribe();
     return () => { clearInterval(interval); supabase.removeChannel(ch); };
   }, [fetchOnline]);
@@ -434,6 +496,7 @@ export function OnlineVisitorsWidget() {
   }, [open]);
 
   const count = sessions.length;
+  const totalActivity = count + chatSessions.length;
 
   return (
     <div className="relative" ref={panelRef}>
@@ -441,29 +504,34 @@ export function OnlineVisitorsWidget() {
       <button
         onClick={() => { setOpen(o => !o); if (open) setSelected(null); }}
         className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-all border ${
-          count > 0
+          totalActivity > 0
             ? 'bg-green-500/10 border-green-500/30 text-green-700 hover:bg-green-500/20'
             : 'bg-muted/50 border-border text-muted-foreground hover:bg-muted'
         }`}
       >
-        {count > 0 && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />}
+        {totalActivity > 0 && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />}
         <Users className="w-3.5 h-3.5" />
-        <span>{count > 0 ? `${count} online` : 'Ninguém online'}</span>
+        <span>
+          {count > 0 ? `${count} online` : 'Ninguém online'}
+          {chatSessions.length > 0 && ` · ${chatSessions.length} conv`}
+        </span>
       </button>
 
       {/* Dropdown panel */}
       {open && (
         <div
           className="absolute right-0 top-full mt-2 w-80 rounded-2xl border border-border bg-background shadow-2xl overflow-hidden z-50 flex flex-col"
-          style={{ maxHeight: '520px' }}
+          style={{ maxHeight: '580px' }}
         >
           {/* Panel header */}
           <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
             {selected ? null : (
               <>
                 <div>
-                  <p className="text-sm font-semibold">Visitantes online</p>
-                  <p className="text-xs text-muted-foreground">{count} {count === 1 ? 'pessoa' : 'pessoas'} no site agora</p>
+                  <p className="text-sm font-semibold">Atividade ao vivo</p>
+                  <p className="text-xs text-muted-foreground">
+                    {count} navegando · {chatSessions.length} conversas recentes
+                  </p>
                 </div>
                 <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
                   <X className="w-4 h-4" />
@@ -475,22 +543,56 @@ export function OnlineVisitorsWidget() {
           {/* Body */}
           {selected ? (
             <div className="flex-1 overflow-hidden flex flex-col" style={{ minHeight: 0 }}>
-              <VisitorDetail
-                session={selected}
-                onBack={() => setSelected(null)}
-              />
-            </div>
-          ) : count === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-              <Users className="w-8 h-8 text-muted-foreground/30 mb-2" />
-              <p className="text-sm text-muted-foreground">Nenhum visitante online no momento</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">As notificações aparecem automaticamente quando alguém entrar</p>
+              <VisitorDetail session={selected} onBack={() => setSelected(null)} />
             </div>
           ) : (
             <div className="overflow-y-auto flex-1">
-              {sessions.map(s => (
-                <VisitorRow key={s.user_id_anon} session={s} onClick={() => setSelected(s)} />
-              ))}
+              {/* Analytics visitors section */}
+              {count > 0 && (
+                <>
+                  <div className="px-4 py-2 bg-muted/30 border-b border-border/40">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                      Navegando agora
+                    </p>
+                  </div>
+                  {sessions.map(s => (
+                    <VisitorRow key={s.user_id_anon} session={s} onClick={() => setSelected(s)} />
+                  ))}
+                </>
+              )}
+
+              {/* Chat sessions section */}
+              {chatSessions.length > 0 && (
+                <>
+                  <div className="px-4 py-2 bg-muted/30 border-b border-border/40">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <MessageCircle className="w-3 h-3 text-indigo-400" />
+                      Conversas com a Camila
+                    </p>
+                  </div>
+                  {chatSessions.map(s => (
+                    <ChatSessionRow
+                      key={s.session_id}
+                      session={s}
+                      onClick={() => {
+                        if (onOpenChat) {
+                          onOpenChat(s.session_id);
+                          setOpen(false);
+                        }
+                      }}
+                    />
+                  ))}
+                </>
+              )}
+
+              {totalActivity === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                  <Users className="w-8 h-8 text-muted-foreground/30 mb-2" />
+                  <p className="text-sm text-muted-foreground">Nenhuma atividade no momento</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">As notificações aparecem automaticamente quando alguém entrar</p>
+                </div>
+              )}
             </div>
           )}
         </div>
