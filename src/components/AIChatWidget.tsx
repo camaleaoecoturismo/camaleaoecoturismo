@@ -289,6 +289,10 @@ export function AIChatWidget() {
 
   // Detect if user is on a specific tour page
   const location = useLocation();
+
+  // Hide chat on admin pages
+  if (location.pathname.startsWith('/admin')) return null;
+
   const currentTourSlug = (() => {
     const match = location.pathname.match(/^\/passeio\/([^/]+)$/);
     return match ? match[1] : null;
