@@ -727,8 +727,8 @@ const Passeio = () => {
                           <span className="text-right">Total</span>
                         </div>
                         {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
-                          const total = installmentBase * (1 + INSTALLMENT_FEES[n] / 100);
-                          const monthly = total / n;
+                          const total = Math.round((installmentBase / (1 - INSTALLMENT_FEES[n] / 100) + Number.EPSILON) * 100) / 100;
+                          const monthly = Math.round((total / n + Number.EPSILON) * 100) / 100;
                           return (
                             <div key={n} className="grid grid-cols-3 px-3 py-2 border-t border-border/40 items-center">
                               <span className="font-medium text-foreground">{n === 1 ? "À vista" : `${n}x`}</span>
@@ -775,8 +775,8 @@ const Passeio = () => {
                           <span className="text-right">Total</span>
                         </div>
                         {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
-                          const total = minPrice * (1 + INSTALLMENT_FEES[n] / 100);
-                          const monthly = total / n;
+                          const total = Math.round((minPrice / (1 - INSTALLMENT_FEES[n] / 100) + Number.EPSILON) * 100) / 100;
+                          const monthly = Math.round((total / n + Number.EPSILON) * 100) / 100;
                           return (
                             <div key={n} className="grid grid-cols-3 px-3 py-2 border-t border-border/40 items-center">
                               <span className="font-medium text-foreground">{n === 1 ? "À vista" : `${n}x`}</span>

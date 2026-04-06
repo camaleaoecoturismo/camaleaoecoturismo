@@ -3426,7 +3426,7 @@ setChatMessages([]);
                           </div>
 
                           {/* Installments simulation - shown when credit card selected */}
-                          {formData.payment_method === "credit_card" && cardAfterDiscount > 0 && (
+                          {formData.payment_method === "credit_card" && afterDiscount > 0 && (
                             <div>
                               <button
                                 type="button"
@@ -3443,8 +3443,8 @@ setChatMessages([]);
                                     <span className="text-right">Total</span>
                                   </div>
                                   {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
-                                    const totalCard = cardAfterDiscount * (1 + INSTALLMENT_FEES[n] / 100);
-                                    const monthly = totalCard / n;
+                                    const totalCard = Math.round((afterDiscount / (1 - INSTALLMENT_FEES[n] / 100) + Number.EPSILON) * 100) / 100;
+                                    const monthly = Math.round((totalCard / n + Number.EPSILON) * 100) / 100;
                                     return (
                                       <div key={n} className="grid grid-cols-3 px-3 py-1.5 border-t border-border/40 items-center">
                                         <span className="font-medium">{n === 1 ? "À vista" : `${n}x`}</span>

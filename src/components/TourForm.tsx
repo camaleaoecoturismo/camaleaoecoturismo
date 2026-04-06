@@ -385,7 +385,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
       await supabase.from('tour_pricing_options').delete().eq('tour_id', tour.id);
       
       const pricingOptionsToInsert = values.pricing_options.map(option => {
-        const cardPrice = option.pix_price * (1 + INSTALLMENT_FEES[12] / 100);
+        const cardPrice = Math.round((option.pix_price / (1 - INSTALLMENT_FEES[12] / 100) + Number.EPSILON) * 100) / 100;
         return {
           tour_id: tour.id,
           option_name: option.option_name,
@@ -534,7 +534,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
 
         const pricingOptionsToInsert = values.pricing_options.map(option => {
           // Preço cartão = preço base + 17.28% (12x)
-          const cardPrice = option.pix_price * (1 + INSTALLMENT_FEES[12] / 100);
+          const cardPrice = Math.round((option.pix_price / (1 - INSTALLMENT_FEES[12] / 100) + Number.EPSILON) * 100) / 100;
           return {
             tour_id: tourId,
             option_name: option.option_name,
@@ -562,7 +562,7 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
   const watchPixPrice = form.watch('pricing_options.0.pix_price') || 0;
   const watchPixDiscount = form.watch('pix_discount_percent') || 0;
   const pixPriceWithDiscount = watchPixPrice * (1 - watchPixDiscount / 100);
-  const cardPrice12x = watchPixPrice * (1 + INSTALLMENT_FEES[12] / 100);
+  const cardPrice12x = Math.round((watchPixPrice / (1 - INSTALLMENT_FEES[12] / 100) + Number.EPSILON) * 100) / 100;
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6">
