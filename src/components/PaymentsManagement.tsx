@@ -32,7 +32,8 @@ import {
   Mail,
   FileText,
   RotateCcw,
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -62,6 +63,8 @@ interface Payment {
   refund_reason: string;
   selected_optional_items: any[];
   status: string;
+  ticket_enviado: boolean;
+  tickets_generated: boolean;
 }
 
 interface PaymentLog {
@@ -150,6 +153,9 @@ export default function PaymentsManagement() {
   const [showInfinitePayDialog, setShowInfinitePayDialog] = useState(false);
   const [infinitePayNsu, setInfinitePayNsu] = useState('');
   const [verifyingInfinitePay, setVerifyingInfinitePay] = useState(false);
+
+  // Email resend
+  const [reenvioLoading, setReenvioLoading] = useState(false);
   
   const { toast } = useToast();
 
@@ -256,6 +262,8 @@ export default function PaymentsManagement() {
           refund_reason,
           selected_optional_items,
           status,
+          ticket_enviado,
+          tickets_generated,
           clientes!fk_reservas_cliente(id, nome_completo, email, cpf, whatsapp),
           tours!fk_reservas_tour(id, name, start_date)
         `)
@@ -291,7 +299,9 @@ export default function PaymentsManagement() {
         refund_date: r.refund_date || '',
         refund_reason: r.refund_reason || '',
         selected_optional_items: r.selected_optional_items || [],
-        status: r.status || 'pendente'
+        status: r.status || 'pendente',
+        ticket_enviado: r.ticket_enviado || false,
+        tickets_generated: r.tickets_generated || false,
       }));
 
       setPayments(transformedData);
@@ -468,12 +478,40 @@ export default function PaymentsManagement() {
     link.click();
   };
 
+  const handleReenviarEmail = async () => {
+    if (!selectedPayment) return;
+    setReenvioLoading(true);
+    try {
+      // Reset ticket_enviado so the idempotency check allows re-send
+      await supabase.from('reservas')
+        .update({ ticket_enviado: false })
+        .eq('id', selectedPayment.id);
+
+      const { error } = await supabase.functions.invoke('send-reservation-confirmation', {
+        body: { reserva_id: selectedPayment.id }
+      });
+
+      if (error) {
+        toast({ title: 'Erro ao reenviar email', variant: 'destructive' });
+      } else {
+        toast({ title: 'Email reenviado com sucesso!' });
+        fetchPayments();
+        setSelectedPayment({ ...selectedPayment, ticket_enviado: true });
+      }
+    } catch {
+      toast({ title: 'Erro ao reenviar email', variant: 'destructive' });
+    } finally {
+      setReenvioLoading(false);
+    }
+  };
+
   const handleUpdateStatus = async (newStatus: string) => {
     if (!selectedPayment) return;
-    
+
     try {
       await supabase.from('reservas').update({
         payment_status: newStatus,
+        status: newStatus === 'pago' ? 'confirmada' : undefined,
         updated_at: new Date().toISOString()
       }).eq('id', selectedPayment.id);
 
@@ -483,6 +521,19 @@ export default function PaymentsManagement() {
         event_status: newStatus,
         event_message: `Status alterado manualmente para ${newStatus}`
       });
+
+      if (newStatus === 'pago') {
+        // Generate tickets if not yet generated
+        if (!selectedPayment.tickets_generated) {
+          await supabase.rpc('create_tickets_for_reservation', {
+            p_reserva_id: selectedPayment.id
+          });
+        }
+        // Send confirmation email (idempotent — won't duplicate if already sent)
+        supabase.functions.invoke('send-reservation-confirmation', {
+          body: { reserva_id: selectedPayment.id }
+        }).catch(console.error);
+      }
 
       toast({ title: 'Status atualizado!' });
       fetchPayments();
@@ -712,10 +763,36 @@ export default function PaymentsManagement() {
               </>
             )}
 
+            {/* Email badge + resend button - for paid reservations */}
+            {selectedPayment.payment_status === 'pago' && (
+              <div className="flex items-center gap-2">
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  selectedPayment.ticket_enviado
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-slate-100 text-slate-500'
+                }`}>
+                  {selectedPayment.ticket_enviado ? '✓ Email enviado' : 'Email não enviado'}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReenviarEmail}
+                  disabled={reenvioLoading}
+                  className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                >
+                  {reenvioLoading
+                    ? <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    : <Mail className="h-4 w-4 mr-1" />
+                  }
+                  Reenviar Ingresso
+                </Button>
+              </div>
+            )}
+
             {/* InfinitePay verification button - for pending payments */}
-            {(selectedPayment.payment_status === 'pendente' || selectedPayment.payment_status === 'aguardando') && 
+            {(selectedPayment.payment_status === 'pendente' || selectedPayment.payment_status === 'aguardando') &&
              (selectedPayment.payment_method === 'infinitepay' || !selectedPayment.payment_method || selectedPayment.payment_method === '') && (
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => setShowInfinitePayDialog(true)}
                 className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"

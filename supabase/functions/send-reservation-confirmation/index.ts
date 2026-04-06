@@ -494,7 +494,8 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { reserva_id }: ReservationConfirmationRequest = await req.json();
+    const body = await req.json();
+    const { reserva_id, force } = body as ReservationConfirmationRequest & { force?: boolean };
     
     if (!reserva_id) {
       console.error('Missing reserva_id');
@@ -555,6 +556,15 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Reservation found: ${reserva.reserva_numero || reserva_id.slice(0, 8)}`);
     console.log(`Client email: ${reserva.cliente?.email}`);
     console.log(`Tour: ${reserva.tour?.name}`);
+
+    // Idempotency: skip if email already sent (unless force flag is passed)
+    if (reserva.ticket_enviado === true && !force) {
+      console.log('Email já enviado para reserva, pulando:', reserva_id);
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, message: 'Email already sent' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Fetch email template from database using trigger_event
     console.log('Fetching email template for trigger: payment_approved');
