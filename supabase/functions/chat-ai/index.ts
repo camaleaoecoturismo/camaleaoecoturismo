@@ -53,11 +53,11 @@ function deriveTags(tour: any): string[] {
   return tags;
 }
 
-async function buildData(tourSlug: string | null): Promise<{ context: string; toursMap: Map<string, TourCard> }> {
+async function buildData(tourSlug: string | null): Promise<{ context: string; toursMap: Map<string, TourCard>; adminInstructions: string }> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const today = new Date().toISOString().split("T")[0];
 
-  const [toursRes, faqRes] = await Promise.all([
+  const [toursRes, faqRes, instructionsRes, configRes] = await Promise.all([
     supabase
       .from("tours")
       .select("id, name, city, state, start_date, end_date, slug, about, itinerary, includes, not_includes, valor_padrao, image_url")
@@ -70,12 +70,21 @@ async function buildData(tourSlug: string | null): Promise<{ context: string; to
       .select("pergunta, resposta, categoria")
       .order("display_order", { ascending: true })
       .limit(15),
+    supabase
+      .from("ai_instructions")
+      .select("title, content, category")
+      .eq("is_active", true)
+      .order("priority", { ascending: false }),
+    supabase
+      .from("ai_agent_config")
+      .select("key, label, value")
+      .neq("value", ""),
   ]);
 
   const tours = toursRes.data;
 
   if (!tours || tours.length === 0) {
-    return { context: "Nenhum passeio disponível no momento.", toursMap: new Map() };
+    return { context: "Nenhum passeio disponível no momento.", toursMap: new Map(), adminInstructions: "" };
   }
 
   const tourIds = (tours as any[]).map((t) => t.id);
@@ -178,7 +187,34 @@ async function buildData(tourSlug: string | null): Promise<{ context: string; to
     faqSection = "\n\nPERGUNTAS FREQUENTES:\n" + faqLines.join("\n---\n");
   }
 
-  return { context: contextLines.join("\n") + faqSection, toursMap };
+  // Build admin instructions section
+  const adminLines: string[] = [];
+
+  // Config entries (free-text: extra context, seasonal notes, etc.)
+  for (const cfg of (configRes.data ?? []) as any[]) {
+    if (cfg.value && cfg.value.trim()) {
+      adminLines.push(`[${cfg.label ?? cfg.key}]: ${cfg.value.trim()}`);
+    }
+  }
+
+  // Individual instructions by category
+  const categoryLabel: Record<string, string> = {
+    regra: "REGRA",
+    contexto: "CONTEXTO",
+    comportamento: "COMPORTAMENTO",
+    promocao: "PROMOÇÃO",
+  };
+  for (const inst of (instructionsRes.data ?? []) as any[]) {
+    const label = categoryLabel[inst.category] ?? inst.category.toUpperCase();
+    adminLines.push(`[${label}] ${inst.title}: ${inst.content.trim()}`);
+  }
+
+  const adminInstructions =
+    adminLines.length > 0
+      ? "INSTRUÇÕES PERSONALIZADAS DO ADMIN:\n" + adminLines.join("\n")
+      : "";
+
+  return { context: contextLines.join("\n") + faqSection, toursMap, adminInstructions };
 }
 
 serve(async (req) => {
@@ -196,7 +232,7 @@ serve(async (req) => {
       );
     }
 
-    const { context, toursMap } = await buildData(tourSlug);
+    const { context, toursMap, adminInstructions } = await buildData(tourSlug);
 
     // Build tour-page context section if user is on a specific tour page
     let tourPageSection = "";
@@ -297,7 +333,7 @@ Use esses tokens SEMPRE que for indicar uma página do site. Nunca escreva a URL
 
 PASSEIOS DISPONÍVEIS (use APENAS estes slugs em "tourSlugs"):
 ${context}${tourPageSection}
-
+${adminInstructions ? "\n" + adminInstructions + "\n" : ""}
 REGRAS ABSOLUTAS:
 - Só use slugs da lista acima — nunca invente
 - Nunca coloque nomes ou datas de passeios no "text" se já incluiu em "tourSlugs"

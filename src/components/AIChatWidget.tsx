@@ -289,12 +289,7 @@ export function AIChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
-
-  // Detect if user is on a specific tour page
   const location = useLocation();
-
-  // Hide chat on admin pages
-  if (location.pathname.startsWith('/admin')) return null;
 
   const currentTourSlug = (() => {
     const match = location.pathname.match(/^\/passeio\/([^/]+)$/);
@@ -486,6 +481,9 @@ export function AIChatWidget() {
       sendMessage(input);
     }
   };
+
+  // Hide chat on admin pages — AFTER all hooks
+  if (location.pathname.startsWith('/admin')) return null;
 
   const showQuickActions = !quickActionsUsed && messages.length === 0;
 

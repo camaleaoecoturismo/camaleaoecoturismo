@@ -27,6 +27,7 @@ import AdminCategorias from "@/components/admin/AdminCategorias";
 import AdminStories from "@/components/admin/AdminStories";
 import AdminTourMoments from "@/components/admin/AdminTourMoments";
 import ChatConversasTab from "@/components/admin/ChatConversasTab";
+import AITrainingTab from "@/components/admin/AITrainingTab";
 import { useToast } from "@/hooks/use-toast";
 import { Tour } from "@/hooks/useTours";
 import { useNoIndex } from '@/hooks/useNoIndex';
@@ -337,6 +338,8 @@ const Admin = () => {
         return <AdminCategorias />;
       case 'conversas':
         return <ChatConversasTab />;
+      case 'treinamento':
+        return <AITrainingTab />;
       default:
         return <TourManagementTab tours={allToursForManagement} onRefresh={fetchTours} viewMode="dashboard" />;
     }
@@ -407,6 +410,7 @@ const Admin = () => {
       'analytics-abandono': 'Analytics - Abandono de Formulario',
       'exportar': 'Exportar Passeios',
       'conversas': 'Conversas IA',
+      'treinamento': 'Treinamento da Camila',
     };
     return titles[activeTab] || 'Painel Administrativo';
   };

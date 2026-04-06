@@ -151,6 +151,10 @@ const navGroups: NavGroup[] = [
         id: 'conversas',
         label: 'Conversas IA',
         icon: <MessageCircle className="h-5 w-5" />,
+        subItems: [
+          { id: 'conversas', label: 'Histórico', icon: <MessageSquare className="h-4 w-4" /> },
+          { id: 'treinamento', label: 'Treinamento', icon: <Brain className="h-4 w-4" /> },
+        ],
       },
       {
         id: 'fidelidade',
