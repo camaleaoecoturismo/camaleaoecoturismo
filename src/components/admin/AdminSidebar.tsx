@@ -53,6 +53,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   UserCog,
+  Settings,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import AdminSettingsModal from './AdminSettingsModal';
