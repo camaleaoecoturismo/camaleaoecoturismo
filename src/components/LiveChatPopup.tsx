@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { X, Send, MessageCircle, ChevronDown } from 'lucide-react';
+import { Send, MessageCircle, ChevronDown } from 'lucide-react';
 
 const ANON_KEY = 'analytics_anon_id';
 const ACTIVE_CHAT_KEY = 'live_chat_active_session_id';
@@ -22,6 +23,7 @@ function formatTime(iso: string) {
 }
 
 export function LiveChatPopup() {
+  const { pathname } = useLocation();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -139,6 +141,8 @@ export function LiveChatPopup() {
     setSending(false);
   };
 
+  // Never show the visitor popup on admin/auth pages
+  if (pathname.startsWith('/admin') || pathname.startsWith('/auth')) return null;
   if (!sessionId) return null;
 
   // ── Minimized button ──────────────────────────────────────────────────────────
