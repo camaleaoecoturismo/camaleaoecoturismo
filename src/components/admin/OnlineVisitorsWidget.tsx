@@ -311,7 +311,7 @@ export function OnlineVisitorsWidget({ onOpenChat }: { onOpenChat?: (sessionId: 
   const [selected, setSelected] = useState<OnlineSession | null>(null);
 
   const fetchOnline = useCallback(async () => {
-    // Analytics visitors (browsing now — heartbeat < 2min)
+    // Analytics visitors (browsing now — heartbeat < 2min, exclude admin/auth pages)
     const cutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
     const { data } = await (supabase.from('analytics_sessions' as any) as any)
       .select('*')
@@ -322,6 +322,8 @@ export function OnlineVisitorsWidget({ onOpenChat }: { onOpenChat?: (sessionId: 
     const seen = new Set<string>();
     const unique: OnlineSession[] = [];
     for (const s of (data || [])) {
+      const page: string = s.current_page || '';
+      if (page.startsWith('/admin') || page.startsWith('/auth')) continue;
       if (!seen.has(s.user_id_anon)) { seen.add(s.user_id_anon); unique.push(s); }
     }
     setSessions(unique);
