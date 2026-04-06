@@ -256,7 +256,7 @@ function useFloatingDrag(initialLeft: number, initialBottom: number) {
     if (!dragging.current) return;
     const dx = e.clientX - startPointer.current.x;
     const dy = e.clientY - startPointer.current.y;
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) didDrag.current = true;
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) didDrag.current = true;
     setPos({
       x: Math.max(0, Math.min(window.innerWidth - BTN_SIZE, startPos.current.x + dx)),
       y: Math.max(0, Math.min(window.innerHeight - BTN_SIZE, startPos.current.y + dy)),
@@ -762,16 +762,24 @@ export function AIChatWidget() {
                 <Send className="w-4 h-4" />
               </button>
             </div>
-            <div className="text-[10px] text-gray-400 text-center mt-1.5 flex flex-col items-center gap-0.5">
-              <span>Modo beta · informações podem estar imprecisas</span>
-              <a
-                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Olá! Gostaria de falar com a equipe da Camaleão Ecoturismo.")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline text-green-500 hover:text-green-600 whitespace-nowrap"
-              >
-                Falar com atendente humano
-              </a>
+            <div className="text-[10px] text-center mt-1.5 flex flex-col items-center gap-0.5">
+              {isManualMode ? (
+                <span className="text-emerald-600 font-medium">
+                  Você está falando com um atendente humano
+                </span>
+              ) : (
+                <>
+                  <span className="text-gray-400">Modo beta · informações podem estar imprecisas</span>
+                  <a
+                    href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Olá! Gostaria de falar com a equipe da Camaleão Ecoturismo.")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline text-green-500 hover:text-green-600 whitespace-nowrap"
+                  >
+                    Falar com atendente humano
+                  </a>
+                </>
+              )}
             </div>
           </div>
         </div>
