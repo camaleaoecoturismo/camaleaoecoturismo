@@ -26,9 +26,6 @@ interface TourGalleryCarouselProps {
   fill?: boolean;
 }
 
-function toTransformUrl(url: string, width: number, quality = 80): string {
-  return url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/') + `?width=${width}&quality=${quality}`;
-}
 
 export function TourGalleryCarousel({
   tourId,
@@ -121,7 +118,7 @@ export function TourGalleryCarousel({
                 <CarouselItem key={image.id} className="flex items-center justify-center">
                   <div className="flex flex-col items-center justify-center w-full px-4">
                     <img
-                      src={toTransformUrl(image.image_url, 1920, 85)}
+                      src={image.image_url}
                       alt={`${tourName} - Foto ${index + 1}`}
                       className="max-h-[70vh] max-w-full w-auto h-auto object-contain rounded-lg"
                     />
@@ -143,7 +140,7 @@ export function TourGalleryCarousel({
                 onClick={() => setLightboxIndex(index)}
               >
                 <img
-                  src={toTransformUrl(image.image_url, 200, 70)}
+                  src={image.image_url}
                   alt={`Miniatura ${index + 1}`}
                   className="w-full h-full object-cover"
                   style={getCoverImageStyle(image.crop_position)}
@@ -174,7 +171,7 @@ export function TourGalleryCarousel({
     <>
       <div className={containerClass}>
         <img
-          src={toTransformUrl(currentImage.image_url, 1400)}
+          src={currentImage.image_url}
           alt={`${tourName} - Foto ${currentIndex + 1}`}
           className="w-full h-full object-cover transition-opacity duration-500"
           style={{

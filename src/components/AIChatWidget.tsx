@@ -129,6 +129,66 @@ function TourCardItem({ tour, onClose }: { tour: TourCard; onClose: () => void }
 
 // ─── Main widget ──────────────────────────────────────────────────────────────
 
+const BTN_SIZE = 56; // w-14 h-14 = 56px
+const PANEL_W = 360;
+const PANEL_H = 560;
+const EDGE_MARGIN = 16;
+
+function useFloatingDrag(initialRight: number, initialBottom: number) {
+  // pos stores distance from LEFT and TOP edges (easier to compute snap)
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const dragging = useRef(false);
+  const didDrag = useRef(false);
+  const startPointer = useRef({ x: 0, y: 0 });
+  const startPos = useRef({ x: 0, y: 0 });
+
+  // Resolve initial position once (right/bottom → left/top)
+  const resolvedPos = pos ?? {
+    x: window.innerWidth - initialRight - BTN_SIZE,
+    y: window.innerHeight - initialBottom - BTN_SIZE,
+  };
+
+  const snapToEdge = (x: number, y: number) => {
+    const midX = window.innerWidth / 2;
+    const snappedX = x < midX
+      ? EDGE_MARGIN
+      : window.innerWidth - BTN_SIZE - EDGE_MARGIN;
+    const clampedY = Math.max(EDGE_MARGIN, Math.min(window.innerHeight - BTN_SIZE - EDGE_MARGIN, y));
+    setPos({ x: snappedX, y: clampedY });
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    dragging.current = true;
+    didDrag.current = false;
+    startPointer.current = { x: e.clientX, y: e.clientY };
+    startPos.current = resolvedPos;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    const dx = e.clientX - startPointer.current.x;
+    const dy = e.clientY - startPointer.current.y;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) didDrag.current = true;
+    setPos({
+      x: Math.max(0, Math.min(window.innerWidth - BTN_SIZE, startPos.current.x + dx)),
+      y: Math.max(0, Math.min(window.innerHeight - BTN_SIZE, startPos.current.y + dy)),
+    });
+  };
+
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    if (didDrag.current) {
+      const dx = e.clientX - startPointer.current.x;
+      const dy = e.clientY - startPointer.current.y;
+      snapToEdge(startPos.current.x + dx, startPos.current.y + dy);
+    }
+  };
+
+  return { resolvedPos, didDrag, onPointerDown, onPointerMove, onPointerUp };
+}
+
 export function AIChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -138,6 +198,9 @@ export function AIChatWidget() {
   const [unreadCount, setUnreadCount] = useState(1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Drag: initial position — right 16px, bottom 80px (above WhatsApp)
+  const drag = useFloatingDrag(EDGE_MARGIN, 80);
 
   // Restore session
   useEffect(() => {
@@ -260,10 +323,16 @@ export function AIChatWidget() {
   return (
     <>
       {/* ── Floating button ─────────────────────────────────────────────────── */}
-      <div className="fixed bottom-6 left-6 z-50">
+      <div
+        className="fixed z-50 touch-none"
+        style={{ left: drag.resolvedPos.x, top: drag.resolvedPos.y }}
+        onPointerDown={drag.onPointerDown}
+        onPointerMove={drag.onPointerMove}
+        onPointerUp={drag.onPointerUp}
+      >
         <button
-          onClick={() => setIsOpen((o) => !o)}
-          className="relative w-14 h-14 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 overflow-visible"
+          onClick={() => { if (!drag.didDrag.current) setIsOpen((o) => !o); }}
+          className="relative w-14 h-14 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 overflow-visible cursor-grab active:cursor-grabbing select-none"
           aria-label={isOpen ? "Fechar chat" : "Falar com a Camila"}
         >
           {isOpen ? (
@@ -297,14 +366,30 @@ export function AIChatWidget() {
       </div>
 
       {/* ── Chat window ──────────────────────────────────────────────────────── */}
-      {isOpen && (
+      {isOpen && (() => {
+        const { x, y } = drag.resolvedPos;
+        const panelW = Math.min(PANEL_W, window.innerWidth - 2 * EDGE_MARGIN);
+        // Place panel to the left if button is on right edge, else to the right
+        const onRightSide = x + BTN_SIZE / 2 > window.innerWidth / 2;
+        const panelX = onRightSide
+          ? Math.max(EDGE_MARGIN, x + BTN_SIZE - panelW)
+          : Math.min(x, window.innerWidth - panelW - EDGE_MARGIN);
+        // Place panel above or below button
+        const spaceAbove = y;
+        const panelH = Math.min(PANEL_H, window.innerHeight - 2 * EDGE_MARGIN);
+        const panelY = spaceAbove >= panelH + 8
+          ? y - panelH - 8
+          : y + BTN_SIZE + 8;
+        return (
         <div
-          className="fixed bottom-24 left-6 z-50 flex flex-col bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden animate-fade-in"
+          className="fixed z-50 flex flex-col bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden animate-fade-in"
           style={{
-            width: 360,
-            height: 560,
-            maxWidth: "calc(100vw - 3rem)",
-            maxHeight: "calc(100vh - 8rem)",
+            left: panelX,
+            top: panelY,
+            width: panelW,
+            height: panelH,
+            maxWidth: "calc(100vw - 2rem)",
+            maxHeight: "calc(100vh - 2rem)",
           }}
         >
           {/* Header */}
@@ -465,20 +550,21 @@ export function AIChatWidget() {
                 <Send className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-[10px] text-gray-400 text-center mt-1.5">
-              Assistente da Camaleão · datas, destinos e dúvidas em geral.{" "}
+            <div className="text-[10px] text-gray-400 text-center mt-1.5 flex flex-col items-center gap-0.5">
+              <span>Assistente da Camaleão · datas, destinos e dúvidas em geral.</span>
               <a
                 href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Olá! Gostaria de falar com a equipe da Camaleão Ecoturismo.")}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline text-green-500 hover:text-green-600"
+                className="underline text-green-500 hover:text-green-600 whitespace-nowrap"
               >
                 Falar com atendente humano
               </a>
-            </p>
+            </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </>
   );
 }
