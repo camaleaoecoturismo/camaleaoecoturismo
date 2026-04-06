@@ -81,14 +81,14 @@ function getRelevantMonthName(): string {
 
 const relevantMonth = getRelevantMonthName();
 
-// Página genérica — qualificação do funil
+// Página genérica — temas de interesse (não perguntas)
 const QUICK_ACTIONS_DEFAULT = [
-  { label: "Quando você quer ir?", message: "Ainda não tenho data certa, pode me ajudar a escolher?" },
-  { label: "Quantas pessoas?", message: "Quero entender as opções de acordo com o tamanho do grupo" },
-  { label: "Que tipo de passeio?", message: "Que tipos de passeio vocês têm? Cachoeira, trilha, acampamento..." },
-  { label: "Chapada Diamantina", message: "Quero conhecer a Chapada Diamantina, como funciona?" },
-  { label: "Para famílias", message: "Tem passeio para levar família com crianças?" },
-  { label: "Falar com a equipe", message: "", whatsapp: true },
+  { label: "Ver próximas viagens",     message: "Quero ver os próximos passeios disponíveis" },
+  { label: "Chapada Diamantina",       message: "Quero conhecer os roteiros da Chapada Diamantina" },
+  { label: "Trilhas com cachoeiras",   message: "Quero ver passeios com trilhas e cachoeiras" },
+  { label: "Para famílias",            message: "Quero passeios adequados para família com crianças" },
+  { label: "Política de cancelamento", message: "Como funciona a política de cancelamento e reembolso?" },
+  { label: "Falar com a equipe",       message: "", whatsapp: true },
 ] as const;
 
 // Página de passeio — foco em conversão
