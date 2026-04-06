@@ -112,12 +112,32 @@ function VisitorDetail({
 
   const startChat = async () => {
     setStarting(true);
-    const newSessionId = crypto.randomUUID();
 
-    // Create a chat_session in manual mode (no AI)
+    // Check for existing active session for this visitor (avoid duplicates)
+    const recentCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { data: existing } = await supabase
+      .from('chat_sessions')
+      .select('session_id')
+      .eq('visitor_anon_id', session.user_id_anon)
+      .gte('last_activity', recentCutoff)
+      .order('last_activity', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing?.session_id) {
+      // Re-use existing session
+      if (onOpenChat) onOpenChat(existing.session_id);
+      setStarting(false);
+      onBack();
+      return;
+    }
+
+    // Create a new chat_session in manual mode
+    const newSessionId = crypto.randomUUID();
     const now = new Date().toISOString();
     const { error } = await supabase.from('chat_sessions').insert({
       session_id: newSessionId,
+      visitor_anon_id: session.user_id_anon,
       is_manual_mode: true,
       first_page: session.current_page,
       device_type: session.device_type,
@@ -133,13 +153,11 @@ function VisitorDetail({
       return;
     }
 
-    // Notify visitor's LiveChatPopup via broadcast
+    // Notify visitor's AIChatWidget via broadcast
     await supabase.channel(`visitor-notify-${session.user_id_anon}`)
       .send({ type: 'broadcast', event: 'chat_started', payload: { session_id: newSessionId } });
 
-    // Open the admin floating panel
     if (onOpenChat) onOpenChat(newSessionId);
-
     setStarting(false);
     onBack();
   };

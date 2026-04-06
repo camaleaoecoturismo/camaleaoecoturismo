@@ -384,6 +384,18 @@ export function AIChatWidget() {
     };
   }, [sessionId]);
 
+  // Link visitor_anon_id to chat_session (so admin can de-duplicate)
+  useEffect(() => {
+    const anonId = localStorage.getItem('analytics_anon_id');
+    if (!anonId || !sessionId) return;
+    supabase
+      .from('chat_sessions')
+      .update({ visitor_anon_id: anonId })
+      .eq('session_id', sessionId)
+      .is('visitor_anon_id', null)
+      .then(() => {});
+  }, [sessionId]);
+
   // Listen for admin-initiated chat broadcast (visitor who hasn't opened Camila yet)
   useEffect(() => {
     const anonId = localStorage.getItem('analytics_anon_id');
