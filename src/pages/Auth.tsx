@@ -128,9 +128,6 @@ const Auth = () => {
           toast({ title: 'Conta desativada', description: 'Entre em contato com o administrador.', variant: 'destructive' });
           return;
         }
-        await logAction('login');
-        navigate('/admin');
-        return;
       }
 
       const { data: twoFASetting } = await supabase.from('site_settings').select('setting_value')

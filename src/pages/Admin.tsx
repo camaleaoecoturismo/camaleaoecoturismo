@@ -154,11 +154,9 @@ const Admin = () => {
           navigate('/auth');
           return;
         }
-        setLoading(false);
-        return;
       }
 
-      // Admin: check 2FA
+      // Check 2FA for both admin and staff
       const { data: twoFASetting } = await supabase
         .from('site_settings')
         .select('setting_value')
@@ -167,17 +165,14 @@ const Admin = () => {
 
       if (twoFASetting?.setting_value === 'true') {
         const deviceFp = localStorage.getItem('admin_device_fp');
-        let query = (supabase.from('admin_2fa_sessions' as any) as any)
+        const { data: sessions } = await (supabase.from('admin_2fa_sessions' as any) as any)
           .select('id')
           .eq('user_id', session.user.id)
-          .gt('expires_at', new Date().toISOString());
+          .eq('device_fingerprint', deviceFp ?? '')
+          .gt('expires_at', new Date().toISOString())
+          .limit(1);
 
-        // If this device has a fingerprint, check for it specifically
-        if (deviceFp) {
-          query = query.eq('device_fingerprint', deviceFp);
-        }
-
-        const { data: twoFASession } = await query.maybeSingle();
+        const twoFASession = sessions?.[0] ?? null;
 
         if (!twoFASession) {
           await supabase.auth.signOut();

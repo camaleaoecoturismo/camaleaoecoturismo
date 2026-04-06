@@ -1,154 +1,126 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface VerifyCodeRequest {
-  email: string;
-  code: string;
-  user_id?: string;
-  device_fingerprint?: string;
-}
-
-const handler = async (req: Request): Promise<Response> => {
+serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const REST = `${SUPABASE_URL}/rest/v1`;
+  const dbHeaders = {
+    "apikey": SERVICE_KEY,
+    "Authorization": `Bearer ${SERVICE_KEY}`,
+    "Content-Type": "application/json",
+    "Prefer": "return=representation",
+  };
+
   try {
-    const { email, code, user_id: userIdFromClient, device_fingerprint }: VerifyCodeRequest = await req.json();
-    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
+    const body = await req.json();
+    const email: string = body.email ?? "";
+    const code: string = body.code ?? "";
+    const userId: string | null = body.user_id ?? null;
+    const deviceFp: string | null = body.device_fingerprint ?? null;
+    const ipAddress: string | null =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
 
     if (!email || !code) {
-      return new Response(
-        JSON.stringify({ error: "Email e código são obrigatórios" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ valid: false, error: "Email e código são obrigatórios" });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // ── 1. Find valid code ────────────────────────────────────────────────
+    const now = new Date().toISOString();
+    const codeRes = await fetch(
+      `${REST}/email_verification_codes?email=eq.${encodeURIComponent(email)}&expires_at=gt.${encodeURIComponent(now)}&verified_at=is.null&order=created_at.desc&limit=1`,
+      { headers: dbHeaders }
+    );
 
-    // Find the verification code (still valid, not yet verified)
-    // Use limit(1) instead of maybeSingle() to avoid PGRST116 error on duplicate rows
-    const { data: rows, error: fetchError } = await supabase
-      .from('email_verification_codes')
-      .select('*')
-      .eq('email', email)
-      .gt('expires_at', new Date().toISOString())
-      .is('verified_at', null)
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (fetchError) {
-      console.error("Error fetching verification code:", fetchError);
-      return new Response(
-        JSON.stringify({ valid: false, error: "Erro ao verificar código" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!codeRes.ok) {
+      console.error("DB error fetching code:", await codeRes.text());
+      return json({ valid: false, error: "Erro ao buscar código" });
     }
 
-    const verificationCode = rows?.[0] ?? null;
+    const rows = await codeRes.json();
+    const row = rows?.[0] ?? null;
 
-    if (!verificationCode) {
-      return new Response(
-        JSON.stringify({ valid: false, error: "Código inválido ou expirado" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!row) {
+      return json({ valid: false, error: "Código inválido ou expirado" });
     }
 
-    // Rate limiting: max 5 failed attempts before invalidating the code
-    const attempts = (verificationCode.attempts ?? 0) as number;
+    // ── 2. Rate limiting ──────────────────────────────────────────────────
+    const attempts = (row.attempts ?? 0) as number;
     if (attempts >= 5) {
-      await supabase
-        .from('email_verification_codes')
-        .delete()
-        .eq('id', verificationCode.id);
-
-      return new Response(
-        JSON.stringify({ valid: false, error: "Muitas tentativas. Solicite um novo código.", too_many_attempts: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      await fetch(`${REST}/email_verification_codes?id=eq.${row.id}`, {
+        method: "DELETE",
+        headers: dbHeaders,
+      });
+      return json({ valid: false, error: "Muitas tentativas. Solicite um novo código.", too_many_attempts: true });
     }
 
-    // Wrong code → increment attempts
-    if (verificationCode.code !== code) {
-      await supabase
-        .from('email_verification_codes')
-        .update({ attempts: attempts + 1 })
-        .eq('id', verificationCode.id);
-
+    // ── 3. Verify code ────────────────────────────────────────────────────
+    if (row.code !== code) {
+      await fetch(`${REST}/email_verification_codes?id=eq.${row.id}`, {
+        method: "PATCH",
+        headers: dbHeaders,
+        body: JSON.stringify({ attempts: attempts + 1 }),
+      });
       const remaining = 4 - attempts;
-      return new Response(
-        JSON.stringify({ valid: false, error: `Código incorreto. ${remaining > 0 ? `${remaining} tentativa(s) restante(s).` : 'Último código. Solicite um novo.'}` }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({
+        valid: false,
+        error: remaining > 0
+          ? `Código incorreto. ${remaining} tentativa(s) restante(s).`
+          : "Último código. Solicite um novo.",
+      });
     }
 
-    // Mark code as verified and delete
-    await supabase
-      .from('email_verification_codes')
-      .update({ verified_at: new Date().toISOString() })
-      .eq('id', verificationCode.id);
+    // ── 4. Delete used code ───────────────────────────────────────────────
+    await fetch(`${REST}/email_verification_codes?id=eq.${row.id}`, {
+      method: "DELETE",
+      headers: dbHeaders,
+    });
 
-    await supabase
-      .from('email_verification_codes')
-      .delete()
-      .eq('id', verificationCode.id);
-
-    // Use user_id from client (already authenticated via signInWithPassword)
-    // Fall back to DB lookup only if not provided
-    let userId = userIdFromClient ?? null;
-    if (!userId) {
-      const { data: userData } = await supabase.auth.admin.getUserByEmail(email);
-      userId = userData?.user?.id ?? null;
-    }
-
-    // Create a 2FA session (1 year) with device fingerprint so Admin.tsx can skip 2FA on same device
-    if (userId) {
+    // ── 5. Create 2FA session ─────────────────────────────────────────────
+    const finalUserId = userId ?? row.user_id ?? null;
+    if (finalUserId) {
       const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
 
-      // Delete existing session for this device (if any) to avoid duplicates
-      if (device_fingerprint) {
-        await supabase
-          .from('admin_2fa_sessions')
-          .delete()
-          .eq('user_id', userId)
-          .eq('device_fingerprint', device_fingerprint);
+      // Delete existing session for this device
+      if (deviceFp) {
+        await fetch(
+          `${REST}/admin_2fa_sessions?user_id=eq.${finalUserId}&device_fingerprint=eq.${encodeURIComponent(deviceFp)}`,
+          { method: "DELETE", headers: dbHeaders }
+        );
       }
 
-      const { error: sessionError } = await supabase
-        .from('admin_2fa_sessions')
-        .insert({
-          user_id: userId,
+      await fetch(`${REST}/admin_2fa_sessions`, {
+        method: "POST",
+        headers: dbHeaders,
+        body: JSON.stringify({
+          user_id: finalUserId,
           expires_at: expiresAt,
-          device_fingerprint: device_fingerprint ?? null,
+          device_fingerprint: deviceFp,
           ip_address: ipAddress,
-        });
-
-      if (sessionError) {
-        console.error("Error creating 2FA session:", sessionError);
-      }
+        }),
+      });
     }
 
-    console.log(`2FA code verified for admin: ${email}`);
+    console.log(`2FA verified for: ${email}`);
+    return json({ valid: true, message: "Código verificado com sucesso" });
 
-    return new Response(
-      JSON.stringify({ valid: true, message: "Código verificado com sucesso" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-
-  } catch (error) {
-    console.error("Error in verify-admin-2fa-code:", error);
-    return new Response(
-      JSON.stringify({ error: "Erro interno do servidor" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+  } catch (err) {
+    console.error("Unexpected error in verify-admin-2fa-code:", err);
+    return json({ valid: false, error: "Erro interno do servidor" }, 500);
   }
-};
+});
 
-serve(handler);
+function json(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
