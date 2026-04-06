@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Send, MessageCircle, MapPin, Calendar, ChevronRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const SUPABASE_URL = "https://guwplwuwriixgvkjlutg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1d3Bsd3V3cmlpeGd2a2psdXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MzE3MDYsImV4cCI6MjA2OTMwNzcwNn0.XqFnllTUiv1SZrnL23hy7pWWeIeWDldfm9lpfO3vIQg";
@@ -37,13 +37,22 @@ function getRelevantMonthName(): string {
 
 const relevantMonth = getRelevantMonthName();
 
-const QUICK_ACTIONS = [
-  { label: `🗓 Passeios de ${relevantMonth}`, message: `Quais passeios têm em ${relevantMonth}?` },
-  { label: "🏔 Chapada Diamantina", message: "Quero conhecer a Chapada Diamantina" },
-  { label: "💧 Com cachoeira", message: "Quero um passeio com cachoeira" },
+// Página genérica — qualificação do funil
+const QUICK_ACTIONS_DEFAULT = [
+  { label: "🗓 Quando você quer ir?", message: "Ainda não tenho data certa, pode me ajudar a escolher?" },
+  { label: "👥 Quantas pessoas?", message: "Quero entender as opções de acordo com o tamanho do grupo" },
+  { label: "💧 Cachoeira ou trilha?", message: "Qual a diferença entre os passeios com cachoeira e os de trilha?" },
+  { label: "🏔 Chapada Diamantina", message: "Quero conhecer a Chapada Diamantina, como funciona?" },
   { label: "👨‍👩‍👧 Para famílias", message: "Tem passeio para levar família com crianças?" },
-  { label: "💳 Valores e pagamento", message: "Como funcionam os pagamentos e valores?" },
   { label: "💬 Falar com a equipe", message: "", whatsapp: true },
+] as const;
+
+// Página de passeio — foco em conversão
+const QUICK_ACTIONS_TOUR = [
+  { label: "🚌 Pontos de embarque", message: "Quais são os pontos de embarque para este passeio?" },
+  { label: "💳 Ver preços", message: "Quais são os valores e formas de pagamento?" },
+  { label: "📋 Como reservar?", message: "Como faço para reservar este passeio?" },
+  { label: "❓ Outras dúvidas", message: "Tenho outras dúvidas sobre este passeio" },
 ] as const;
 
 function uid() {
@@ -142,7 +151,7 @@ function useFloatingDrag(initialLeft: number, initialBottom: number) {
   const startPointer = useRef({ x: 0, y: 0 });
   const startPos = useRef({ x: 0, y: 0 });
 
-  // Resolve initial position once (left/bottom → left/top)
+  // Resolve initial position (left/bottom → left/top); re-evaluated when pos is null (not yet dragged)
   const resolvedPos = pos ?? {
     x: initialLeft,
     y: window.innerHeight - initialBottom - BTN_SIZE,
@@ -201,8 +210,16 @@ export function AIChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Drag: initial position — left 16px, bottom 100px (above bottom nav on passeio page)
-  const drag = useFloatingDrag(EDGE_MARGIN, 100);
+  // Detect if user is on a specific tour page
+  const location = useLocation();
+  const currentTourSlug = (() => {
+    const match = location.pathname.match(/^\/passeio\/([^/]+)$/);
+    return match ? match[1] : null;
+  })();
+  const QUICK_ACTIONS = currentTourSlug ? QUICK_ACTIONS_TOUR : QUICK_ACTIONS_DEFAULT;
+
+  // On passeio pages, stay above the bottom tab bar (~64px); elsewhere, sit at normal bottom margin
+  const drag = useFloatingDrag(EDGE_MARGIN, currentTourSlug ? 100 : EDGE_MARGIN);
 
   // Show greeting bubble on load, then swap to badge
   useEffect(() => {
@@ -274,7 +291,7 @@ export function AIChatWidget() {
             apikey: SUPABASE_ANON_KEY,
             Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
           },
-          body: JSON.stringify({ message: text, history }),
+          body: JSON.stringify({ message: text, history, tourSlug: currentTourSlug }),
         });
 
         const data = await res.json();
