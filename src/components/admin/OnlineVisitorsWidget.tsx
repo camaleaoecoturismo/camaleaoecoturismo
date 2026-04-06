@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  Users, X, MessageCircle, Monitor, Smartphone, Tablet,
-  MapPin, Globe, ChevronLeft, MousePointer, ArrowUpRight,
+  Users, X, Monitor, Smartphone, Tablet,
+  MapPin, Globe, ChevronLeft, MousePointer, ArrowUpRight, MessageCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -331,10 +331,14 @@ function VisitorRow({ session, onClick }: { session: OnlineSession; onClick: () 
 
 // ─── Main widget ──────────────────────────────────────────────────────────────
 
+function getReadCounts(): Record<string, number> {
+  try { return JSON.parse(localStorage.getItem('chat_read_counts') || '{}'); } catch { return {}; }
+}
+
 export function OnlineVisitorsWidget({ onOpenChat }: { onOpenChat?: (sessionId: string) => void }) {
   const [open, setOpen] = useState(false);
   const [sessions, setSessions] = useState<OnlineSession[]>([]);
-  const [chatSessions, setChatSessions] = useState<ActiveChatSession[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [selected, setSelected] = useState<OnlineSession | null>(null);
 
   const fetchOnline = useCallback(async () => {
@@ -355,15 +359,21 @@ export function OnlineVisitorsWidget({ onOpenChat }: { onOpenChat?: (sessionId: 
     }
     setSessions(unique);
 
-    // Chat sessions (active in last 15min)
-    const chatCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    // Unread messages count from recent chat sessions
+    const chatCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     const { data: chatData } = await supabase
       .from('chat_sessions')
-      .select('session_id, last_activity, message_count, browser, os, device_type, first_page, is_manual_mode')
+      .select('session_id, message_count')
       .gte('last_activity', chatCutoff)
-      .order('last_activity', { ascending: false })
-      .limit(30);
-    setChatSessions((chatData as ActiveChatSession[]) ?? []);
+      .gt('message_count', 0);
+
+    const reads = getReadCounts();
+    let unread = 0;
+    for (const s of (chatData || []) as { session_id: string; message_count: number }[]) {
+      const read = reads[s.session_id] ?? 0;
+      unread += Math.max(0, s.message_count - read);
+    }
+    setUnreadCount(unread);
   }, []);
 
   useEffect(() => {
@@ -391,47 +401,41 @@ export function OnlineVisitorsWidget({ onOpenChat }: { onOpenChat?: (sessionId: 
   }, [open]);
 
   const count = sessions.length;
-  const totalActivity = count + chatSessions.length;
 
   return (
     <div className="relative" ref={panelRef}>
       {/* Trigger button */}
       <button
         onClick={() => { setOpen(o => !o); if (open) setSelected(null); }}
-        className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-all border ${
-          totalActivity > 0
+        className={`relative flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-all border ${
+          count > 0
             ? 'bg-green-500/10 border-green-500/30 text-green-700 hover:bg-green-500/20'
             : 'bg-muted/50 border-border text-muted-foreground hover:bg-muted'
         }`}
       >
-        {totalActivity > 0 && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />}
+        {count > 0 && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />}
         <Users className="w-3.5 h-3.5" />
-        <span>
-          {totalActivity === 0
-            ? 'Ninguém online'
-            : count > 0 && chatSessions.length > 0
-            ? `${count} online · ${chatSessions.length} conv`
-            : count > 0
-            ? `${count} online`
-            : `${chatSessions.length} conversando`}
-        </span>
+        <span>{count > 0 ? `${count} online` : 'Ninguém online'}</span>
+        {unreadCount > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
       </button>
 
       {/* Dropdown panel */}
       {open && (
         <div
           className="absolute right-0 top-full mt-2 w-80 rounded-2xl border border-border bg-background shadow-2xl overflow-hidden z-50 flex flex-col"
-          style={{ maxHeight: '580px' }}
+          style={{ maxHeight: '520px' }}
         >
           {/* Panel header */}
           <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
             {selected ? null : (
               <>
                 <div>
-                  <p className="text-sm font-semibold">Atividade ao vivo</p>
-                  <p className="text-xs text-muted-foreground">
-                    {count} navegando · {chatSessions.length} conversas recentes
-                  </p>
+                  <p className="text-sm font-semibold">Visitantes online</p>
+                  <p className="text-xs text-muted-foreground">{count} {count === 1 ? 'pessoa' : 'pessoas'} no site agora</p>
                 </div>
                 <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
                   <X className="w-4 h-4" />
@@ -445,54 +449,17 @@ export function OnlineVisitorsWidget({ onOpenChat }: { onOpenChat?: (sessionId: 
             <div className="flex-1 overflow-hidden flex flex-col" style={{ minHeight: 0 }}>
               <VisitorDetail session={selected} onBack={() => setSelected(null)} onOpenChat={onOpenChat} />
             </div>
+          ) : count === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+              <Users className="w-8 h-8 text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">Ninguém navegando agora</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">As notificações aparecem automaticamente quando alguém entrar</p>
+            </div>
           ) : (
             <div className="overflow-y-auto flex-1">
-              {/* Analytics visitors section */}
-              {count > 0 && (
-                <>
-                  <div className="px-4 py-2 bg-muted/30 border-b border-border/40">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
-                      Navegando agora
-                    </p>
-                  </div>
-                  {sessions.map(s => (
-                    <VisitorRow key={s.user_id_anon} session={s} onClick={() => setSelected(s)} />
-                  ))}
-                </>
-              )}
-
-              {/* Chat sessions section */}
-              {chatSessions.length > 0 && (
-                <>
-                  <div className="px-4 py-2 bg-muted/30 border-b border-border/40">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                      <MessageCircle className="w-3 h-3 text-indigo-400" />
-                      Conversas com a Camila
-                    </p>
-                  </div>
-                  {chatSessions.map(s => (
-                    <ChatSessionRow
-                      key={s.session_id}
-                      session={s}
-                      onClick={() => {
-                        if (onOpenChat) {
-                          onOpenChat(s.session_id);
-                          setOpen(false);
-                        }
-                      }}
-                    />
-                  ))}
-                </>
-              )}
-
-              {totalActivity === 0 && (
-                <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-                  <Users className="w-8 h-8 text-muted-foreground/30 mb-2" />
-                  <p className="text-sm text-muted-foreground">Nenhuma atividade no momento</p>
-                  <p className="text-xs text-muted-foreground/60 mt-1">As notificações aparecem automaticamente quando alguém entrar</p>
-                </div>
-              )}
+              {sessions.map(s => (
+                <VisitorRow key={s.user_id_anon} session={s} onClick={() => setSelected(s)} />
+              ))}
             </div>
           )}
         </div>
