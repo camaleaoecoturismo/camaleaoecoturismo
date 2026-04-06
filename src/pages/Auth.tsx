@@ -244,6 +244,7 @@ const Auth = () => {
                       required
                       autoFocus
                       className="pl-10 h-11 bg-white/[0.07] border-white/10 text-white placeholder:text-white/25 focus-visible:ring-violet-500/40 focus-visible:border-violet-500/50"
+                      style={{ WebkitTextFillColor: 'white', caretColor: 'white' }}
                     />
                   </div>
                   <Button
@@ -287,6 +288,7 @@ const Auth = () => {
                       required
                       autoFocus
                       className="pr-10 h-11 bg-white/[0.07] border-white/10 text-white placeholder:text-white/25 focus-visible:ring-violet-500/40 focus-visible:border-violet-500/50"
+                      style={{ WebkitTextFillColor: 'white', caretColor: 'white' }}
                     />
                     <button
                       type="button"
