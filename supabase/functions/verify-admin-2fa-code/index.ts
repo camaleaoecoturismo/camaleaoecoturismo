@@ -9,6 +9,7 @@ const corsHeaders = {
 interface VerifyCodeRequest {
   email: string;
   code: string;
+  device_fingerprint?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -17,7 +18,8 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, code }: VerifyCodeRequest = await req.json();
+    const { email, code, device_fingerprint }: VerifyCodeRequest = await req.json();
+    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
 
     if (!email || !code) {
       return new Response(
@@ -97,16 +99,30 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: userData } = await supabase.auth.admin.getUserByEmail(email);
     const userId = userData?.user?.id;
 
-    // Create a 2FA session (30 minutes) so Admin.tsx can verify 2FA was completed
+    // Create a 2FA session (1 year) with device fingerprint so Admin.tsx can skip 2FA on same device
     if (userId) {
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+      const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+
+      // Delete existing session for this device (if any) to avoid duplicates
+      if (device_fingerprint) {
+        await supabase
+          .from('admin_2fa_sessions')
+          .delete()
+          .eq('user_id', userId)
+          .eq('device_fingerprint', device_fingerprint);
+      }
+
       const { error: sessionError } = await supabase
         .from('admin_2fa_sessions')
-        .insert({ user_id: userId, expires_at: expiresAt });
+        .insert({
+          user_id: userId,
+          expires_at: expiresAt,
+          device_fingerprint: device_fingerprint ?? null,
+          ip_address: ipAddress,
+        });
 
       if (sessionError) {
         console.error("Error creating 2FA session:", sessionError);
-        // Don't fail — log and continue
       }
     }
 

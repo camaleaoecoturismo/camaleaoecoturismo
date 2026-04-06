@@ -44,15 +44,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify user is actually an admin
-    const { data: adminRole, error: roleError } = await supabase
+    // Verify user has admin or staff role
+    const { data: roleRows, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user_id)
-      .eq('role', 'admin')
-      .maybeSingle();
+      .in('role', ['admin', 'staff'])
+      .limit(1);
 
-    if (roleError || !adminRole) {
+    if (roleError || !roleRows || roleRows.length === 0) {
       return new Response(
         JSON.stringify({ error: "Acesso não autorizado" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
