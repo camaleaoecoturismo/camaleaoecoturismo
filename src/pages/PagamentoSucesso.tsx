@@ -158,14 +158,25 @@ export default function PagamentoSucesso() {
           status,
           payment_status,
           receipt_url,
+          ponto_embarque_id,
           clientes!fk_reservas_cliente(nome_completo, email),
-          tours!fk_reservas_tour(name, start_date, whatsapp_group_link),
-          tour_boarding_points!fk_reservas_ponto_embarque(nome, horario)
+          tours!fk_reservas_tour(name, start_date, whatsapp_group_link)
         `)
         .eq('id', reservaId)
         .single();
 
       if (error) throw error;
+
+      // Fetch boarding point separately
+      let pontoEmbarque: { nome?: string; horario?: string } | null = null;
+      if (data.ponto_embarque_id) {
+        const { data: bpData } = await supabase
+          .from('tour_boarding_points')
+          .select('nome, horario')
+          .eq('id', data.ponto_embarque_id)
+          .single();
+        pontoEmbarque = bpData;
+      }
 
       const { data: tickets } = await supabase
         .from('tickets')
@@ -175,7 +186,6 @@ export default function PagamentoSucesso() {
 
       const cliente = data.clientes as { nome_completo?: string; email?: string } | null;
       const tour = data.tours as { name?: string; start_date?: string; whatsapp_group_link?: string } | null;
-      const pontoEmbarque = data.tour_boarding_points as { nome?: string; horario?: string } | null;
 
       console.log('Client data from DB:', { cliente, clienteRaw: data.clientes });
 

@@ -47,6 +47,7 @@ const ClientExperiences = ({ clienteId, onNavigate }: ClientExperiencesProps) =>
           payment_status,
           created_at,
           valor_pago,
+          ponto_embarque_id,
           tours!reservas_tour_id_fkey (
             name,
             city,
@@ -54,19 +55,28 @@ const ClientExperiences = ({ clienteId, onNavigate }: ClientExperiencesProps) =>
             start_date,
             end_date,
             image_url
-          ),
-          tour_boarding_points!reservas_ponto_embarque_id_fkey (
-            nome
           )
         `)
         .eq('cliente_id', clienteId)
         .order('created_at', { ascending: false });
 
       if (error) { setError(true); setLoading(false); return; }
+
+      // Fetch boarding points separately
+      const pontoIds = [...new Set((data || []).map((r: any) => r.ponto_embarque_id).filter(Boolean))];
+      const bpMap: Record<string, { nome: string }> = {};
+      if (pontoIds.length > 0) {
+        const { data: bpData } = await supabase
+          .from('tour_boarding_points')
+          .select('id, nome')
+          .in('id', pontoIds);
+        (bpData || []).forEach((bp: any) => { bpMap[bp.id] = { nome: bp.nome }; });
+      }
+
       setReservas((data || []).filter(r => r.tours).map(r => ({
         ...r,
         tour: r.tours as any,
-        ponto_embarque: r.tour_boarding_points as any
+        ponto_embarque: bpMap[(r as any).ponto_embarque_id] ?? null
       })));
       setLoading(false);
     };
