@@ -3,23 +3,27 @@ import { supabase } from '@/integrations/supabase/client';
 import { X, Send, MessageCircle, ChevronDown } from 'lucide-react';
 
 const ANON_KEY = 'analytics_anon_id';
-const ACTIVE_CHAT_KEY = 'live_chat_active_id';
+const ACTIVE_CHAT_KEY = 'live_chat_active_session_id';
 
 function getAnonId(): string | null {
   return localStorage.getItem(ANON_KEY);
 }
 
-interface Message {
+interface ChatMessage {
   id: string;
-  sender_type: 'admin' | 'visitor';
+  session_id: string;
+  role: 'user' | 'assistant' | 'admin';
   content: string;
-  sent_at: string;
+  created_at: string;
+}
+
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
 export function LiveChatPopup() {
-  const [chatId, setChatId] = useState<string | null>(null);
-  const [adminName, setAdminName] = useState<string>('Equipe Camaleão');
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
@@ -27,31 +31,29 @@ export function LiveChatPopup() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const anonId = getAnonId();
 
-  // ── Restore active chat from session storage ────────────────────────────────
+  // ── Restore active session from sessionStorage ──────────────────────────────
   useEffect(() => {
     const saved = sessionStorage.getItem(ACTIVE_CHAT_KEY);
-    if (saved) setChatId(saved);
+    if (saved) setSessionId(saved);
   }, []);
 
-  // ── Listen for admin initiating a chat via Realtime broadcast ───────────────
+  // ── Listen for admin initiating chat via Realtime broadcast ─────────────────
   useEffect(() => {
     if (!anonId) return;
 
     const channel = supabase
       .channel(`visitor-notify-${anonId}`)
       .on('broadcast', { event: 'chat_started' }, (payload) => {
-        const id: string = payload.payload?.chat_id;
-        const name: string = payload.payload?.admin_name || 'Equipe Camaleão';
-        if (!id) return;
-        sessionStorage.setItem(ACTIVE_CHAT_KEY, id);
-        setChatId(id);
-        setAdminName(name);
+        const sid: string = payload.payload?.session_id;
+        if (!sid) return;
+        sessionStorage.setItem(ACTIVE_CHAT_KEY, sid);
+        setSessionId(sid);
         setOpen(true);
         setUnread(0);
       })
       .on('broadcast', { event: 'chat_closed' }, () => {
         sessionStorage.removeItem(ACTIVE_CHAT_KEY);
-        setChatId(null);
+        setSessionId(null);
         setMessages([]);
         setOpen(false);
         setUnread(0);
@@ -61,85 +63,83 @@ export function LiveChatPopup() {
     return () => { supabase.removeChannel(channel); };
   }, [anonId]);
 
-  // ── Load existing messages when chatId is set ───────────────────────────────
+  // ── Load messages + subscribe when sessionId is set ─────────────────────────
   useEffect(() => {
-    if (!chatId) return;
+    if (!sessionId) return;
 
     supabase
-      .from('visitor_live_messages' as any)
-      .select('*')
-      .eq('chat_id', chatId)
-      .order('sent_at', { ascending: true })
+      .from('chat_messages')
+      .select('id, session_id, role, content, created_at')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true })
       .then(({ data }) => {
         if (data) {
-          setMessages(data as Message[]);
-          if (!open) setUnread((data as Message[]).filter(m => m.sender_type === 'admin').length);
+          const msgs = data as ChatMessage[];
+          setMessages(msgs);
+          if (!open) {
+            setUnread(msgs.filter(m => m.role === 'admin').length);
+          }
         }
       });
 
-    // ── Subscribe to new messages ─────────────────────────────────────────────
     const channel = supabase
-      .channel(`chat-messages-${chatId}`)
+      .channel(`livechat-msgs-${sessionId}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
-        table: 'visitor_live_messages',
-        filter: `chat_id=eq.${chatId}`,
+        table: 'chat_messages',
+        filter: `session_id=eq.${sessionId}`,
       }, (payload) => {
-        const msg = payload.new as Message;
+        const msg = payload.new as ChatMessage;
+        // Only show admin messages (not the visitor's own, not AI)
+        if (msg.role === 'user') return;
         setMessages(prev => [...prev, msg]);
-        if (msg.sender_type === 'admin') {
-          setOpen(prev => {
-            if (!prev) setUnread(u => u + 1);
-            return prev;
-          });
-        }
+        setOpen(prev => {
+          if (!prev) setUnread(u => u + 1);
+          return prev;
+        });
       })
       .subscribe();
 
-    // Also fetch chat metadata (admin name)
-    supabase
-      .from('visitor_live_chats' as any)
-      .select('admin_name, status')
-      .eq('id', chatId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.admin_name) setAdminName(data.admin_name);
-        if (data?.status === 'closed') {
-          sessionStorage.removeItem(ACTIVE_CHAT_KEY);
-          setChatId(null);
-        }
-      });
-
     return () => { supabase.removeChannel(channel); };
-  }, [chatId]);
+  }, [sessionId]);
 
   // ── Scroll to bottom ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, open]);
 
-  // ── Reset unread when opened ──────────────────────────────────────────────────
   const handleOpen = useCallback(() => {
     setOpen(true);
     setUnread(0);
   }, []);
 
   const handleSend = async () => {
-    if (!input.trim() || !chatId || !anonId || sending) return;
+    if (!input.trim() || !sessionId || sending) return;
     setSending(true);
     const content = input.trim();
     setInput('');
-    await (supabase.from('visitor_live_messages' as any) as any).insert({
-      chat_id: chatId,
-      visitor_anon_id: anonId,
-      sender_type: 'visitor',
+
+    // Optimistic
+    const optimisticMsg: ChatMessage = {
+      id: `opt-${Date.now()}`,
+      session_id: sessionId,
+      role: 'user',
+      content,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
+
+    await supabase.from('chat_messages').insert({
+      session_id: sessionId,
+      role: 'user',
       content,
     });
+
     setSending(false);
   };
 
-  if (!chatId) return null;
+  if (!sessionId) return null;
 
   // ── Minimized button ──────────────────────────────────────────────────────────
   if (!open) {
@@ -150,7 +150,7 @@ export function LiveChatPopup() {
         style={{ background: 'linear-gradient(135deg, #7C12D1, #9333ea)' }}
       >
         <MessageCircle className="w-4 h-4" />
-        {adminName}
+        Equipe Camaleão
         {unread > 0 && (
           <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
             {unread}
@@ -176,7 +176,7 @@ export function LiveChatPopup() {
             <MessageCircle className="w-4 h-4 text-white" />
           </div>
           <div>
-            <p className="text-white text-sm font-semibold leading-none">{adminName}</p>
+            <p className="text-white text-sm font-semibold leading-none">Equipe Camaleão</p>
             <p className="text-white/70 text-xs mt-0.5">Camaleão Ecoturismo</p>
           </div>
         </div>
@@ -190,20 +190,26 @@ export function LiveChatPopup() {
         {messages.length === 0 && (
           <p className="text-center text-xs text-gray-400 py-4">Conversa iniciada. Aguarde...</p>
         )}
-        {messages.map(msg => (
-          <div key={msg.id} className={`flex ${msg.sender_type === 'visitor' ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className="max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-snug"
-              style={
-                msg.sender_type === 'visitor'
-                  ? { background: 'linear-gradient(135deg, #7C12D1, #9333ea)', color: '#fff', borderBottomRightRadius: 4 }
-                  : { background: '#fff', color: '#1f2937', border: '1px solid #e5e7eb', borderBottomLeftRadius: 4 }
-              }
-            >
-              {msg.content}
+        {messages.map(msg => {
+          const isMe = msg.role === 'user';
+          return (
+            <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className="max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-snug"
+                style={
+                  isMe
+                    ? { background: 'linear-gradient(135deg, #7C12D1, #9333ea)', color: '#fff', borderBottomRightRadius: 4 }
+                    : { background: '#fff', color: '#1f2937', border: '1px solid #e5e7eb', borderBottomLeftRadius: 4 }
+                }
+              >
+                <p>{msg.content}</p>
+                <p className={`text-[10px] mt-0.5 text-right ${isMe ? 'text-white/60' : 'text-gray-400'}`}>
+                  {formatTime(msg.created_at)}
+                </p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         <div ref={bottomRef} />
       </div>
 
