@@ -134,7 +134,7 @@ const PANEL_W = 360;
 const PANEL_H = 560;
 const EDGE_MARGIN = 16;
 
-function useFloatingDrag(initialRight: number, initialBottom: number) {
+function useFloatingDrag(initialLeft: number, initialBottom: number) {
   // pos stores distance from LEFT and TOP edges (easier to compute snap)
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const dragging = useRef(false);
@@ -142,9 +142,9 @@ function useFloatingDrag(initialRight: number, initialBottom: number) {
   const startPointer = useRef({ x: 0, y: 0 });
   const startPos = useRef({ x: 0, y: 0 });
 
-  // Resolve initial position once (right/bottom → left/top)
+  // Resolve initial position once (left/bottom → left/top)
   const resolvedPos = pos ?? {
-    x: window.innerWidth - initialRight - BTN_SIZE,
+    x: initialLeft,
     y: window.innerHeight - initialBottom - BTN_SIZE,
   };
 
@@ -196,11 +196,21 @@ export function AIChatWidget() {
   const [isLoading, setIsLoading] = useState(false);
   const [quickActionsUsed, setQuickActionsUsed] = useState(false);
   const [unreadCount, setUnreadCount] = useState(1);
+  const [showBubble, setShowBubble] = useState(false);
+  const [showBadge, setShowBadge] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Drag: initial position — right 16px, bottom 80px (above WhatsApp)
-  const drag = useFloatingDrag(EDGE_MARGIN, 80);
+  // Drag: initial position — left 16px, bottom 100px (above bottom nav on passeio page)
+  const drag = useFloatingDrag(EDGE_MARGIN, 100);
+
+  // Show greeting bubble on load, then swap to badge
+  useEffect(() => {
+    const t1 = setTimeout(() => setShowBubble(true), 800);
+    const t2 = setTimeout(() => setShowBubble(false), 4500);
+    const t3 = setTimeout(() => setShowBadge(true), 5200);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
 
   // Restore session
   useEffect(() => {
@@ -331,7 +341,7 @@ export function AIChatWidget() {
         onPointerUp={drag.onPointerUp}
       >
         <button
-          onClick={() => { if (!drag.didDrag.current) setIsOpen((o) => !o); }}
+          onClick={() => { if (!drag.didDrag.current) { setShowBubble(false); setShowBadge(false); setIsOpen((o) => !o); } }}
           className="relative w-14 h-14 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 overflow-visible cursor-grab active:cursor-grabbing select-none"
           aria-label={isOpen ? "Fechar chat" : "Falar com a Camila"}
         >
@@ -357,12 +367,28 @@ export function AIChatWidget() {
               </div>
             </>
           )}
-          {!isOpen && unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow">
+          {!isOpen && showBadge && unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow animate-in zoom-in-50 duration-300">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
         </button>
+
+        {/* Greeting bubble */}
+        {!isOpen && (
+          <div
+            className="absolute pointer-events-none"
+            style={{ bottom: BTN_SIZE + 10, left: 0 }}
+          >
+            <div
+              className={`relative bg-white text-gray-800 text-sm font-medium px-3.5 py-2 rounded-2xl rounded-bl-sm shadow-lg whitespace-nowrap transition-all duration-500 ${showBubble ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'}`}
+            >
+              Oi, posso ajudar? 😊
+              {/* tail */}
+              <span className="absolute -bottom-2 left-4 w-0 h-0 border-l-[8px] border-l-transparent border-r-[0px] border-t-[8px] border-t-white" />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Chat window ──────────────────────────────────────────────────────── */}
