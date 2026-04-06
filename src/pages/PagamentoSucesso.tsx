@@ -405,6 +405,15 @@ export default function PagamentoSucesso() {
                 {/* Tour info */}
                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                   <h3 className="font-bold text-base text-foreground mb-3">{reserva.tour_name}</h3>
+
+                  {/* Nome do titular */}
+                  {reserva.client_name && (
+                    <div className="flex items-center gap-2 mb-3 bg-white rounded-lg px-3 py-2 border border-slate-200">
+                      <Users className="h-4 w-4 shrink-0 text-emerald-600" />
+                      <span className="text-sm font-medium text-foreground">{reserva.client_name}</span>
+                    </div>
+                  )}
+
                   <div className="space-y-2 text-sm text-muted-foreground">
                     {reserva.tour_date && (
                       <div className="flex items-center gap-2">
@@ -414,15 +423,23 @@ export default function PagamentoSucesso() {
                     )}
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 shrink-0 text-emerald-600" />
-                      <span>{reserva.numero_participantes} {reserva.numero_participantes === 1 ? 'pessoa' : 'pessoas'}</span>
+                      <span>{reserva.numero_participantes} {reserva.numero_participantes === 1 ? 'participante' : 'participantes'}</span>
                     </div>
-                    {reserva.ponto_embarque && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 shrink-0 text-emerald-600" />
-                        <span>{reserva.ponto_embarque}{reserva.ponto_embarque_horario && ` · ${reserva.ponto_embarque_horario}`}</span>
-                      </div>
-                    )}
                   </div>
+
+                  {/* Ponto de embarque em destaque */}
+                  {reserva.ponto_embarque && (
+                    <div className="mt-3 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2.5 flex items-start gap-2">
+                      <MapPin className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Ponto de Embarque</p>
+                        <p className="text-sm font-medium text-emerald-900">{reserva.ponto_embarque}</p>
+                        {reserva.ponto_embarque_horario && (
+                          <p className="text-xs text-emerald-600">Horário: {reserva.ponto_embarque_horario}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Payment breakdown */}
                   {(() => {
