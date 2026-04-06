@@ -553,6 +553,16 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
       {/* Footer */}
       <div className="border-t border-border p-2 space-y-1">
+        {/* Settings button — visible to admins only */}
+        {isAdmin && (
+          <button
+            onClick={() => setSettingsOpen(true)}
+            title="Configurações do sistema"
+            className="w-full flex items-center justify-center py-2 px-1 rounded-xl text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+          >
+            <Settings className="h-5 w-5" />
+          </button>
+        )}
         {/* Expand button */}
         <button
           onClick={toggleCollapsed}
