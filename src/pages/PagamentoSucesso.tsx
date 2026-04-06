@@ -2,10 +2,11 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Home, Download, Loader2, ExternalLink, RefreshCw, Clock, AlertCircle, Calendar, MapPin, Users, Ticket, Mail, MessageCircle } from 'lucide-react';
+import { Home, Download, Loader2, ExternalLink, RefreshCw, Clock, AlertCircle, Calendar, MapPin, Users, Ticket, Mail, MessageCircle } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 import logoImage from "@/assets/logo.png";
 import camaleaoVideo from "@/assets/camaleao-correndo.mp4";
+import joinhaImage from "@/assets/joinha-camaleao.png";
 
 interface TicketData {
   id: string;
@@ -47,6 +48,7 @@ export default function PagamentoSucesso() {
   const [ticketPollCount, setTicketPollCount] = useState(0);
   const [manualCheckLoading, setManualCheckLoading] = useState(false);
   const [loadingTickets, setLoadingTickets] = useState(true);
+  const ticketsEnsuredRef = useRef(false);
 
   // Splash screen state
   const [splashDone, setSplashDone] = useState(false);
@@ -232,9 +234,32 @@ export default function PagamentoSucesso() {
     return () => clearInterval(pollInterval);
   }, [reserva, pollCount, fetchReservaDetails, isConfirmedByRedirect]);
 
+  // Ensure tickets are generated: call check-infinitepay-payment once when paid but no tickets
   useEffect(() => {
     const isPaid = reserva?.payment_status === 'pago' || reserva?.status === 'confirmada' || isConfirmedByRedirect;
-    if (!reserva || !isPaid || (reserva.tickets && reserva.tickets.length > 0) || ticketPollCount >= 60) {
+    if (!reserva || !isPaid || reserva.tickets.length > 0 || ticketsEnsuredRef.current) return;
+    ticketsEnsuredRef.current = true;
+
+    supabase.functions.invoke('check-infinitepay-payment', {
+      body: {
+        reserva_id: reserva.id,
+        ...(transactionNsu && { transaction_nsu: transactionNsu }),
+        ...(slug && { slug }),
+        ...(receiptUrl && { receipt_url: receiptUrl }),
+        ...(captureMethod && { capture_method: captureMethod }),
+      }
+    }).then(() => {
+      // Re-fetch after a short delay to pick up generated tickets
+      setTimeout(() => fetchReservaDetails(), 1500);
+    }).catch(() => {
+      setTimeout(() => fetchReservaDetails(), 1500);
+    });
+  }, [reserva, isConfirmedByRedirect, transactionNsu, slug, receiptUrl, captureMethod, fetchReservaDetails]);
+
+  // Poll for tickets (max 15 attempts = ~30s)
+  useEffect(() => {
+    const isPaid = reserva?.payment_status === 'pago' || reserva?.status === 'confirmada' || isConfirmedByRedirect;
+    if (!reserva || !isPaid || (reserva.tickets && reserva.tickets.length > 0) || ticketPollCount >= 15) {
       if (reserva?.tickets && reserva.tickets.length > 0) setLoadingTickets(false);
       return;
     }
@@ -250,7 +275,7 @@ export default function PagamentoSucesso() {
   }, [reserva, ticketPollCount, fetchReservaDetails, isConfirmedByRedirect]);
 
   useEffect(() => {
-    if (ticketPollCount >= 60) setLoadingTickets(false);
+    if (ticketPollCount >= 15) setLoadingTickets(false);
   }, [ticketPollCount]);
 
   const handleManualCheck = async () => {
@@ -365,8 +390,8 @@ export default function PagamentoSucesso() {
 
               {/* Header */}
               <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 px-6 pt-7 pb-6 text-white text-center">
-                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 ring-4 ring-white/30">
-                  <CheckCircle className="h-9 w-9 text-white" />
+                <div className="w-20 h-20 mx-auto mb-3">
+                  <img src={joinhaImage} alt="" className="w-full h-full object-contain drop-shadow-lg" />
                 </div>
                 <h1 className="text-2xl font-bold">Reserva Confirmada!</h1>
                 {reserva.client_name && (
