@@ -338,6 +338,7 @@ function getReadCounts(): Record<string, number> {
 export function OnlineVisitorsWidget({ onOpenChat }: { onOpenChat?: (sessionId: string) => void }) {
   const [open, setOpen] = useState(false);
   const [sessions, setSessions] = useState<OnlineSession[]>([]);
+  const [chatSessions, setChatSessions] = useState<ActiveChatSession[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [selected, setSelected] = useState<OnlineSession | null>(null);
 
@@ -359,17 +360,20 @@ export function OnlineVisitorsWidget({ onOpenChat }: { onOpenChat?: (sessionId: 
     }
     setSessions(unique);
 
-    // Unread messages count from recent chat sessions
-    const chatCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    // Recent chat sessions (last 15min) + unread count
+    const chatCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     const { data: chatData } = await supabase
       .from('chat_sessions')
-      .select('session_id, message_count')
+      .select('session_id, last_activity, message_count, browser, os, device_type, first_page, is_manual_mode')
       .gte('last_activity', chatCutoff)
-      .gt('message_count', 0);
+      .order('last_activity', { ascending: false })
+      .limit(30);
+    const chats = (chatData as ActiveChatSession[]) ?? [];
+    setChatSessions(chats);
 
     const reads = getReadCounts();
     let unread = 0;
-    for (const s of (chatData || []) as { session_id: string; message_count: number }[]) {
+    for (const s of chats) {
       const read = reads[s.session_id] ?? 0;
       unread += Math.max(0, s.message_count - read);
     }
@@ -401,6 +405,7 @@ export function OnlineVisitorsWidget({ onOpenChat }: { onOpenChat?: (sessionId: 
   }, [open]);
 
   const count = sessions.length;
+  const totalActivity = count + chatSessions.length;
 
   return (
     <div className="relative" ref={panelRef}>
@@ -408,14 +413,19 @@ export function OnlineVisitorsWidget({ onOpenChat }: { onOpenChat?: (sessionId: 
       <button
         onClick={() => { setOpen(o => !o); if (open) setSelected(null); }}
         className={`relative flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-all border ${
-          count > 0
+          totalActivity > 0
             ? 'bg-green-500/10 border-green-500/30 text-green-700 hover:bg-green-500/20'
             : 'bg-muted/50 border-border text-muted-foreground hover:bg-muted'
         }`}
       >
-        {count > 0 && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />}
+        {totalActivity > 0 && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />}
         <Users className="w-3.5 h-3.5" />
-        <span>{count > 0 ? `${count} online` : 'Ninguém online'}</span>
+        <span>
+          {totalActivity === 0 ? 'Ninguém online'
+            : count > 0 && chatSessions.length > 0 ? `${count} online · ${chatSessions.length} conv`
+            : count > 0 ? `${count} online`
+            : `${chatSessions.length} conversando`}
+        </span>
         {unreadCount > 0 && (
           <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -427,15 +437,15 @@ export function OnlineVisitorsWidget({ onOpenChat }: { onOpenChat?: (sessionId: 
       {open && (
         <div
           className="absolute right-0 top-full mt-2 w-80 rounded-2xl border border-border bg-background shadow-2xl overflow-hidden z-50 flex flex-col"
-          style={{ maxHeight: '520px' }}
+          style={{ maxHeight: '560px' }}
         >
           {/* Panel header */}
           <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
-            {selected ? null : (
+            {!selected && (
               <>
                 <div>
-                  <p className="text-sm font-semibold">Visitantes online</p>
-                  <p className="text-xs text-muted-foreground">{count} {count === 1 ? 'pessoa' : 'pessoas'} no site agora</p>
+                  <p className="text-sm font-semibold">Atividade ao vivo</p>
+                  <p className="text-xs text-muted-foreground">{count} navegando · {chatSessions.length} conversas recentes</p>
                 </div>
                 <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
                   <X className="w-4 h-4" />
@@ -449,17 +459,75 @@ export function OnlineVisitorsWidget({ onOpenChat }: { onOpenChat?: (sessionId: 
             <div className="flex-1 overflow-hidden flex flex-col" style={{ minHeight: 0 }}>
               <VisitorDetail session={selected} onBack={() => setSelected(null)} onOpenChat={onOpenChat} />
             </div>
-          ) : count === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-              <Users className="w-8 h-8 text-muted-foreground/30 mb-2" />
-              <p className="text-sm text-muted-foreground">Ninguém navegando agora</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">As notificações aparecem automaticamente quando alguém entrar</p>
-            </div>
           ) : (
             <div className="overflow-y-auto flex-1">
-              {sessions.map(s => (
-                <VisitorRow key={s.user_id_anon} session={s} onClick={() => setSelected(s)} />
-              ))}
+              {/* Online visitors */}
+              {count > 0 && (
+                <>
+                  <div className="px-4 py-2 bg-muted/30 border-b border-border/40">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                      Navegando agora
+                    </p>
+                  </div>
+                  {sessions.map(s => (
+                    <VisitorRow key={s.user_id_anon} session={s} onClick={() => setSelected(s)} />
+                  ))}
+                </>
+              )}
+
+              {/* Recent chat sessions */}
+              {chatSessions.length > 0 && (
+                <>
+                  <div className="px-4 py-2 bg-muted/30 border-b border-border/40">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <MessageCircle className="w-3 h-3 text-indigo-400" />
+                      Conversas recentes
+                    </p>
+                  </div>
+                  {chatSessions.map(s => {
+                    const reads = getReadCounts();
+                    const unread = Math.max(0, s.message_count - (reads[s.session_id] ?? 0));
+                    const isRecent = Date.now() - new Date(s.last_activity).getTime() < 5 * 60 * 1000;
+                    return (
+                      <button
+                        key={s.session_id}
+                        onClick={() => { if (onOpenChat) { onOpenChat(s.session_id); setOpen(false); } }}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors text-left border-b border-border/50 last:border-0"
+                      >
+                        <div className="relative shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center">
+                            <MessageCircle className="w-4 h-4 text-indigo-500" />
+                          </div>
+                          {isRecent && <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-background" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm truncate ${unread > 0 ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
+                            #{s.session_id.slice(-8)}
+                            {s.is_manual_mode && <span className="ml-1.5 text-[9px] bg-purple-100 text-purple-600 rounded-full px-1.5 py-0.5 font-normal">manual</span>}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">{s.first_page || '/'} · {s.message_count} msg</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className={`text-xs ${unread > 0 ? 'text-green-600 font-medium' : 'text-muted-foreground'}`}>{timeAgo(s.last_activity)}</span>
+                          {unread > 0 && (
+                            <span className="min-w-[18px] h-[18px] bg-green-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                              {unread}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </>
+              )}
+
+              {totalActivity === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                  <Users className="w-8 h-8 text-muted-foreground/30 mb-2" />
+                  <p className="text-sm text-muted-foreground">Nenhuma atividade no momento</p>
+                </div>
+              )}
             </div>
           )}
         </div>
