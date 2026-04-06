@@ -11,7 +11,7 @@ export const SECTION_TO_TABS: Record<string, string[]> = {
   fidelidade:    ['fidelidade', 'fidelidade-clientes', 'fidelidade-pontos', 'fidelidade-selos', 'fidelidade-niveis', 'fidelidade-mensagens'],
   chat_ia:       ['conversas', 'treinamento'],
   marketing:     ['marketing', 'jornada', 'conteudo-calendario', 'paginas-institucionais', 'paginas', 'home-sections', 'stories', 'tour-moments', 'depoimentos', 'formularios', 'categorias'],
-  configuracoes: ['funcionalidades', 'func-menu', 'func-banners', 'func-mensagens', 'func-cupons', 'func-emails', 'func-politica', 'func-templates', 'func-tickets', 'func-transporte', 'func-pagina-sucesso', 'func-processos', 'func-seguro-roca', 'analytics', 'analytics-acessos', 'analytics-abandono', 'loja', 'mapa-processos'],
+  configuracoes: ['funcionalidades', 'func-menu', 'func-banners', 'func-mensagens', 'func-cupons', 'func-emails', 'func-politica', 'func-templates', 'func-tickets', 'func-transporte', 'func-pagina-sucesso', 'func-processos', 'func-seguro-roca', 'analytics', 'analytics-acessos', 'analytics-abandono', 'analytics-visitantes', 'loja', 'mapa-processos'],
   guias:         ['guias'],
   exportar:      ['exportar'],
 };

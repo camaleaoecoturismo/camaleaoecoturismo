@@ -491,6 +491,7 @@ const Admin = () => {
       'analytics': 'Analytics de Acessos',
       'analytics-acessos': 'Analytics - Acessos',
       'analytics-abandono': 'Analytics - Abandono de Formulario',
+      'analytics-visitantes': 'Analytics - Visitantes',
       'exportar': 'Exportar Passeios',
       'conversas': 'Conversas IA',
       'treinamento': 'Treinamento da Camila',

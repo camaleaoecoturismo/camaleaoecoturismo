@@ -233,6 +233,7 @@ const navGroups: NavGroup[] = [
         subItems: [
           { id: 'analytics-acessos', label: 'Acessos', icon: <Activity className="h-4 w-4" /> },
           { id: 'analytics-abandono', label: 'Abandono', icon: <TrendingUp className="h-4 w-4" /> },
+          { id: 'analytics-visitantes', label: 'Visitantes', icon: <Users className="h-4 w-4" /> },
         ],
       },
       { id: 'guias', label: 'Guias', icon: <Users className="h-5 w-5" /> },

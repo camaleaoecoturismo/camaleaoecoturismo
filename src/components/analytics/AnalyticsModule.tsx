@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Globe, FileText, Target, Monitor, MapPin, SearchCheck } from 'lucide-react';
+import { BarChart3, Globe, FileText, Target, Monitor, MapPin, SearchCheck, Users } from 'lucide-react';
 import AnalyticsOverview from './AnalyticsOverview';
 import AnalyticsTrafficSources from './AnalyticsTrafficSources';
 import AnalyticsBehavior from './AnalyticsBehavior';
@@ -8,6 +8,7 @@ import AnalyticsFunnel from './AnalyticsFunnel';
 import AnalyticsDevices from './AnalyticsDevices';
 import AnalyticsGeoMap from './AnalyticsGeoMap';
 import AnalyticsSeoConversion from './AnalyticsSeoConversion';
+import AnalyticsVisitantes from './AnalyticsVisitantes';
 import FormAbandonmentMetrics from '@/components/FormAbandonmentMetrics';
 
 interface AnalyticsModuleProps {
@@ -25,6 +26,11 @@ const AnalyticsModule: React.FC<AnalyticsModuleProps> = ({ subView }) => {
         <FormAbandonmentMetrics />
       </div>
     );
+  }
+
+  // If subView is 'visitantes', show AnalyticsVisitantes directly
+  if (subView === 'visitantes') {
+    return <AnalyticsVisitantes />;
   }
 
   const tabs = [
