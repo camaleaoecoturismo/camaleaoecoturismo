@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Users, Clock, TrendingUp, MapPin, Search, ArrowUpDown, BarChart3, CheckSquare, Gift, PartyPopper, UserPlus, Check, CheckCheck, Bell, ClipboardList, MessageCircle, AlertCircle, RefreshCw } from "lucide-react";
+import { Calendar, Users, Clock, TrendingUp, MapPin, Search, ArrowUpDown, BarChart3, CheckSquare, Gift, PartyPopper, UserPlus, Check, CheckCheck, Bell, ClipboardList, MessageCircle, AlertCircle, RefreshCw, ChevronDown } from "lucide-react";
 import { Tour } from "@/hooks/useTours";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -99,6 +99,21 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [markingAsSeen, setMarkingAsSeen] = useState<string | null>(null);
   const [markingAllAsSeen, setMarkingAllAsSeen] = useState(false);
+  const [proximosCollapsed, setProximosCollapsed] = useState(() =>
+    localStorage.getItem('dashboard_proximos_collapsed') === 'true'
+  );
+  const [realizadosCollapsed, setRealizadosCollapsed] = useState(() =>
+    localStorage.getItem('dashboard_realizados_collapsed') === 'true'
+  );
+
+  const toggleProximos = () => setProximosCollapsed(v => {
+    localStorage.setItem('dashboard_proximos_collapsed', String(!v));
+    return !v;
+  });
+  const toggleRealizados = () => setRealizadosCollapsed(v => {
+    localStorage.setItem('dashboard_realizados_collapsed', String(!v));
+    return !v;
+  });
 
   // Fetch new subscribers (unseen reservations - only PAID ones)
   const {
@@ -1361,24 +1376,33 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
       <Card className="overflow-hidden">
         <CardHeader className="pb-2">
           <div className="flex flex-col gap-4">
-            <CardTitle className="text-lg">Próximos Passeios</CardTitle>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              {/* Quick filters */}
-              <div className="flex flex-wrap gap-1">
-                {['todos', '7', '15', '30'].map(days => <Button key={days} variant={daysFilter === days ? 'default' : 'outline'} size="sm" onClick={() => setDaysFilter(days)} className="h-7 px-2 text-xs">
-                    {days === 'todos' ? 'Todos' : `Até ${days}d`}
-                  </Button>)}
-              </div>
-              
-              {/* Search */}
-              <div className="relative flex-1 sm:flex-initial">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar passeio..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-8 h-8 w-full sm:w-[180px]" />
-              </div>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Próximos Passeios</CardTitle>
+              <button
+                onClick={toggleProximos}
+                className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-muted/50"
+              >
+                <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${proximosCollapsed ? '-rotate-90' : ''}`} />
+              </button>
             </div>
+            {!proximosCollapsed && (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                {/* Quick filters */}
+                <div className="flex flex-wrap gap-1">
+                  {['todos', '7', '15', '30'].map(days => <Button key={days} variant={daysFilter === days ? 'default' : 'outline'} size="sm" onClick={() => setDaysFilter(days)} className="h-7 px-2 text-xs">
+                      {days === 'todos' ? 'Todos' : `Até ${days}d`}
+                    </Button>)}
+                </div>
+                {/* Search */}
+                <div className="relative flex-1 sm:flex-initial">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Buscar passeio..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-8 h-8 w-full sm:w-[180px]" />
+                </div>
+              </div>
+            )}
           </div>
         </CardHeader>
-        <CardContent>
+        {!proximosCollapsed && <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -1478,16 +1502,24 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
               </TableBody>
             </Table>
           </div>
-        </CardContent>
+        </CardContent>}
       </Card>
 
       {/* Past Tours Table */}
       {pastTourStats.length > 0 && (
         <Card className="overflow-hidden">
           <CardHeader className="pb-2">
-            <div className="flex flex-col gap-2">
-              <CardTitle className="text-lg">Passeios Realizados em {new Date().getFullYear()}</CardTitle>
-              <p className="text-sm text-muted-foreground">{pastTourStats.length} passeios realizados</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">Passeios Realizados em {new Date().getFullYear()}</CardTitle>
+                {!realizadosCollapsed && <p className="text-sm text-muted-foreground mt-1">{pastTourStats.length} passeios realizados</p>}
+              </div>
+              <button
+                onClick={toggleRealizados}
+                className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-muted/50"
+              >
+                <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${realizadosCollapsed ? '-rotate-90' : ''}`} />
+              </button>
             </div>
           </CardHeader>
           <CardContent>
