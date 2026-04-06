@@ -1,13 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Monitor, Smartphone, Tablet, Globe, Clock, MessageCircle, Send, UserCheck, Bot, X, Bell } from 'lucide-react';
-
-interface ActiveNotification {
-  id: string;
-  session: ChatSession;
-  message: string; // 'Nova conversa' | 'Mensagem recebida'
-  at: number;
-}
+import { Monitor, Smartphone, Tablet, Globe, Clock, MessageCircle, Send, UserCheck, Bot, X } from 'lucide-react';
 
 interface ChatSession {
   id: string;
@@ -75,15 +68,10 @@ export default function ChatConversasTab() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [adminInput, setAdminInput] = useState('');
   const [sendingAdmin, setSendingAdmin] = useState(false);
-  const [notifications, setNotifications] = useState<ActiveNotification[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const adminInputRef = useRef<HTMLInputElement>(null);
-  const knownSessionsRef = useRef<Map<string, number>>(new Map()); // session_id → last_activity ms
+  const knownSessionsRef = useRef<Map<string, number>>(new Map());
   const isFirstLoadRef = useRef(true);
-
-  const dismissNotification = useCallback((id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  }, []);
 
   const fetchSessions = useCallback(async () => {
     const { data } = await supabase
@@ -93,39 +81,14 @@ export default function ChatConversasTab() {
       .limit(100);
 
     const incoming = (data as ChatSession[]) ?? [];
-
-    if (!isFirstLoadRef.current) {
-      // Detect new sessions or sessions with new activity from real users
-      const now = Date.now();
-      for (const session of incoming) {
-        const activityMs = new Date(session.last_activity).getTime();
-        const prevActivity = knownSessionsRef.current.get(session.session_id);
-        const isNew = prevActivity === undefined;
-        const hasNewMsg = !isNew && activityMs > prevActivity! && (now - activityMs) < 30_000;
-
-        if ((isNew || hasNewMsg) && isOnline(session.last_activity)) {
-          const notifId = `${session.session_id}-${activityMs}`;
-          const label = isNew ? 'Nova conversa iniciada' : 'Nova mensagem recebida';
-          setNotifications((prev) => {
-            if (prev.find((n) => n.id === notifId)) return prev;
-            return [...prev, { id: notifId, session, message: label, at: now }];
-          });
-          // Auto-dismiss after 8s
-          setTimeout(() => dismissNotification(notifId), 8000);
-        }
-        knownSessionsRef.current.set(session.session_id, activityMs);
-      }
-    } else {
-      // First load: just populate known sessions, no notifications
-      for (const session of incoming) {
-        knownSessionsRef.current.set(session.session_id, new Date(session.last_activity).getTime());
-      }
-      isFirstLoadRef.current = false;
+    // Populate known sessions map (used by global AdminNotifications)
+    for (const session of incoming) {
+      knownSessionsRef.current.set(session.session_id, new Date(session.last_activity).getTime());
     }
-
+    isFirstLoadRef.current = false;
     setSessions(incoming);
     setLoadingSessions(false);
-  }, [dismissNotification]);
+  }, []);
 
   const fetchMessages = useCallback(async (sessionId: string) => {
     setLoadingMessages(true);
@@ -269,47 +232,6 @@ export default function ChatConversasTab() {
 
   return (
     <div className="relative">
-    {/* ── Notifications ─────────────────────────────────────────────────── */}
-    {notifications.length > 0 && (
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-        {notifications.map((notif) => (
-          <div
-            key={notif.id}
-            className="pointer-events-auto flex items-start gap-3 bg-white border border-emerald-200 shadow-xl rounded-xl px-4 py-3 w-80 animate-in slide-in-from-right-4 duration-300"
-          >
-            <div className="shrink-0 mt-0.5 w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-              <Bell className="w-4 h-4 text-emerald-600" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900">{notif.message}</p>
-              <p className="text-xs text-gray-500 truncate mt-0.5">
-                <DeviceIcon type={notif.session.device_type} />
-                {' '}{notif.session.browser ?? 'N/A'} · {notif.session.os ?? 'N/A'}
-              </p>
-              {notif.session.first_page && (
-                <p className="text-xs text-gray-400 truncate">{notif.session.first_page}</p>
-              )}
-              <button
-                onClick={() => {
-                  setSelectedSession(notif.session);
-                  dismissNotification(notif.id);
-                }}
-                className="mt-2 text-xs font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg px-2.5 py-1 transition-colors"
-              >
-                Ver conversa →
-              </button>
-            </div>
-            <button
-              onClick={() => dismissNotification(notif.id)}
-              className="shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
-      </div>
-    )}
-
     <div className="flex h-[calc(100vh-120px)] border border-gray-200 rounded-xl overflow-hidden bg-white">
       {/* Session list */}
       <div className="w-80 shrink-0 border-r border-gray-200 flex flex-col bg-gray-50">

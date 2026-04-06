@@ -32,6 +32,7 @@ import AdminCategorias from "@/components/admin/AdminCategorias";
 import AdminStories from "@/components/admin/AdminStories";
 import AdminTourMoments from "@/components/admin/AdminTourMoments";
 import ConversasPage from "@/components/admin/ConversasPage";
+import { AdminNotifications } from "@/components/admin/AdminNotifications";
 import { useToast } from "@/hooks/use-toast";
 import { Tour } from "@/hooks/useTours";
 import { useNoIndex } from '@/hooks/useNoIndex';
@@ -507,6 +508,9 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background flex w-full">
+      {/* Global notifications — visitors & chat, always active */}
+      <AdminNotifications onNavigate={setActiveTab} />
+
       {/* Intro animation — first session only */}
       {showIntro && (
         <IntroAnimation
