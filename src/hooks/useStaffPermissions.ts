@@ -64,12 +64,14 @@ export function useStaffPermissions(): StaffPermissionsResult {
 
       const userId = session.user.id;
 
-      // Get user role
-      const { data: roleRow } = await supabase
+      // Get user role — filter to only admin/staff to avoid trigger-inserted 'user' rows
+      const { data: roleRows } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .maybeSingle();
+        .in('role', ['admin', 'staff'])
+        .limit(1);
+      const roleRow = roleRows?.[0] ?? null;
 
       if (cancelled) return;
 

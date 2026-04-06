@@ -101,6 +101,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     const newUserId = newUser.user.id;
 
+    // Remove the auto-inserted 'user' role (added by the on_auth_user_created trigger)
+    // before inserting 'staff', to avoid duplicate role conflicts
+    await adminClient
+      .from("user_roles")
+      .delete()
+      .eq("user_id", newUserId)
+      .eq("role", "user");
+
     // Insert staff role in user_roles
     const { error: roleError } = await adminClient
       .from("user_roles")
