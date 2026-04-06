@@ -19,6 +19,7 @@ import {
   Menu,
   Image as ImageIcon,
   MessageSquare,
+  MessageCircle,
   Tag,
   Mail,
   FileText,
@@ -145,6 +146,11 @@ const navGroups: NavGroup[] = [
           { id: 'clientes-planilha', label: 'Planilha', icon: <FileSpreadsheet className="h-4 w-4" /> },
           { id: 'clientes-analytics', label: 'Análise', icon: <BarChart3 className="h-4 w-4" /> },
         ],
+      },
+      {
+        id: 'conversas',
+        label: 'Conversas IA',
+        icon: <MessageCircle className="h-5 w-5" />,
       },
       {
         id: 'fidelidade',

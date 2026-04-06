@@ -157,7 +157,10 @@ async function buildData(tourSlug: string | null): Promise<{ context: string; to
         `Preço a partir de: ${price ? formatCurrency(price) : "Consulte"}`,
         boardingMap[tour.id] ? `Pontos de embarque: ${boardingMap[tour.id]}` : null,
         tags.length ? `Temas: ${tags.join(", ")}` : null,
-        tour.about ? `Sobre: ${(tour.about as string).slice(0, 280)}` : null,
+        tour.about ? `Sobre: ${stripHtml(tour.about as string).slice(0, 250)}` : null,
+        tour.itinerary ? `Roteiro: ${stripHtml(tour.itinerary as string).slice(0, 350)}` : null,
+        tour.includes ? `Inclui: ${stripHtml(tour.includes as string).slice(0, 250)}` : null,
+        tour.not_includes ? `Não inclui: ${stripHtml(tour.not_includes as string).slice(0, 200)}` : null,
         "---",
       ]
         .filter(Boolean)
@@ -184,7 +187,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, history = [], tourSlug = null } = await req.json();
+    const { message, history = [], tourSlug = null, sessionId = null, deviceInfo = null } = await req.json();
 
     if (!message || typeof message !== "string") {
       return new Response(
@@ -221,8 +224,8 @@ ESTILO:
 - "text" com no máximo 4 frases curtas e diretas
 - Faça UMA pergunta por vez
 - Nunca liste nomes de passeios no "text" — os cards visuais cuidam disso
-- Máximo 1 emoji por resposta
-- Se há muitos passeios para mostrar, anuncia no texto (ex: "Encontrei 5 passeios para junho 😊") e deixa os cards falar
+- Não use emojis em nenhuma parte da resposta
+- Se há muitos passeios para mostrar, anuncia no texto (ex: "Encontrei 5 passeios para junho") e deixa os cards falar
 - Linguagem suave, humana e comercial
 
 FUNIL DE QUALIFICAÇÃO — siga esta sequência antes de recomendar (pule etapas se o usuário já deu a informação):
@@ -242,12 +245,14 @@ options obrigatórias: ["Cachoeira", "Trilha", "Chapada Diamantina", "Acampament
 Após o PASSO 3 (ou quando o perfil já estiver claro): vá direto para RECOMENDAR.
 
 APÓS RECOMENDAR PASSEIOS — sempre retorne exatamente estas options:
-["Quero saber mais", "Como reservo?", "Ver outras opções"]
+["Quero saber mais", "Como reservo?", "Ver agenda completa", "Ver outras opções"]
+
+Quando o usuário escolher "Ver agenda completa", responda com [AGENDA] no texto para que o botão de redirecionamento apareça.
 
 ESTÁGIO DE CONVERSÃO — quando o usuário demonstrar interesse claro em um passeio específico:
 1. Mencione o(s) ponto(s) de embarque (use os "Pontos de embarque:" listados no contexto do SLUG)
 2. Confirme o preço ("A partir de R$X no Pix")
-3. Diga que pode reservar na página do passeio ou pelo WhatsApp (82) 99364-9454
+3. Diga que pode reservar na página do passeio ou use [WHATSAPP] para o link de atendimento
 4. options: ["Reservar agora", "Falar no WhatsApp", "Ver detalhes"]
 
 COMPORTAMENTO EM PÁGINA DE PASSEIO ESPECÍFICO (quando CONTEXTO DA PÁGINA ATUAL estiver presente):
@@ -267,21 +272,23 @@ PROVA SOCIAL (mencione quando relevante, não em toda mensagem):
 
 EMPRESA:
 - Nome: Camaleão Ecoturismo
-- WhatsApp: (82) 99364-9454
+- WhatsApp: use [WHATSAPP] para o botão de contato (nunca escreva o número)
 - Instagram: @camaleaoecoturismo
 - Localização: Maceió, Alagoas
 - Fundada em 2020 por Isaías Christian (psicólogo e guia de turismo)
 - Sócia: Paula Jatobá (advogada)
 - Conquistas: +5000 viajantes, +25 roteiros, prêmio melhor ecoturismo AL 2023
 
-PÁGINAS DO SITE (mencione quando relevante):
-- /agenda → catálogo completo de passeios com filtros por mês, dificuldade e tipo
-- /chapada-diamantina → roteiros especializados para a Chapada Diamantina
-- /faq → perguntas frequentes sobre reservas, cancelamento, logística
-- /politicas → políticas de cancelamento e termos de participação
-- /sobre → história da empresa e equipe
-- /organizacoes → grupos privativos, empresas e escolas
-- /blog → artigos e dicas de viagem
+PÁGINAS DO SITE — use o token correspondente no "text" para gerar um botão de navegação:
+- [AGENDA] → catálogo completo de passeios
+- [CHAPADA] → roteiros da Chapada Diamantina
+- [FAQ] → perguntas frequentes sobre reservas, cancelamento, logística
+- [POLITICAS] → políticas de cancelamento e termos de participação
+- [SOBRE] → história da empresa e equipe
+- [ORGANIZACOES] → grupos privativos, empresas e escolas
+- [BLOG] → artigos e dicas de viagem
+
+Use esses tokens SEMPRE que for indicar uma página do site. Nunca escreva a URL diretamente.
 
 PASSEIOS DISPONÍVEIS (use APENAS estes slugs em "tourSlugs"):
 ${context}${tourPageSection}
@@ -291,8 +298,10 @@ REGRAS ABSOLUTAS:
 - Nunca coloque nomes ou datas de passeios no "text" se já incluiu em "tourSlugs"
 - Nunca peça CPF, email ou telefone
 - Use as PERGUNTAS FREQUENTES para responder diretamente — só direcione para /faq se a dúvida for muito específica
-- Reservas existentes ou dados pessoais → WhatsApp
-- Pontos de embarque: use os "Pontos de embarque:" listados no contexto de cada SLUG`;
+- Reservas existentes ou dados pessoais → use [WHATSAPP] no texto
+- Nunca escreva o número de telefone no texto — use sempre [WHATSAPP] para o link de atendimento
+- Para detalhes completos de um passeio, use os campos: Sobre, Roteiro, Inclui, Não inclui, Pontos de embarque
+- Responda sobre roteiro, o que inclui e o que não inclui quando o usuário perguntar`;
 
     const openaiMessages = [
       { role: "system", content: systemPrompt },
@@ -318,7 +327,7 @@ REGRAS ABSOLUTAS:
     if (!openaiRes.ok) {
       console.error("OpenAI error:", await openaiRes.text());
       return new Response(
-        JSON.stringify({ text: "Ops, tive um problema técnico. Tente novamente em instantes 😊", tours: [], options: [] }),
+        JSON.stringify({ text: "Ops, tive um problema técnico. Tente novamente em instantes.", tours: [], options: [] }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -341,6 +350,53 @@ REGRAS ABSOLUTAS:
       .filter((o: any) => typeof o === "string" && o.trim().length > 0)
       .slice(0, 4);
 
+    // Log conversation to DB (fire-and-forget, never blocks response)
+    if (sessionId && typeof sessionId === "string") {
+      const logDb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const now = new Date().toISOString();
+      const msgCount = (history as any[]).length + 2;
+
+      Promise.all([
+        logDb.from("chat_sessions").upsert(
+          {
+            session_id: sessionId,
+            tour_slug: tourSlug ?? null,
+            last_activity: now,
+            message_count: msgCount,
+            ...(deviceInfo
+              ? {
+                  user_agent: (deviceInfo as any).userAgent ?? null,
+                  device_type: (deviceInfo as any).deviceType ?? null,
+                  browser: (deviceInfo as any).browser ?? null,
+                  os: (deviceInfo as any).os ?? null,
+                  screen_width: (deviceInfo as any).screenWidth ?? null,
+                  screen_height: (deviceInfo as any).screenHeight ?? null,
+                  language: (deviceInfo as any).language ?? null,
+                  referrer: (deviceInfo as any).referrer ?? null,
+                  first_page: (deviceInfo as any).firstPage ?? null,
+                }
+              : {}),
+          },
+          { onConflict: "session_id" }
+        ),
+        logDb.from("chat_messages").insert({
+          session_id: sessionId,
+          role: "user",
+          content: message,
+          tour_slugs: null,
+          options: null,
+          created_at: now,
+        }),
+        logDb.from("chat_messages").insert({
+          session_id: sessionId,
+          role: "assistant",
+          content: parsed.text ?? "",
+          tour_slugs: tours.length > 0 ? tours.map((t: TourCard) => t.slug) : null,
+          options: options.length > 0 ? options : null,
+        }),
+      ]).catch((e) => console.error("chat log error:", e));
+    }
+
     return new Response(
       JSON.stringify({ text: parsed.text ?? "Como posso ajudar?", tours, options }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -348,7 +404,7 @@ REGRAS ABSOLUTAS:
   } catch (error: any) {
     console.error("chat-ai error:", error);
     return new Response(
-      JSON.stringify({ text: "Ops, ocorreu um erro. Tente novamente 😊", tours: [], options: [] }),
+      JSON.stringify({ text: "Ops, ocorreu um erro. Tente novamente.", tours: [], options: [] }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

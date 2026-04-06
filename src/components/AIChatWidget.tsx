@@ -6,6 +6,50 @@ const SUPABASE_URL = "https://guwplwuwriixgvkjlutg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1d3Bsd3V3cmlpeGd2a2psdXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MzE3MDYsImV4cCI6MjA2OTMwNzcwNn0.XqFnllTUiv1SZrnL23hy7pWWeIeWDldfm9lpfO3vIQg";
 const WHATSAPP_NUMBER = "5582993649454";
 const SESSION_KEY = "cami_chat_v3";
+const CHAT_SESSION_ID_KEY = "cami_session_id_v1";
+
+function getOrCreateSessionId(): string {
+  let id = sessionStorage.getItem(CHAT_SESSION_ID_KEY);
+  if (!id) {
+    id = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    sessionStorage.setItem(CHAT_SESSION_ID_KEY, id);
+  }
+  return id;
+}
+
+function getDeviceInfo() {
+  const ua = navigator.userAgent;
+  let browser = "unknown";
+  let os = "unknown";
+  let deviceType = "desktop";
+
+  if (ua.includes("Firefox/")) browser = "Firefox";
+  else if (ua.includes("Edg/")) browser = "Edge";
+  else if (ua.includes("OPR/") || ua.includes("Opera/")) browser = "Opera";
+  else if (ua.includes("Chrome/")) browser = "Chrome";
+  else if (ua.includes("Safari/")) browser = "Safari";
+
+  if (ua.includes("iPhone")) { os = "iOS"; deviceType = "mobile"; }
+  else if (ua.includes("iPad")) { os = "iPadOS"; deviceType = "tablet"; }
+  else if (ua.includes("Android")) {
+    os = "Android";
+    deviceType = ua.includes("Mobile") ? "mobile" : "tablet";
+  } else if (ua.includes("Windows")) os = "Windows";
+  else if (ua.includes("Mac OS X")) os = "macOS";
+  else if (ua.includes("Linux")) os = "Linux";
+
+  return {
+    userAgent: ua,
+    browser,
+    os,
+    deviceType,
+    screenWidth: screen.width,
+    screenHeight: screen.height,
+    language: navigator.language,
+    referrer: document.referrer || null,
+    firstPage: window.location.pathname,
+  };
+}
 
 interface TourCard {
   id: string;
@@ -39,35 +83,68 @@ const relevantMonth = getRelevantMonthName();
 
 // Página genérica — qualificação do funil
 const QUICK_ACTIONS_DEFAULT = [
-  { label: "🗓 Quando você quer ir?", message: "Ainda não tenho data certa, pode me ajudar a escolher?" },
-  { label: "👥 Quantas pessoas?", message: "Quero entender as opções de acordo com o tamanho do grupo" },
-  { label: "💧 Cachoeira ou trilha?", message: "Qual a diferença entre os passeios com cachoeira e os de trilha?" },
-  { label: "🏔 Chapada Diamantina", message: "Quero conhecer a Chapada Diamantina, como funciona?" },
-  { label: "👨‍👩‍👧 Para famílias", message: "Tem passeio para levar família com crianças?" },
-  { label: "💬 Falar com a equipe", message: "", whatsapp: true },
+  { label: "Quando você quer ir?", message: "Ainda não tenho data certa, pode me ajudar a escolher?" },
+  { label: "Quantas pessoas?", message: "Quero entender as opções de acordo com o tamanho do grupo" },
+  { label: "Que tipo de passeio?", message: "Que tipos de passeio vocês têm? Cachoeira, trilha, acampamento..." },
+  { label: "Chapada Diamantina", message: "Quero conhecer a Chapada Diamantina, como funciona?" },
+  { label: "Para famílias", message: "Tem passeio para levar família com crianças?" },
+  { label: "Falar com a equipe", message: "", whatsapp: true },
 ] as const;
 
 // Página de passeio — foco em conversão
 const QUICK_ACTIONS_TOUR = [
-  { label: "🚌 Pontos de embarque", message: "Quais são os pontos de embarque para este passeio?" },
-  { label: "💳 Ver preços", message: "Quais são os valores e formas de pagamento?" },
-  { label: "📋 Como reservar?", message: "Como faço para reservar este passeio?" },
-  { label: "❓ Outras dúvidas", message: "Tenho outras dúvidas sobre este passeio" },
+  { label: "Pontos de embarque", message: "Quais são os pontos de embarque para este passeio?" },
+  { label: "Ver preços", message: "Quais são os valores e formas de pagamento?" },
+  { label: "Como reservar?", message: "Como faço para reservar este passeio?" },
+  { label: "Outras dúvidas", message: "Tenho outras dúvidas sobre este passeio" },
 ] as const;
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
+const PAGE_TOKENS: Record<string, { label: string; path?: string; href?: string }> = {
+  "[WHATSAPP]": { label: "Falar com a equipe", href: `https://wa.me/${WHATSAPP_NUMBER}` },
+  "[AGENDA]":      { label: "Ver agenda",            path: "/agenda" },
+  "[CHAPADA]":     { label: "Chapada Diamantina",     path: "/chapada-diamantina" },
+  "[FAQ]":         { label: "Perguntas frequentes",   path: "/faq" },
+  "[POLITICAS]":   { label: "Políticas",              path: "/politicas" },
+  "[SOBRE]":       { label: "Sobre nós",              path: "/sobre" },
+  "[ORGANIZACOES]":{ label: "Grupos privativos",      path: "/organizacoes" },
+  "[BLOG]":        { label: "Blog",                   path: "/blog" },
+};
+
+const TOKEN_REGEX = /(\[WHATSAPP\]|\[AGENDA\]|\[CHAPADA\]|\[FAQ\]|\[POLITICAS\]|\[SOBRE\]|\[ORGANIZACOES\]|\[BLOG\])/g;
+
+// Renders assistant text, replacing page tokens with clickable buttons
+function RenderText({ text, onNavigate }: { text: string; onNavigate: (path: string) => void }) {
+  const parts = text.split(TOKEN_REGEX);
+  if (parts.length === 1) return <>{text}</>;
+  const btnClass = "inline-flex items-center mx-1 px-2.5 py-0.5 bg-emerald-500 text-white text-[11px] font-semibold rounded-full hover:bg-emerald-600 transition-colors";
+  return (
+    <>
+      {parts.map((part, i) => {
+        const token = PAGE_TOKENS[part];
+        if (!token) return <span key={i}>{part}</span>;
+        if (token.href) {
+          return (
+            <a key={i} href={token.href} target="_blank" rel="noopener noreferrer" className={btnClass}>
+              {token.label}
+            </a>
+          );
+        }
+        return (
+          <button key={i} onClick={() => { onNavigate(token.path!); }} className={btnClass}>
+            {token.label}
+          </button>
+        );
+      })}
+    </>
+  );
+}
+
 function toThumbUrl(url: string | null): string | null {
-  if (!url) return null;
-  if (url.includes("/storage/v1/object/public/")) {
-    return (
-      url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/") +
-      "?width=400&quality=75"
-    );
-  }
-  return url;
+  return url ?? null;
 }
 
 function formatDateShort(dateStr: string): string {
@@ -223,9 +300,9 @@ export function AIChatWidget() {
 
   // Show greeting bubble on load, then swap to badge
   useEffect(() => {
-    const t1 = setTimeout(() => setShowBubble(true), 800);
-    const t2 = setTimeout(() => setShowBubble(false), 4500);
-    const t3 = setTimeout(() => setShowBadge(true), 5200);
+    const t1 = setTimeout(() => setShowBubble(true), 3800);
+    const t2 = setTimeout(() => setShowBubble(false), 7500);
+    const t3 = setTimeout(() => setShowBadge(true), 8200);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
@@ -284,6 +361,9 @@ export function AIChatWidget() {
           .slice(-15)
           .map((m) => ({ role: m.type as "user" | "assistant", content: m.content }));
 
+        const sessionId = getOrCreateSessionId();
+        const isFirstMessage = messages.filter(m => m.type === "user").length === 0;
+
         const res = await fetch(`${SUPABASE_URL}/functions/v1/chat-ai`, {
           method: "POST",
           headers: {
@@ -291,7 +371,13 @@ export function AIChatWidget() {
             apikey: SUPABASE_ANON_KEY,
             Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
           },
-          body: JSON.stringify({ message: text, history, tourSlug: currentTourSlug }),
+          body: JSON.stringify({
+            message: text,
+            history,
+            tourSlug: currentTourSlug,
+            sessionId,
+            deviceInfo: isFirstMessage ? getDeviceInfo() : undefined,
+          }),
         });
 
         const data = await res.json();
@@ -400,7 +486,7 @@ export function AIChatWidget() {
             <div
               className={`relative bg-white text-gray-800 text-sm font-medium px-3.5 py-2 rounded-2xl rounded-bl-sm shadow-lg whitespace-nowrap transition-all duration-500 ${showBubble ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'}`}
             >
-              Oi, posso ajudar? 😊
+              Oi, posso ajudar?
               {/* tail */}
               <span className="absolute -bottom-2 left-4 w-0 h-0 border-l-[8px] border-l-transparent border-r-[0px] border-t-[8px] border-t-white" />
             </div>
@@ -475,17 +561,20 @@ export function AIChatWidget() {
 
             {/* Quick actions */}
             {showQuickActions && (
-              <div className="pl-8 flex flex-wrap gap-2">
-                {QUICK_ACTIONS.map((action) => (
-                  <button
-                    key={action.label}
-                    onClick={() => handleQuickAction(action)}
-                    className="text-[11px] font-medium bg-white border border-emerald-200 text-emerald-700 rounded-full px-3 py-1.5 hover:bg-emerald-50 hover:border-emerald-400 transition-colors"
-                  >
-                    {action.label}
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="pl-8 flex flex-wrap gap-2">
+                  {QUICK_ACTIONS.map((action) => (
+                    <button
+                      key={action.label}
+                      onClick={() => handleQuickAction(action)}
+                      className="text-[11px] font-medium bg-white border border-emerald-200 text-emerald-700 rounded-full px-3 py-1.5 hover:bg-emerald-50 hover:border-emerald-400 transition-colors"
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="pl-8 text-[10px] text-gray-400 mt-0.5">Não achou o que quer? Digite sua pergunta abaixo.</p>
+              </>
             )}
 
             {/* Conversation */}
@@ -512,20 +601,33 @@ export function AIChatWidget() {
                         className="w-6 h-6 rounded-full object-cover mt-0.5 shrink-0"
                       />
                       <div className="max-w-[82%] bg-white rounded-2xl rounded-tl-sm px-3 py-2.5 border border-gray-200 shadow-sm text-sm text-gray-800 leading-relaxed">
-                        {msg.content}
+                        <RenderText text={msg.content} onNavigate={(path) => { setIsOpen(false); navigate(path); }} />
                       </div>
                     </div>
                     {showOptions && (
                       <div className="pl-8 flex flex-wrap gap-1.5">
-                        {msg.options!.map((opt) => (
-                          <button
-                            key={opt}
-                            onClick={() => sendMessage(opt)}
-                            className="text-[11px] font-medium bg-white border border-emerald-200 text-emerald-700 rounded-full px-3 py-1.5 hover:bg-emerald-50 hover:border-emerald-400 transition-colors"
-                          >
-                            {opt}
-                          </button>
-                        ))}
+                        {msg.options!.map((opt) => {
+                          const isWhatsApp = opt.toLowerCase().includes("whatsapp");
+                          return isWhatsApp ? (
+                            <a
+                              key={opt}
+                              href={`https://wa.me/${WHATSAPP_NUMBER}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[11px] font-medium bg-white border border-emerald-200 text-emerald-700 rounded-full px-3 py-1.5 hover:bg-emerald-50 hover:border-emerald-400 transition-colors"
+                            >
+                              {opt}
+                            </a>
+                          ) : (
+                            <button
+                              key={opt}
+                              onClick={() => sendMessage(opt)}
+                              className="text-[11px] font-medium bg-white border border-emerald-200 text-emerald-700 rounded-full px-3 py-1.5 hover:bg-emerald-50 hover:border-emerald-400 transition-colors"
+                            >
+                              {opt}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -603,6 +705,9 @@ export function AIChatWidget() {
               >
                 Falar com atendente humano
               </a>
+              <span className="mt-0.5 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-600 rounded-full text-[9px] font-medium">
+                Modo beta · informações podem estar imprecisas
+              </span>
             </div>
           </div>
         </div>
