@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Shield, Mail, Loader2, Eye, EyeOff, ArrowLeft, User } from 'lucide-react';
+import { Shield, Mail, Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useNoIndex } from '@/hooks/useNoIndex';
 import { logAction } from '@/hooks/useActivityLogger';
 
@@ -18,35 +18,23 @@ interface UserPreview {
   role: string;
 }
 
-// ─── Animated background blobs ───────────────────────────────────────────────
-function Blobs() {
-  return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none">
-      <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-emerald-600/20 rounded-full blur-[120px] animate-[pulse_8s_ease-in-out_infinite]" />
-      <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-teal-500/15 rounded-full blur-[100px] animate-[pulse_10s_ease-in-out_infinite_2s]" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-green-700/10 rounded-full blur-[80px] animate-[pulse_12s_ease-in-out_infinite_4s]" />
-    </div>
-  );
-}
-
 // ─── Avatar circle ────────────────────────────────────────────────────────────
 function AvatarCircle({ preview }: { preview: UserPreview }) {
   return (
-    <div className="relative">
-      <div className="w-20 h-20 rounded-full overflow-hidden ring-4 ring-white/20 shadow-2xl mx-auto">
+    <div className="relative mx-auto">
+      <div className="w-20 h-20 rounded-full overflow-hidden ring-4 ring-white/30 shadow-2xl">
         {preview.avatar_url ? (
           <img src={preview.avatar_url} alt={preview.name} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+          <div className="w-full h-full bg-gradient-to-br from-violet-600 to-purple-800 flex items-center justify-center">
             <span className="text-3xl font-bold text-white">
               {preview.name.charAt(0).toUpperCase()}
             </span>
           </div>
         )}
       </div>
-      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-400 rounded-full border-2 border-[#0f1a14] flex items-center justify-center">
-        <div className="w-2 h-2 bg-white rounded-full" />
-      </div>
+      {/* Online dot */}
+      <div className="absolute bottom-0.5 right-0.5 w-5 h-5 bg-green-400 rounded-full border-2 border-black/60" />
     </div>
   );
 }
@@ -101,7 +89,6 @@ const Auth = () => {
     if (!password) return;
     setLoading(true);
     try {
-      // Rate limit check
       const { data: isValid } = await supabase.rpc('validate_auth_attempt', { email_input: email, ip_address: null });
       if (!isValid) {
         toast({ title: 'Bloqueado', description: 'Muitas tentativas. Aguarde 15 minutos.', variant: 'destructive' });
@@ -114,7 +101,6 @@ const Auth = () => {
         return;
       }
 
-      // Check role
       const { data: roleRow } = await supabase.from('user_roles').select('role')
         .eq('user_id', data.user.id).in('role', ['admin', 'staff']).maybeSingle();
       if (!roleRow) {
@@ -123,7 +109,6 @@ const Auth = () => {
         return;
       }
 
-      // Staff: check active
       if (roleRow.role === 'staff') {
         const { data: profile } = await supabase.from('staff_profiles').select('is_active')
           .eq('user_id', data.user.id).maybeSingle();
@@ -137,7 +122,6 @@ const Auth = () => {
         return;
       }
 
-      // Admin: check 2FA
       const { data: twoFASetting } = await supabase.from('site_settings').select('setting_value')
         .eq('setting_key', 'admin_2fa_enabled').maybeSingle();
 
@@ -198,30 +182,41 @@ const Auth = () => {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a1510] relative">
-      <Blobs />
+    <div className="min-h-screen relative flex items-end justify-center pb-12 md:pb-0 md:items-center">
 
-      {/* Grid pattern overlay */}
+      {/* Background photo — full screen */}
       <div
-        className="fixed inset-0 opacity-[0.03] pointer-events-none"
-        style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)', backgroundSize: '40px 40px' }}
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/auth-bg.jpg)' }}
       />
 
-      <div className="relative z-10 w-full max-w-sm px-4">
-        {/* Brand */}
+      {/* Gradient overlay — black from bottom up */}
+      <div className="fixed inset-0 bg-gradient-to-t from-black via-black/70 to-black/10" />
+
+      {/* Card */}
+      <div className="relative z-10 w-full max-w-sm px-5">
+
+        {/* Logo / brand — top of card area */}
         <motion.div
-          initial={{ opacity: 0, y: -16 }}
+          initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
           className="text-center mb-8"
         >
-          <div className="text-2xl font-bold text-white tracking-tight">Camaleão Ecoturismo</div>
-          <div className="text-sm text-white/40 mt-1">Painel Administrativo</div>
+          <p className="text-white/50 text-xs tracking-[0.25em] uppercase mb-1">Área restrita</p>
+          <h1 className="text-white text-2xl font-bold tracking-tight">Camaleão Ecoturismo</h1>
         </motion.div>
 
-        {/* Card */}
+        {/* Form card */}
         <motion.div
           layout
-          className="bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl"
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: 'rgba(10,6,20,0.72)',
+            backdropFilter: 'blur(24px)',
+            border: '1px solid rgba(139,92,246,0.2)',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
+          }}
         >
           <AnimatePresence mode="wait">
 
@@ -229,16 +224,18 @@ const Auth = () => {
             {step === 'email' && (
               <motion.div
                 key="email"
-                initial={{ opacity: 0, x: 20 }}
+                initial={{ opacity: 0, x: 24 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
+                exit={{ opacity: 0, x: -24 }}
+                transition={{ duration: 0.22 }}
+                className="p-8"
               >
-                <h2 className="text-xl font-semibold text-white mb-1">Bem-vindo de volta</h2>
-                <p className="text-white/50 text-sm mb-6">Digite seu email para continuar</p>
+                <h2 className="text-white text-xl font-semibold mb-1">Bem-vindo de volta</h2>
+                <p className="text-white/40 text-sm mb-7">Digite seu email para continuar</p>
+
                 <form onSubmit={handleEmailContinue} className="space-y-4">
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/25" />
                     <Input
                       type="email"
                       placeholder="seu@email.com"
@@ -246,13 +243,14 @@ const Auth = () => {
                       onChange={e => setEmail(e.target.value)}
                       required
                       autoFocus
-                      className="pl-10 bg-white/[0.06] border-white/10 text-white placeholder:text-white/30 focus:border-emerald-500/60 focus:ring-emerald-500/20 h-11"
+                      className="pl-10 h-11 bg-white/[0.07] border-white/10 text-white placeholder:text-white/25 focus-visible:ring-violet-500/40 focus-visible:border-violet-500/50"
                     />
                   </div>
                   <Button
                     type="submit"
                     disabled={loading || !email.trim()}
-                    className="w-full h-11 bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition-all"
+                    className="w-full h-11 font-semibold text-white transition-all"
+                    style={{ background: 'hsl(271 81% 56%)', boxShadow: '0 4px 20px rgba(139,92,246,0.35)' }}
                   >
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Continuar →'}
                   </Button>
@@ -264,18 +262,19 @@ const Auth = () => {
             {step === 'password' && userPreview && (
               <motion.div
                 key="password"
-                initial={{ opacity: 0, x: 20 }}
+                initial={{ opacity: 0, x: 24 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
+                exit={{ opacity: 0, x: -24 }}
+                transition={{ duration: 0.22 }}
+                className="p-8"
               >
                 {/* User preview */}
-                <div className="flex flex-col items-center mb-6">
+                <div className="flex flex-col items-center mb-7">
                   <AvatarCircle preview={userPreview} />
-                  <h2 className="text-xl font-semibold text-white mt-4">
+                  <h2 className="text-white text-xl font-semibold mt-4">
                     Olá, {userPreview.name.split(' ')[0]}!
                   </h2>
-                  <p className="text-white/40 text-sm mt-0.5">{email}</p>
+                  <p className="text-white/35 text-sm mt-0.5">{email}</p>
                 </div>
 
                 <form onSubmit={handleSignIn} className="space-y-4">
@@ -287,12 +286,12 @@ const Auth = () => {
                       onChange={e => setPassword(e.target.value)}
                       required
                       autoFocus
-                      className="pr-10 bg-white/[0.06] border-white/10 text-white placeholder:text-white/30 focus:border-emerald-500/60 focus:ring-emerald-500/20 h-11"
+                      className="pr-10 h-11 bg-white/[0.07] border-white/10 text-white placeholder:text-white/25 focus-visible:ring-violet-500/40 focus-visible:border-violet-500/50"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(p => !p)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/60 transition-colors"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -300,7 +299,8 @@ const Auth = () => {
                   <Button
                     type="submit"
                     disabled={loading || !password}
-                    className="w-full h-11 bg-emerald-600 hover:bg-emerald-500 text-white font-medium"
+                    className="w-full h-11 font-semibold text-white"
+                    style={{ background: 'hsl(271 81% 56%)', boxShadow: '0 4px 20px rgba(139,92,246,0.35)' }}
                   >
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Entrar'}
                   </Button>
@@ -308,7 +308,7 @@ const Auth = () => {
 
                 <button
                   onClick={resetToEmail}
-                  className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-sm mt-4 mx-auto transition-colors"
+                  className="flex items-center gap-1.5 text-white/30 hover:text-white/60 text-sm mt-5 mx-auto transition-colors"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" /> Trocar conta
                 </button>
@@ -319,19 +319,23 @@ const Auth = () => {
             {step === '2fa' && (
               <motion.div
                 key="2fa"
-                initial={{ opacity: 0, x: 20 }}
+                initial={{ opacity: 0, x: 24 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
+                exit={{ opacity: 0, x: -24 }}
+                transition={{ duration: 0.22 }}
+                className="p-8"
               >
-                <div className="flex flex-col items-center text-center mb-6">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4">
-                    <Shield className="h-7 w-7 text-emerald-400" />
+                <div className="flex flex-col items-center text-center mb-7">
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+                    style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)' }}
+                  >
+                    <Shield className="h-7 w-7 text-violet-400" />
                   </div>
-                  <h2 className="text-xl font-semibold text-white">Verificação em 2 etapas</h2>
-                  <p className="text-white/50 text-sm mt-1">
+                  <h2 className="text-white text-xl font-semibold">Verificação em 2 etapas</h2>
+                  <p className="text-white/40 text-sm mt-1">
                     Código enviado para<br />
-                    <span className="text-white/70">{email}</span>
+                    <span className="text-white/65">{email}</span>
                   </p>
                 </div>
 
@@ -342,7 +346,7 @@ const Auth = () => {
                         <InputOTPSlot
                           key={i}
                           index={i}
-                          className="bg-white/[0.06] border-white/10 text-white h-12 w-10"
+                          className="bg-white/[0.07] border-white/10 text-white h-12 w-10"
                         />
                       ))}
                     </InputOTPGroup>
@@ -352,20 +356,21 @@ const Auth = () => {
                 <Button
                   onClick={handleVerify2FA}
                   disabled={verifying || otpCode.length !== 6}
-                  className="w-full h-11 bg-emerald-600 hover:bg-emerald-500 text-white font-medium"
+                  className="w-full h-11 font-semibold text-white"
+                  style={{ background: 'hsl(271 81% 56%)', boxShadow: '0 4px 20px rgba(139,92,246,0.35)' }}
                 >
                   {verifying ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verificar'}
                 </Button>
 
-                <div className="flex justify-between text-sm mt-4">
+                <div className="flex justify-between text-sm mt-5">
                   <button
                     onClick={handleResendCode}
                     disabled={resending}
-                    className="text-white/40 hover:text-white/70 transition-colors"
+                    className="text-white/30 hover:text-white/60 transition-colors"
                   >
                     {resending ? 'Reenviando...' : 'Reenviar código'}
                   </button>
-                  <button onClick={resetToEmail} className="text-white/40 hover:text-white/70 transition-colors">
+                  <button onClick={resetToEmail} className="text-white/30 hover:text-white/60 transition-colors">
                     Cancelar
                   </button>
                 </div>
@@ -379,7 +384,7 @@ const Auth = () => {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.6 }}
           className="text-center text-white/20 text-xs mt-6"
         >
           © {new Date().getFullYear()} Camaleão Ecoturismo
