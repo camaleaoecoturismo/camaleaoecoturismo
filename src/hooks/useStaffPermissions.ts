@@ -36,6 +36,9 @@ export interface StaffPermissionsResult {
   permissions: Record<string, boolean>;
   allowedTabs: Set<string> | null; // null = no restriction (admin)
   firstAllowedTab: string;
+  staffName: string | null;
+  staffAvatarUrl: string | null;
+  staffLastLogin: string | null; // ISO timestamp of most recent login log
   loading: boolean;
 }
 
@@ -46,6 +49,9 @@ export function useStaffPermissions(): StaffPermissionsResult {
     permissions: {},
     allowedTabs: null,
     firstAllowedTab: 'gestao-dashboard',
+    staffName: null,
+    staffAvatarUrl: null,
+    staffLastLogin: null,
     loading: true,
   });
 
@@ -77,27 +83,36 @@ export function useStaffPermissions(): StaffPermissionsResult {
           isAdmin: true,
           isStaff: false,
           permissions: {},
-          allowedTabs: null, // null = unrestricted
+          allowedTabs: null,
           firstAllowedTab: 'gestao-dashboard',
+          staffName: null,
+          staffAvatarUrl: null,
+          staffLastLogin: null,
           loading: false,
         });
         return;
       }
 
       if (roleRow.role === 'staff') {
-        // Load staff permissions
-        const { data: permRows } = await supabase
-          .from('staff_permissions')
-          .select('section, can_access')
-          .eq('user_id', userId);
+        // Load staff profile, permissions, and last login in parallel
+        const [permRes, profileRes, loginRes] = await Promise.all([
+          supabase.from('staff_permissions').select('section, can_access').eq('user_id', userId),
+          supabase.from('staff_profiles').select('name, avatar_url').eq('user_id', userId).maybeSingle(),
+          supabase
+            .from('staff_activity_logs')
+            .select('created_at')
+            .eq('user_id', userId)
+            .eq('action_type', 'login')
+            .order('created_at', { ascending: false })
+            .limit(2), // first = current session, second = previous
+        ]);
 
         if (cancelled) return;
 
         const permissions: Record<string, boolean> = {};
         const allowedTabs = new Set<string>();
 
-        // Always include 'usuarios' tab for checking (will be gated by isAdmin in sidebar)
-        (permRows || []).forEach(row => {
+        (permRes.data || []).forEach(row => {
           permissions[row.section] = row.can_access;
           if (row.can_access) {
             const tabs = SECTION_TO_TABS[row.section] || [];
@@ -117,12 +132,21 @@ export function useStaffPermissions(): StaffPermissionsResult {
           }
         }
 
+        // Use second-most-recent login as "last session" (first = current)
+        const logins = loginRes.data || [];
+        const lastLogin = logins.length > 1
+          ? logins[1].created_at
+          : logins.length === 1 ? logins[0].created_at : null;
+
         setResult({
           isAdmin: false,
           isStaff: true,
           permissions,
           allowedTabs,
           firstAllowedTab,
+          staffName: profileRes.data?.name ?? null,
+          staffAvatarUrl: profileRes.data?.avatar_url ?? null,
+          staffLastLogin: lastLogin,
           loading: false,
         });
         return;

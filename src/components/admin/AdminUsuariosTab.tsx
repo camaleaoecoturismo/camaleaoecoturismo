@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,17 +6,87 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import {
-  UserPlus, Edit2, PowerOff, Power, Eye, EyeOff, RefreshCw,
-  User, Activity, Shield, Clock, Calendar, BarChart3, LogIn, Trash2,
+  UserPlus, PowerOff, Power, Eye, EyeOff, RefreshCw,
+  User, Activity, Shield, Clock, Calendar, LogIn, Camera, Loader2,
 } from 'lucide-react';
 import { ALL_SECTIONS, SECTION_TO_TABS } from '@/hooks/useStaffPermissions';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
+
+// ─── Avatar upload helper ────────────────────────────────────────────────────
+
+async function uploadAvatar(file: File, userId: string): Promise<string> {
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `${userId}.${ext}`;
+  const { error } = await supabase.storage
+    .from('staff-avatars')
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (error) throw error;
+  const { data } = supabase.storage.from('staff-avatars').getPublicUrl(path);
+  // Append timestamp to bust cache after re-upload
+  return `${data.publicUrl}?t=${Date.now()}`;
+}
+
+// ─── AvatarUpload component ───────────────────────────────────────────────────
+
+function AvatarUpload({
+  currentUrl,
+  name,
+  onFileSelected,
+  uploading,
+}: {
+  currentUrl?: string | null;
+  name?: string;
+  onFileSelected: (file: File) => void;
+  uploading?: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Selecione uma imagem.'); return; }
+    if (file.size > 2 * 1024 * 1024) { toast.error('A imagem deve ter no máximo 2MB.'); return; }
+    onFileSelected(file);
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={uploading}
+        className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-dashed border-border hover:border-primary/60 transition-colors group"
+        title="Clique para enviar foto"
+      >
+        {currentUrl ? (
+          <img src={currentUrl} alt={name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-muted flex items-center justify-center">
+            {name ? (
+              <span className="text-2xl font-bold text-muted-foreground">{name.charAt(0).toUpperCase()}</span>
+            ) : (
+              <User className="h-8 w-8 text-muted-foreground" />
+            )}
+          </div>
+        )}
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          {uploading ? (
+            <Loader2 className="h-5 w-5 text-white animate-spin" />
+          ) : (
+            <Camera className="h-5 w-5 text-white" />
+          )}
+        </div>
+      </button>
+      <input ref={inputRef} type="file" accept="image/*" onChange={handleChange} className="hidden" />
+      <p className="text-xs text-muted-foreground">Clique para enviar foto</p>
+    </div>
+  );
+}
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -93,12 +163,20 @@ function CreateUserModal({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [selectedSections, setSelectedSections] = useState<Set<string>>(new Set());
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const reset = () => {
     setName(''); setEmail(''); setCargo(''); setTelefone('');
     setPassword(''); setConfirmPassword('');
     setSelectedSections(new Set());
+    setAvatarFile(null); setAvatarPreview(null);
+  };
+
+  const handleAvatarFile = (file: File) => {
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
   };
 
   const toggleSection = (key: string) => {
@@ -125,7 +203,6 @@ function CreateUserModal({
 
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const response = await supabase.functions.invoke('create-staff-user', {
         body: {
           email: email.trim(),
@@ -139,6 +216,18 @@ function CreateUserModal({
 
       if (response.error) throw new Error(response.error.message);
       if (response.data?.error) throw new Error(response.data.error);
+
+      const newUserId: string = response.data.user_id;
+
+      // Upload avatar if provided
+      if (avatarFile && newUserId) {
+        try {
+          const avatarUrl = await uploadAvatar(avatarFile, newUserId);
+          await supabase.from('staff_profiles').update({ avatar_url: avatarUrl }).eq('user_id', newUserId);
+        } catch {
+          toast.warning('Usuário criado, mas houve erro ao enviar a foto. Você pode adicioná-la depois.');
+        }
+      }
 
       toast.success(`Usuário ${name} criado com sucesso!`);
       reset();
@@ -163,6 +252,16 @@ function CreateUserModal({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          {/* Avatar upload */}
+          <div className="flex justify-center">
+            <AvatarUpload
+              currentUrl={avatarPreview}
+              name={name}
+              onFileSelected={handleAvatarFile}
+              uploading={loading}
+            />
+          </div>
+
           {/* Basic info */}
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
@@ -253,11 +352,15 @@ function EditPermissionsModal({
   onSaved: () => void;
 }) {
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingPerms, setLoadingPerms] = useState(false);
 
   useEffect(() => {
     if (!user || !open) return;
+    setAvatarFile(null);
+    setAvatarPreview(null);
     setLoadingPerms(true);
     supabase
       .from('staff_permissions')
@@ -275,13 +378,28 @@ function EditPermissionsModal({
   const toggle = (key: string) =>
     setPermissions(prev => ({ ...prev, [key]: !prev[key] }));
 
+  const handleAvatarFile = (file: File) => {
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
   const handleSave = async () => {
     if (!user) return;
     setLoading(true);
     try {
+      // Upload avatar if a new file was selected
+      if (avatarFile) {
+        const avatarUrl = await uploadAvatar(avatarFile, user.user_id);
+        const { error: avatarError } = await supabase
+          .from('staff_profiles')
+          .update({ avatar_url: avatarUrl })
+          .eq('user_id', user.user_id);
+        if (avatarError) throw avatarError;
+      }
+
+      // Save permissions
       const sections = ALL_SECTIONS.map(s => s.key);
       const canAccess = sections.map(k => permissions[k] ?? false);
-
       const { error } = await supabase.rpc('update_staff_permissions', {
         p_user_id: user.user_id,
         p_sections: sections,
@@ -289,15 +407,17 @@ function EditPermissionsModal({
       });
       if (error) throw error;
 
-      toast.success('Permissões atualizadas!');
+      toast.success('Salvo com sucesso!');
       onSaved();
       onClose();
     } catch (err: unknown) {
-      toast.error('Erro ao salvar permissões.');
+      toast.error('Erro ao salvar.');
     } finally {
       setLoading(false);
     }
   };
+
+  const currentAvatarUrl = avatarPreview || user?.avatar_url || null;
 
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
@@ -305,27 +425,38 @@ function EditPermissionsModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Permissões de {user?.name || user?.email}
+            Editar — {user?.name || user?.email}
           </DialogTitle>
         </DialogHeader>
 
         {loadingPerms ? (
           <div className="py-8 text-center text-muted-foreground">Carregando...</div>
         ) : (
-          <div className="py-2">
-            <p className="text-sm text-muted-foreground mb-4">
-              Selecione as seções que este colaborador pode acessar.
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {ALL_SECTIONS.map(s => (
-                <label key={s.key} className="flex items-center gap-2 cursor-pointer rounded-lg border border-border px-3 py-2 hover:bg-muted/50 transition-colors">
-                  <Checkbox
-                    checked={permissions[s.key] ?? false}
-                    onCheckedChange={() => toggle(s.key)}
-                  />
-                  <span className="text-sm">{s.label}</span>
-                </label>
-              ))}
+          <div className="space-y-5 py-2">
+            {/* Avatar */}
+            <div className="flex justify-center">
+              <AvatarUpload
+                currentUrl={currentAvatarUrl}
+                name={user?.name || undefined}
+                onFileSelected={handleAvatarFile}
+                uploading={loading}
+              />
+            </div>
+
+            {/* Permissions */}
+            <div>
+              <p className="text-sm font-medium mb-3">Permissões de acesso</p>
+              <div className="grid grid-cols-2 gap-2">
+                {ALL_SECTIONS.map(s => (
+                  <label key={s.key} className="flex items-center gap-2 cursor-pointer rounded-lg border border-border px-3 py-2 hover:bg-muted/50 transition-colors">
+                    <Checkbox
+                      checked={permissions[s.key] ?? false}
+                      onCheckedChange={() => toggle(s.key)}
+                    />
+                    <span className="text-sm">{s.label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -333,7 +464,7 @@ function EditPermissionsModal({
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button onClick={handleSave} disabled={loading || loadingPerms} className="bg-primary">
-            {loading ? 'Salvando...' : 'Salvar Permissões'}
+            {loading ? 'Salvando...' : 'Salvar'}
           </Button>
         </DialogFooter>
       </DialogContent>

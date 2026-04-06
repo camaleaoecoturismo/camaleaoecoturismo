@@ -86,6 +86,12 @@ interface AdminSidebarProps {
   allowedTabs?: Set<string>;
   /** Whether the current user is an admin (unrestricted). */
   isAdmin?: boolean;
+  /** Staff user display name (shown in top-left instead of logo). */
+  staffName?: string;
+  /** Staff user avatar URL (shown in top-left instead of logo). */
+  staffAvatarUrl?: string;
+  /** ISO timestamp of last login session for staff users. */
+  staffLastLogin?: string;
 }
 
 const navGroups: NavGroup[] = [
@@ -299,7 +305,26 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onCollapsedChange,
   allowedTabs,
   isAdmin = true,
+  staffName,
+  staffAvatarUrl,
+  staffLastLogin,
 }) => {
+  const isStaff = !isAdmin && !!staffName;
+
+  const formatLastLogin = (iso?: string) => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffH = Math.floor(diffMin / 60);
+    const diffD = Math.floor(diffH / 24);
+    if (diffMin < 1) return 'agora mesmo';
+    if (diffMin < 60) return `há ${diffMin} min`;
+    if (diffH < 24) return `há ${diffH}h`;
+    if (diffD === 1) return 'ontem';
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  };
   const [collapsed, setCollapsed] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -435,28 +460,44 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   // ─── Collapsed sidebar content ───────────────────────────────────────────
   const CollapsedContent = () => (
     <div className="grid h-full" style={{ gridTemplateRows: '64px 1fr auto' }}>
-      {/* Logo */}
+      {/* Logo or Staff Avatar */}
       <div className="flex items-center justify-center border-b border-border">
-        <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
-        <button
-          onClick={() => logoInputRef.current?.click()}
-          className="w-9 h-9 rounded-xl overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all relative"
-          title="Clique para alterar a logo"
-          disabled={isUploadingLogo}
-        >
-          {customLogo ? (
-            <img src={customLogo} alt="Logo" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full bg-muted flex items-center justify-center">
-              <Camera className="h-4 w-4 text-muted-foreground" />
-            </div>
-          )}
-          {isUploadingLogo && (
-            <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-              <div className="h-3 w-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
-        </button>
+        {isStaff ? (
+          <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-primary/20 shrink-0">
+            {staffAvatarUrl ? (
+              <img src={staffAvatarUrl} alt={staffName} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-primary/10 flex items-center justify-center">
+                <span className="text-sm font-bold text-primary">
+                  {staffName?.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+            <button
+              onClick={() => logoInputRef.current?.click()}
+              className="w-9 h-9 rounded-xl overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all relative"
+              title="Clique para alterar a logo"
+              disabled={isUploadingLogo}
+            >
+              {customLogo ? (
+                <img src={customLogo} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                  <Camera className="h-4 w-4 text-muted-foreground" />
+                </div>
+              )}
+              {isUploadingLogo && (
+                <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                  <div className="h-3 w-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </button>
+          </>
+        )}
       </div>
 
       {/* Nav */}
@@ -533,36 +574,74 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   // ─── Expanded sidebar content ─────────────────────────────────────────────
   const ExpandedContent = () => (
-    <div className="grid h-full" style={{ gridTemplateRows: '64px 1fr auto' }}>
-      {/* Logo + collapse button */}
-      <div className="flex items-center justify-between px-3 border-b border-border">
-        <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
-        <button
-          onClick={() => logoInputRef.current?.click()}
-          className="w-9 h-9 rounded-xl overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all relative shrink-0"
-          title="Clique para alterar a logo"
-          disabled={isUploadingLogo}
-        >
-          {customLogo ? (
-            <img src={customLogo} alt="Logo" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full bg-muted flex items-center justify-center">
-              <Camera className="h-4 w-4 text-muted-foreground" />
+    <div className="grid h-full" style={{ gridTemplateRows: 'auto 1fr auto' }}>
+      {/* Header: logo (admin) or avatar + name + last session (staff) */}
+      <div className="border-b border-border">
+        {isStaff ? (
+          <div className="flex items-center gap-3 px-3 py-3">
+            {/* Avatar */}
+            <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary/20 shrink-0">
+              {staffAvatarUrl ? (
+                <img src={staffAvatarUrl} alt={staffName} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-base font-bold text-primary">
+                    {staffName?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
             </div>
-          )}
-          {isUploadingLogo && (
-            <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-              <div className="h-3 w-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            {/* Name + last session */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate leading-tight">{staffName}</p>
+              {staffLastLogin ? (
+                <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                  Última sessão: {formatLastLogin(staffLastLogin)}
+                </p>
+              ) : (
+                <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">Primeiro acesso</p>
+              )}
             </div>
-          )}
-        </button>
-        <button
-          onClick={toggleCollapsed}
-          title="Recolher menu"
-          className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
-        >
-          <PanelLeftClose className="h-4 w-4" />
-        </button>
+            {/* Collapse button */}
+            <button
+              onClick={toggleCollapsed}
+              title="Recolher menu"
+              className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors shrink-0"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between px-3 h-16">
+            <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+            <button
+              onClick={() => logoInputRef.current?.click()}
+              className="w-9 h-9 rounded-xl overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all relative shrink-0"
+              title="Clique para alterar a logo"
+              disabled={isUploadingLogo}
+            >
+              {customLogo ? (
+                <img src={customLogo} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                  <Camera className="h-4 w-4 text-muted-foreground" />
+                </div>
+              )}
+              {isUploadingLogo && (
+                <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                  <div className="h-3 w-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </button>
+            <button
+              onClick={toggleCollapsed}
+              title="Recolher menu"
+              className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Nav */}

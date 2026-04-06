@@ -479,6 +479,9 @@ const Admin = () => {
         onCollapsedChange={setSidebarCollapsed}
         allowedTabs={staffPerms.allowedTabs ?? undefined}
         isAdmin={staffPerms.isAdmin}
+        staffName={staffPerms.staffName ?? undefined}
+        staffAvatarUrl={staffPerms.staffAvatarUrl ?? undefined}
+        staffLastLogin={staffPerms.staffLastLogin ?? undefined}
       />
 
       {/* Main Content */}
