@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { useStaffPermissions } from '@/hooks/useStaffPermissions';
 import { logAction } from '@/hooks/useActivityLogger';
 import AdminUsuariosTab from '@/components/admin/AdminUsuariosTab';
+import IntroAnimation from '@/components/admin/IntroAnimation';
+import ActivitySummaryModal from '@/components/admin/ActivitySummaryModal';
 import { ClientesCadastro } from "@/components/ClientesCadastro";
 import TourManagementTab from "@/components/TourManagementTab";
 import { FuncionalidadesTab } from "@/components/FuncionalidadesTab";
@@ -54,6 +56,12 @@ const Admin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const staffPerms = useStaffPermissions();
+
+  // Intro + summary state (only plays once per browser session)
+  const [showIntro, setShowIntro] = useState(() => !sessionStorage.getItem('intro_shown'));
+  const [showSummary, setShowSummary] = useState(false);
+  const [introLogoUrl, setIntroLogoUrl] = useState<string | null>(null);
+  const [lastLoginDate, setLastLoginDate] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -288,6 +296,31 @@ const Admin = () => {
     }
   };
 
+  // Load logo URL for intro animation
+  useEffect(() => {
+    if (!showIntro) return;
+    supabase.from('site_settings').select('setting_value')
+      .eq('setting_key', 'admin_logo_url').maybeSingle()
+      .then(({ data }) => { if (data?.setting_value) setIntroLogoUrl(data.setting_value); });
+  }, [showIntro]);
+
+  // Load last login date for activity summary (second-to-last login entry)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return;
+      supabase.from('staff_activity_logs')
+        .select('created_at')
+        .eq('user_id', session.user.id)
+        .eq('action_type', 'login')
+        .order('created_at', { ascending: false })
+        .limit(2)
+        .then(({ data }) => {
+          if (data && data.length > 1) setLastLoginDate(data[1].created_at);
+          else if (data && data.length === 1) setLastLoginDate(null); // first ever login
+        });
+    });
+  }, []);
+
   // When staff permissions load, redirect to their first allowed tab
   useEffect(() => {
     if (!staffPerms.loading && staffPerms.isStaff) {
@@ -460,6 +493,12 @@ const Admin = () => {
     return titles[activeTab] || 'Painel Administrativo';
   };
 
+  const handleIntroComplete = () => {
+    sessionStorage.setItem('intro_shown', 'true');
+    setShowIntro(false);
+    setShowSummary(true);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -470,6 +509,22 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background flex w-full">
+      {/* Intro animation — first session only */}
+      {showIntro && (
+        <IntroAnimation
+          onComplete={handleIntroComplete}
+          logoUrl={introLogoUrl}
+        />
+      )}
+
+      {/* Activity summary popup — shown after intro */}
+      <ActivitySummaryModal
+        open={showSummary}
+        onClose={() => setShowSummary(false)}
+        sinceDate={lastLoginDate}
+        isAdmin={staffPerms.isAdmin}
+        userName={staffPerms.staffName ?? (staffPerms.isAdmin ? undefined : undefined)}
+      />
       {/* Sidebar - Desktop */}
       <AdminSidebar
         activeTab={activeTab}
