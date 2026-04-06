@@ -1,9 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle, Home, Download, Loader2, ExternalLink, RefreshCw, Clock, AlertCircle, Calendar, MapPin, Users, Ticket } from 'lucide-react';
+import { CheckCircle, Home, Download, Loader2, ExternalLink, RefreshCw, Clock, AlertCircle, Calendar, MapPin, Users, Ticket, Mail, MessageCircle } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 import logoImage from "@/assets/logo.png";
 import camaleaoVideo from "@/assets/camaleao-correndo.mp4";
@@ -24,6 +23,7 @@ interface ReservaDetails {
   client_name: string;
   client_email: string;
   valor_pago: number;
+  valor_bruto: number;
   numero_participantes: number;
   status: string;
   payment_status: string;
@@ -32,6 +32,8 @@ interface ReservaDetails {
   ponto_embarque_horario: string | null;
   tickets: TicketData[];
   whatsapp_group_link: string | null;
+  capture_method: string | null;
+  payment_method: string | null;
 }
 
 const WHATSAPP_SUPPORT = '5582993649454';
@@ -46,6 +48,11 @@ export default function PagamentoSucesso() {
   const [manualCheckLoading, setManualCheckLoading] = useState(false);
   const [loadingTickets, setLoadingTickets] = useState(true);
 
+  // Splash screen state
+  const [splashDone, setSplashDone] = useState(false);
+  const [splashFading, setSplashFading] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   const orderNsu = searchParams.get('order_nsu');
   const receiptUrl = searchParams.get('receipt_url');
   const transactionNsu = searchParams.get('transaction_nsu');
@@ -53,37 +60,41 @@ export default function PagamentoSucesso() {
   const slug = searchParams.get('slug');
   const paidAmount = searchParams.get('paid_amount');
   const reservaIdParam = searchParams.get('reserva');
-  
-  // Get initial paid amount from URL params immediately (before any fetch)
+
   const initialPaidAmount = paidAmount ? parseInt(paidAmount) / 100 : null;
 
-  // Call edge function to verify payment with InfinitePay API
+  // Skip splash
+  const skipSplash = useCallback(() => {
+    setSplashFading(true);
+    setTimeout(() => setSplashDone(true), 500);
+  }, []);
+
+  // Try to play with sound, fallback to muted
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.play().catch(() => {
+      video.muted = true;
+      video.play().catch(() => {});
+    });
+  }, []);
+
   const verifyPaymentWithInfinitePay = useCallback(async (reservaId: string) => {
     if (!transactionNsu) return false;
-    
     try {
-      console.log('Verifying payment with InfinitePay for reserva:', reservaId);
-      
       const { data, error } = await supabase.functions.invoke('check-infinitepay-payment', {
         body: {
           reserva_id: reservaId,
           transaction_nsu: transactionNsu,
-          slug: slug,
+          slug,
           receipt_url: receiptUrl,
           capture_method: captureMethod,
-          paid_amount: paidAmount ? parseInt(paidAmount) : null
-        }
+          paid_amount: paidAmount ? parseInt(paidAmount) : null,
+        },
       });
-
-      if (error) {
-        console.error('Error verifying payment:', error);
-        return false;
-      }
-
-      console.log('Payment verification result:', data);
+      if (error) return false;
       return data?.verified === true || data?.already_confirmed === true;
-    } catch (err) {
-      console.error('Failed to verify payment:', err);
+    } catch {
       return false;
     }
   }, [transactionNsu, slug, receiptUrl, captureMethod, paidAmount]);
@@ -91,24 +102,20 @@ export default function PagamentoSucesso() {
   const fetchReservaDetails = useCallback(async () => {
     try {
       let reservaId = orderNsu || reservaIdParam;
-      
+
       if (reservaId) {
         const { data: reservaById } = await supabase
           .from('reservas')
           .select('id')
           .eq('id', reservaId)
           .single();
-        
         if (!reservaById && slug) {
           const { data: reservaBySlug } = await supabase
             .from('reservas')
             .select('id')
             .eq('infinitepay_invoice_slug', slug)
             .single();
-          
-          if (reservaBySlug) {
-            reservaId = reservaBySlug.id;
-          }
+          if (reservaBySlug) reservaId = reservaBySlug.id;
         }
       } else if (slug) {
         const { data: reservaBySlug } = await supabase
@@ -116,35 +123,21 @@ export default function PagamentoSucesso() {
           .select('id')
           .eq('infinitepay_invoice_slug', slug)
           .single();
-        
-        if (reservaBySlug) {
-          reservaId = reservaBySlug.id;
-        }
+        if (reservaBySlug) reservaId = reservaBySlug.id;
       }
-      
+
       if (!reservaId) {
-        console.error('No reserva ID found in URL params');
         setLoading(false);
         return null;
       }
 
-      // If we have transaction_nsu, verify payment with InfinitePay API first
-      // This handles cases where webhook didn't arrive
       if (transactionNsu) {
         await verifyPaymentWithInfinitePay(reservaId);
       } else if (receiptUrl || captureMethod) {
-        // Fallback: update with redirect params if no transaction_nsu
-        // NOTE: Do NOT update valor_pago from URL params - valor_total_com_opcionais is authoritative
-        const updateData: Record<string, unknown> = {
-          updated_at: new Date().toISOString()
-        };
+        const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
         if (receiptUrl) updateData.receipt_url = receiptUrl;
         if (captureMethod) updateData.capture_method = captureMethod;
-        
-        await supabase
-          .from('reservas')
-          .update(updateData)
-          .eq('id', reservaId);
+        await supabase.from('reservas').update(updateData).eq('id', reservaId);
       }
 
       const { data, error } = await supabase
@@ -159,6 +152,8 @@ export default function PagamentoSucesso() {
           payment_status,
           receipt_url,
           ponto_embarque_id,
+          capture_method,
+          payment_method,
           clientes!fk_reservas_cliente(nome_completo, email),
           tours!fk_reservas_tour(name, start_date, whatsapp_group_link)
         `)
@@ -167,7 +162,6 @@ export default function PagamentoSucesso() {
 
       if (error) throw error;
 
-      // Fetch boarding point separately
       let pontoEmbarque: { nome?: string; horario?: string } | null = null;
       if (data.ponto_embarque_id) {
         const { data: bpData } = await supabase
@@ -187,18 +181,11 @@ export default function PagamentoSucesso() {
       const cliente = data.clientes as { nome_completo?: string; email?: string } | null;
       const tour = data.tours as { name?: string; start_date?: string; whatsapp_group_link?: string } | null;
 
-      console.log('Client data from DB:', { cliente, clienteRaw: data.clientes });
+      const valorBruto = data.valor_total_com_opcionais || data.valor_pago || 0;
+      let valorPago = data.valor_pago || valorBruto;
+      if (valorPago === 0 && initialPaidAmount) valorPago = initialPaidAmount;
 
-      // Priority for valor_pago: 1) valor_total_com_opcionais (authoritative), 2) valor_pago from DB, 3) URL param
-      let valorPago = data.valor_total_com_opcionais || data.valor_pago || 0;
-      if (valorPago === 0 && initialPaidAmount) {
-        valorPago = initialPaidAmount;
-      }
-
-      // Stop loading tickets if we got them
-      if (tickets && tickets.length > 0) {
-        setLoadingTickets(false);
-      }
+      if (tickets && tickets.length > 0) setLoadingTickets(false);
 
       const reservaDetails: ReservaDetails = {
         id: data.id,
@@ -208,6 +195,7 @@ export default function PagamentoSucesso() {
         client_name: cliente?.nome_completo || '',
         client_email: cliente?.email || '',
         valor_pago: valorPago,
+        valor_bruto: valorBruto,
         numero_participantes: data.numero_participantes || 1,
         status: data.status,
         payment_status: data.payment_status,
@@ -216,6 +204,8 @@ export default function PagamentoSucesso() {
         ponto_embarque_horario: pontoEmbarque?.horario || null,
         tickets: tickets || [],
         whatsapp_group_link: tour?.whatsapp_group_link || null,
+        capture_method: (data as any).capture_method || captureMethod || null,
+        payment_method: (data as any).payment_method || null,
       };
 
       setReserva(reservaDetails);
@@ -228,68 +218,39 @@ export default function PagamentoSucesso() {
     }
   }, [orderNsu, reservaIdParam, receiptUrl, transactionNsu, captureMethod, slug, paidAmount, initialPaidAmount, verifyPaymentWithInfinitePay]);
 
-  // Initial fetch
-  useEffect(() => {
-    fetchReservaDetails();
-  }, [fetchReservaDetails]);
+  useEffect(() => { fetchReservaDetails(); }, [fetchReservaDetails]);
 
   const isConfirmedByRedirect = !!(transactionNsu || captureMethod);
 
-  // Poll for payment confirmation
   useEffect(() => {
     if (!reserva || reserva.payment_status === 'pago' || isConfirmedByRedirect || pollCount >= 20) return;
-
     const pollInterval = setInterval(async () => {
       const updated = await fetchReservaDetails();
       setPollCount(prev => prev + 1);
-      
-      if (updated?.payment_status === 'pago') {
-        clearInterval(pollInterval);
-      }
+      if (updated?.payment_status === 'pago') clearInterval(pollInterval);
     }, 3000);
-
     return () => clearInterval(pollInterval);
   }, [reserva, pollCount, fetchReservaDetails, isConfirmedByRedirect]);
 
-  // Poll for tickets
   useEffect(() => {
     const isPaid = reserva?.payment_status === 'pago' || reserva?.status === 'confirmada' || isConfirmedByRedirect;
-    
-    console.log('Ticket poll check:', { 
-      isPaid, 
-      ticketsCount: reserva?.tickets?.length, 
-      ticketPollCount,
-      paymentStatus: reserva?.payment_status,
-      status: reserva?.status
-    });
-    
     if (!reserva || !isPaid || (reserva.tickets && reserva.tickets.length > 0) || ticketPollCount >= 60) {
-      if (reserva?.tickets && reserva.tickets.length > 0) {
-        setLoadingTickets(false);
-      }
+      if (reserva?.tickets && reserva.tickets.length > 0) setLoadingTickets(false);
       return;
     }
-
     const ticketPoll = setInterval(async () => {
       const updated = await fetchReservaDetails();
       setTicketPollCount(prev => prev + 1);
-      
-      console.log('Ticket poll result:', { ticketsFound: updated?.tickets?.length });
-      
       if (updated && updated.tickets && updated.tickets.length > 0) {
         setLoadingTickets(false);
         clearInterval(ticketPoll);
       }
-    }, 2000); // Poll every 2 seconds
-
+    }, 2000);
     return () => clearInterval(ticketPoll);
   }, [reserva, ticketPollCount, fetchReservaDetails, isConfirmedByRedirect]);
 
-  // Stop loading tickets after max polls (2 minutes)
   useEffect(() => {
-    if (ticketPollCount >= 60) {
-      setLoadingTickets(false);
-    }
+    if (ticketPollCount >= 60) setLoadingTickets(false);
   }, [ticketPollCount]);
 
   const handleManualCheck = async () => {
@@ -298,26 +259,18 @@ export default function PagamentoSucesso() {
     setManualCheckLoading(false);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
-    // Parse date parts directly to avoid timezone issues
-    // Handle both 'YYYY-MM-DD' and 'YYYY-MM-DDTHH:mm:ss' formats
     const datePart = dateStr.split('T')[0];
     const [year, month, day] = datePart.split('-').map(Number);
     const months = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
     return `${day} de ${months[month - 1]} de ${year}`;
   };
 
-  const openTicket = (qrToken: string) => {
-    window.open(`/ticket/${qrToken}`, '_blank');
-  };
+  const openTicket = (qrToken: string) => window.open(`/ticket/${qrToken}`, '_blank');
 
   const openWhatsAppSupport = () => {
     const tourDate = reserva?.tour_date ? formatDate(reserva.tour_date) : '';
@@ -327,231 +280,267 @@ export default function PagamentoSucesso() {
 
   const isPaid = reserva?.payment_status === 'pago' || reserva?.status === 'confirmada' || isConfirmedByRedirect;
 
+  // Payment breakdown logic
+  const getPaymentInfo = () => {
+    if (!reserva) return null;
+    const valorBruto = reserva.valor_bruto;
+    const valorPago = reserva.valor_pago;
+    const juros = Math.max(0, valorPago - valorBruto);
+    const isCartao = reserva.capture_method === 'credit_card' || reserva.payment_method === 'credit_card';
+    return { valorBruto, valorPago, juros, isCartao };
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-primary via-primary to-purple-900">
-      <div className="max-w-sm w-full">
-        {/* Logo */}
-        <div className="text-center mb-4">
-          <img src={logoImage} alt="Camaleao Ecoturismo" className="h-10 mx-auto drop-shadow-lg" />
+    <>
+      {/* Splash screen */}
+      {!splashDone && (
+        <div
+          className={`fixed inset-0 z-50 bg-black transition-opacity duration-500 ${splashFading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        >
+          <video
+            ref={videoRef}
+            src="/video-camaleao.mp4"
+            playsInline
+            onEnded={skipSplash}
+            className="w-full h-full object-cover"
+          />
+          <button
+            onClick={skipSplash}
+            className="absolute bottom-8 right-6 text-white/80 hover:text-white text-sm font-medium bg-black/40 px-4 py-2 rounded-full backdrop-blur-sm transition-colors"
+          >
+            Pular →
+          </button>
         </div>
+      )}
 
-        {loading ? (
-          <Card className="bg-white/95 backdrop-blur-sm shadow-2xl border-0">
-            <CardContent className="flex flex-col items-center justify-center py-8">
-              <video 
-                src={camaleaoVideo} 
-                autoPlay 
-                loop 
-                muted 
-                playsInline
-                className="w-32 h-32 object-contain"
-              />
-              <p className="text-muted-foreground mt-2 text-sm">Carregando informações...</p>
-            </CardContent>
-          </Card>
-        ) : !reserva ? (
-          <Card className="bg-white/95 backdrop-blur-sm shadow-2xl border-0">
-            <CardContent className="pt-8 pb-6 text-center">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <AlertCircle className="h-10 w-10 text-amber-600" />
+      {/* Main content */}
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-slate-900 via-emerald-950 to-slate-900">
+        <div className="max-w-md w-full">
+
+          {/* Logo */}
+          <div className="text-center mb-6">
+            <img src={logoImage} alt="Camaleao Ecoturismo" className="h-10 mx-auto drop-shadow-lg" />
+          </div>
+
+          {loading ? (
+            <div className="bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl p-8 flex flex-col items-center">
+              <video src={camaleaoVideo} autoPlay loop muted playsInline className="w-28 h-28 object-contain" />
+              <p className="text-muted-foreground mt-3 text-sm">Carregando sua reserva...</p>
+            </div>
+
+          ) : !reserva ? (
+            <div className="bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl px-6 py-8 text-center">
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="h-9 w-9 text-amber-600" />
               </div>
-              <h1 className="text-xl font-bold text-foreground mb-2">
-                Reserva não encontrada
-              </h1>
-              <p className="text-sm text-muted-foreground mb-6">
-                Não foi possível localizar os dados da sua reserva.
-              </p>
-              <Button onClick={() => navigate('/')} className="w-full h-10 text-sm">
-                <Home className="h-4 w-4 mr-2" />
-                Voltar ao Início
+              <h1 className="text-xl font-bold text-foreground mb-2">Reserva não encontrada</h1>
+              <p className="text-sm text-muted-foreground mb-6">Não foi possível localizar os dados da sua reserva.</p>
+              <Button onClick={() => navigate('/')} className="w-full">
+                <Home className="h-4 w-4 mr-2" /> Voltar ao Início
               </Button>
-            </CardContent>
-          </Card>
-        ) : !isPaid ? (
-          <Card className="bg-white/95 backdrop-blur-sm shadow-2xl border-0">
-            <CardContent className="pt-8 pb-6 text-center">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <Clock className="h-10 w-10 text-amber-600 animate-pulse" />
-              </div>
-              
-              <h1 className="text-xl font-bold text-foreground mb-2">
-                Confirmando Pagamento...
-              </h1>
-              
-              <p className="text-sm text-muted-foreground mb-6">
-                Estamos aguardando a confirmação do seu pagamento.
-              </p>
+            </div>
 
-              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mb-6 bg-muted/50 py-2 px-3 rounded-lg">
+          ) : !isPaid ? (
+            <div className="bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl px-6 py-8 text-center">
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Clock className="h-9 w-9 text-amber-600 animate-pulse" />
+              </div>
+              <h1 className="text-xl font-bold text-foreground mb-2">Confirmando Pagamento...</h1>
+              <p className="text-sm text-muted-foreground mb-5">Estamos aguardando a confirmação do seu pagamento.</p>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mb-5 bg-muted/50 py-2 px-3 rounded-lg">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 <span>Verificando automaticamente...</span>
               </div>
-
-              <Button 
-                onClick={handleManualCheck} 
-                variant="outline" 
-                className="w-full h-10 text-sm mb-2"
-                disabled={manualCheckLoading}
-              >
-                {manualCheckLoading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                )}
+              <Button onClick={handleManualCheck} variant="outline" className="w-full mb-2" disabled={manualCheckLoading}>
+                {manualCheckLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                 Verificar Novamente
               </Button>
-
-              <Button onClick={() => navigate('/')} variant="ghost" className="w-full h-10 text-sm">
-                <Home className="h-4 w-4 mr-2" />
-                Voltar ao Início
+              <Button onClick={() => navigate('/')} variant="ghost" className="w-full text-muted-foreground">
+                <Home className="h-4 w-4 mr-2" /> Voltar ao Início
               </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="bg-white/95 backdrop-blur-sm shadow-2xl border-0 overflow-hidden">
-            <CardContent className="pt-6 pb-5 px-4">
-              {/* Success Header - Compact */}
-              <div className="text-center mb-5">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
-                  <CheckCircle className="h-10 w-10 text-white" />
+            </div>
+
+          ) : (
+            <div className="bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl overflow-hidden">
+
+              {/* Header */}
+              <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 px-6 pt-7 pb-6 text-white text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 ring-4 ring-white/30">
+                  <CheckCircle className="h-9 w-9 text-white" />
                 </div>
-                
-                <h1 className="text-xl font-bold text-foreground">
-                  Pagamento Confirmado!
-                </h1>
+                <h1 className="text-2xl font-bold">Reserva Confirmada!</h1>
+                {reserva.client_name && (
+                  <p className="text-emerald-100 text-sm mt-1">Olá, {reserva.client_name.split(' ')[0]}! Boa aventura.</p>
+                )}
               </div>
 
-              {/* Reservation Info - Compact */}
-              <div className="bg-slate-50 rounded-xl p-4 mb-4 border border-slate-200">
-                <h3 className="font-bold text-lg text-foreground mb-2">{reserva.tour_name}</h3>
-                
-                <div className="space-y-1.5 text-sm">
-                  {reserva.tour_date && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span>{formatDate(reserva.tour_date)}</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    <span>{reserva.numero_participantes} {reserva.numero_participantes === 1 ? 'pessoa' : 'pessoas'}</span>
-                  </div>
-                  
-                  {reserva.ponto_embarque && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      <span>{reserva.ponto_embarque} {reserva.ponto_embarque_horario && `às ${reserva.ponto_embarque_horario}`}</span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total pago</span>
-                  <span className="text-lg font-bold text-green-600">{formatCurrency(reserva.valor_pago)}</span>
-                </div>
-              </div>
+              <div className="px-5 py-5 space-y-4">
 
-              {/* Tickets Section */}
-              {loadingTickets ? (
-                <div className="bg-white rounded-xl p-4 mb-4 border border-slate-200">
-                  <div className="flex items-center gap-3">
-                    <video 
-                      src={camaleaoVideo} 
-                      autoPlay 
-                      loop 
-                      muted 
-                      playsInline
-                      className="w-12 h-12 object-contain"
-                    />
-                    <div className="flex-1">
-                      <p className="font-medium text-sm text-foreground">Gerando seus ingressos...</p>
-                      <p className="text-xs text-muted-foreground">Aguarde um momento</p>
+                {/* Tour info */}
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                  <h3 className="font-bold text-base text-foreground mb-3">{reserva.tour_name}</h3>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    {reserva.tour_date && (
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 shrink-0 text-emerald-600" />
+                        <span>{formatDate(reserva.tour_date)}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 shrink-0 text-emerald-600" />
+                      <span>{reserva.numero_participantes} {reserva.numero_participantes === 1 ? 'pessoa' : 'pessoas'}</span>
                     </div>
+                    {reserva.ponto_embarque && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 shrink-0 text-emerald-600" />
+                        <span>{reserva.ponto_embarque}{reserva.ponto_embarque_horario && ` · ${reserva.ponto_embarque_horario}`}</span>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Payment breakdown */}
+                  {(() => {
+                    const pi = getPaymentInfo();
+                    if (!pi) return null;
+                    const { valorBruto, valorPago, juros, isCartao } = pi;
+                    return (
+                      <div className="mt-3 pt-3 border-t border-slate-200">
+                        {isCartao && juros > 0.01 ? (
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between text-muted-foreground">
+                              <span>Valor bruto</span>
+                              <span>{formatCurrency(valorBruto)}</span>
+                            </div>
+                            <div className="flex justify-between text-amber-600">
+                              <span>Juros do cartão</span>
+                              <span>+ {formatCurrency(juros)}</span>
+                            </div>
+                            <div className="flex justify-between items-center pt-1 border-t border-slate-200 mt-1">
+                              <span className="font-semibold text-sm">Total pago</span>
+                              <span className="text-emerald-600 font-bold text-lg">{formatCurrency(valorPago)}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">
+                              {isCartao ? 'Total pago (cartão)' : 'Total pago (Pix)'}
+                            </span>
+                            <span className="text-emerald-600 font-bold text-lg">{formatCurrency(valorBruto)}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
-              ) : reserva.tickets.length > 0 ? (
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Ticket className="h-4 w-4 text-primary" />
-                    <span className="font-medium text-sm">Seus Ingressos</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {reserva.tickets.map((ticket) => (
-                      <Button
-                        key={ticket.id}
-                        onClick={() => openTicket(ticket.qr_token)}
-                        variant="outline"
-                        size="sm"
-                        className="w-full justify-between h-10 px-3 hover:bg-primary/5 hover:border-primary border rounded-lg transition-all"
-                      >
-                        <span className="truncate text-sm">{ticket.participant_name}</span>
-                        <div className="flex items-center gap-1 text-primary shrink-0">
-                          <Download className="h-3 w-3" />
+
+                {/* Próximos passos */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">Próximos passos</p>
+                  <div className="space-y-2.5">
+                    <div className="flex gap-3 items-start">
+                      <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                          <Mail className="h-3.5 w-3.5 text-emerald-600" /> Ingresso enviado por e-mail
+                        </p>
+                        <p className="text-xs text-muted-foreground">{reserva.client_email || 'Verifique sua caixa de entrada'}</p>
+                      </div>
+                    </div>
+
+                    {reserva.whatsapp_group_link && (
+                      <div className="flex gap-3 items-start">
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                            <MessageCircle className="h-3.5 w-3.5 text-emerald-600" /> Entre no grupo do WhatsApp
+                          </p>
+                          <p className="text-xs text-muted-foreground">Informações e atualizações sobre o passeio</p>
                         </div>
-                      </Button>
-                    ))}
+                      </div>
+                    )}
+
+                    {reserva.ponto_embarque && (
+                      <div className="flex gap-3 items-start">
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{reserva.whatsapp_group_link ? '3' : '2'}</div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                            <MapPin className="h-3.5 w-3.5 text-emerald-600" /> Chegue 15 min antes do embarque
+                          </p>
+                          <p className="text-xs text-muted-foreground">{reserva.ponto_embarque}{reserva.ponto_embarque_horario && ` · ${reserva.ponto_embarque_horario}`}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              ) : null}
 
-              {/* Email Notice - Compact */}
-              <div className="text-center mb-4 p-2 bg-slate-50 rounded-lg">
-                <p className="text-xs text-muted-foreground">
-                  Enviamos o ingresso para <span className="font-medium text-foreground">{reserva.client_email || 'seu e-mail'}</span>
-                </p>
-              </div>
+                {/* Tickets */}
+                {loadingTickets ? (
+                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+                    <div className="flex items-center gap-3">
+                      <video src={camaleaoVideo} autoPlay loop muted playsInline className="w-10 h-10 object-contain" />
+                      <div>
+                        <p className="font-medium text-sm">Gerando seus ingressos...</p>
+                        <p className="text-xs text-muted-foreground">Aguarde um momento</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : reserva.tickets.length > 0 ? (
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">
+                      <Ticket className="h-3.5 w-3.5 inline mr-1" />Seus Ingressos
+                    </p>
+                    <div className="space-y-1.5">
+                      {reserva.tickets.map(ticket => (
+                        <Button
+                          key={ticket.id}
+                          onClick={() => openTicket(ticket.qr_token)}
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-between h-10 px-3 hover:bg-emerald-50 hover:border-emerald-400 border rounded-lg transition-all"
+                        >
+                          <span className="truncate text-sm">{ticket.participant_name}</span>
+                          <div className="flex items-center gap-1 text-emerald-600 shrink-0">
+                            <Download className="h-3.5 w-3.5" />
+                            <span className="text-xs">Ver</span>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
 
-              {/* Action Buttons - Compact */}
-              <div className="flex flex-col items-center gap-2">
-                {reserva.whatsapp_group_link && (
-                  <Button
-                    onClick={() => window.open(reserva.whatsapp_group_link!, '_blank')}
-                    className="h-9 text-sm font-semibold bg-green-600 hover:bg-green-700 px-6"
-                  >
-                    <FaWhatsapp className="h-4 w-4 mr-2" />
-                    Entrar no Grupo
+                {/* Action buttons */}
+                <div className="flex flex-col gap-2 pt-1">
+                  {reserva.whatsapp_group_link && (
+                    <Button
+                      onClick={() => window.open(reserva.whatsapp_group_link!, '_blank')}
+                      className="w-full bg-green-600 hover:bg-green-700 font-semibold"
+                    >
+                      <FaWhatsapp className="h-4 w-4 mr-2" /> Entrar no Grupo
+                    </Button>
+                  )}
+                  <Button onClick={openWhatsAppSupport} variant="outline" className="w-full border-green-600 text-green-700 hover:bg-green-50">
+                    <FaWhatsapp className="h-4 w-4 mr-2" /> Tirar dúvidas
                   </Button>
-                )}
-
-                <Button
-                  onClick={openWhatsAppSupport}
-                  variant="outline"
-                  className="h-9 text-sm border-green-600 text-green-700 hover:bg-green-50 px-6"
-                >
-                  <FaWhatsapp className="h-4 w-4 mr-2" />
-                  Tirar dúvidas
-                </Button>
-
-                {reserva.receipt_url && (
-                  <Button
-                    onClick={() => window.open(reserva.receipt_url!, '_blank')}
-                    variant="outline"
-                    className="h-9 text-sm px-6"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Ver Comprovante
+                  {reserva.receipt_url && (
+                    <Button onClick={() => window.open(reserva.receipt_url!, '_blank')} variant="outline" className="w-full">
+                      <ExternalLink className="h-4 w-4 mr-2" /> Ver Comprovante
+                    </Button>
+                  )}
+                  <Button onClick={() => navigate('/')} variant="ghost" className="w-full text-muted-foreground">
+                    <Home className="h-4 w-4 mr-2" /> Início
                   </Button>
-                )}
+                </div>
 
-                <Button
-                  onClick={() => navigate('/')}
-                  variant="ghost"
-                  className="h-9 text-sm text-muted-foreground"
-                >
-                  <Home className="h-4 w-4 mr-2" />
-                  Início
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          )}
 
-        {/* Footer */}
-        <p className="text-center text-white/60 text-xs mt-4">
-          Camaleão Ecoturismo © {new Date().getFullYear()}
-        </p>
+          <p className="text-center text-white/40 text-xs mt-5">
+            Camaleão Ecoturismo © {new Date().getFullYear()}
+          </p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
