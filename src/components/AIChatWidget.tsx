@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Send, MessageCircle, MapPin, Calendar, ChevronRight } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const SUPABASE_URL = "https://guwplwuwriixgvkjlutg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1d3Bsd3V3cmlpeGd2a2psdXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MzE3MDYsImV4cCI6MjA2OTMwNzcwNn0.XqFnllTUiv1SZrnL23hy7pWWeIeWDldfm9lpfO3vIQg";
@@ -284,8 +285,10 @@ export function AIChatWidget() {
   const [unreadCount, setUnreadCount] = useState(1);
   const [showBubble, setShowBubble] = useState(false);
   const [showBadge, setShowBadge] = useState(false);
+  const [isManualMode, setIsManualMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   // Detect if user is on a specific tour page
   const location = useLocation();
@@ -344,6 +347,42 @@ export function AIChatWidget() {
     }
   }, [isOpen]);
 
+  // Realtime: listen for admin messages and manual mode changes
+  useEffect(() => {
+    const sessionId = getOrCreateSessionId();
+
+    const msgsChannel = supabase
+      .channel(`widget-msgs-${sessionId}`)
+      .on(
+        'postgres_changes' as any,
+        { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `session_id=eq.${sessionId}` },
+        (payload: any) => {
+          if (payload.new?.role === 'admin') {
+            const adminMsg: ChatMsg = { id: uid(), type: 'assistant', content: payload.new.content };
+            setMessages((prev) => [...prev, adminMsg]);
+            if (!isOpen) setUnreadCount((n) => n + 1);
+          }
+        }
+      )
+      .subscribe();
+
+    const sessionChannel = supabase
+      .channel(`widget-session-${sessionId}`)
+      .on(
+        'postgres_changes' as any,
+        { event: 'UPDATE', schema: 'public', table: 'chat_sessions', filter: `session_id=eq.${sessionId}` },
+        (payload: any) => {
+          setIsManualMode(!!payload.new?.is_manual_mode);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(msgsChannel);
+      supabase.removeChannel(sessionChannel);
+    };
+  }, []);
+
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim() || isLoading) return;
@@ -353,6 +392,23 @@ export function AIChatWidget() {
 
       const userMsg: ChatMsg = { id: uid(), type: "user", content: text };
       setMessages((prev) => [...prev, userMsg]);
+
+      const sessionId = getOrCreateSessionId();
+
+      // Manual mode: insert directly to DB, human will reply via admin panel
+      if (isManualMode) {
+        await supabase.from('chat_messages').insert({
+          session_id: sessionId,
+          role: 'user',
+          content: text,
+          created_at: new Date().toISOString(),
+        });
+        // Update last_activity so admin sees the user is still active
+        await supabase.from('chat_sessions').update({ last_activity: new Date().toISOString() })
+          .eq('session_id', sessionId);
+        return;
+      }
+
       setIsLoading(true);
 
       try {
@@ -365,7 +421,6 @@ export function AIChatWidget() {
           .slice(-15)
           .map((m) => ({ role: m.type as "user" | "assistant", content: m.content }));
 
-        const sessionId = getOrCreateSessionId();
         const isFirstMessage = messages.filter(m => m.type === "user").length === 0;
 
         const res = await fetch(`${SUPABASE_URL}/functions/v1/chat-ai`, {
@@ -411,7 +466,7 @@ export function AIChatWidget() {
         setIsLoading(false);
       }
     },
-    [messages, isLoading, isOpen]
+    [messages, isLoading, isOpen, isManualMode]
   );
 
   const handleQuickAction = (action: (typeof QUICK_ACTIONS)[number]) => {
@@ -550,6 +605,14 @@ export function AIChatWidget() {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3 bg-gray-50">
+
+            {/* Manual mode banner */}
+            {isManualMode && (
+              <div className="flex items-center justify-center gap-1.5 bg-emerald-700 text-white text-[11px] font-medium rounded-xl px-3 py-2 mx-1">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse shrink-0" />
+                Você está falando com um atendente
+              </div>
+            )}
 
             {/* Welcome */}
             <div className="flex items-start gap-2">
