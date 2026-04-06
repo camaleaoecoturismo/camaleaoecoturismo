@@ -120,7 +120,22 @@ export default function ChatConversasTab() {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `session_id=eq.${selectedSession.session_id}` },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new as ChatMessage]);
+          const incoming = payload.new as ChatMessage;
+          setMessages((prev) => {
+            // Skip if we already have an optimistic message with same content+role+approx time
+            const isDuplicate = prev.some(
+              (m) => m.id.startsWith('optimistic-') && m.role === incoming.role && m.content === incoming.content
+            );
+            if (isDuplicate) {
+              // Replace optimistic with real DB row
+              return prev.map((m) =>
+                m.id.startsWith('optimistic-') && m.role === incoming.role && m.content === incoming.content
+                  ? incoming
+                  : m
+              );
+            }
+            return [...prev, incoming];
+          });
         }
       )
       .subscribe();
