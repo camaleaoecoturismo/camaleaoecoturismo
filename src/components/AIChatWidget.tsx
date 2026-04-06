@@ -221,15 +221,13 @@ const PANEL_W = 360;
 const PANEL_H = 560;
 const EDGE_MARGIN = 16;
 
-function useFloatingDrag(initialLeft: number, initialBottom: number) {
-  // pos stores distance from LEFT and TOP edges (easier to compute snap)
+function useFloatingDrag(initialLeft: number, initialBottom: number, onTap: () => void) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const dragging = useRef(false);
   const didDrag = useRef(false);
   const startPointer = useRef({ x: 0, y: 0 });
   const startPos = useRef({ x: 0, y: 0 });
 
-  // Resolve initial position (left/bottom → left/top); re-evaluated when pos is null (not yet dragged)
   const resolvedPos = pos ?? {
     x: initialLeft,
     y: window.innerHeight - initialBottom - BTN_SIZE,
@@ -237,9 +235,7 @@ function useFloatingDrag(initialLeft: number, initialBottom: number) {
 
   const snapToEdge = (x: number, y: number) => {
     const midX = window.innerWidth / 2;
-    const snappedX = x < midX
-      ? EDGE_MARGIN
-      : window.innerWidth - BTN_SIZE - EDGE_MARGIN;
+    const snappedX = x < midX ? EDGE_MARGIN : window.innerWidth - BTN_SIZE - EDGE_MARGIN;
     const clampedY = Math.max(EDGE_MARGIN, Math.min(window.innerHeight - BTN_SIZE - EDGE_MARGIN, y));
     setPos({ x: snappedX, y: clampedY });
   };
@@ -256,11 +252,14 @@ function useFloatingDrag(initialLeft: number, initialBottom: number) {
     if (!dragging.current) return;
     const dx = e.clientX - startPointer.current.x;
     const dy = e.clientY - startPointer.current.y;
-    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) didDrag.current = true;
-    setPos({
-      x: Math.max(0, Math.min(window.innerWidth - BTN_SIZE, startPos.current.x + dx)),
-      y: Math.max(0, Math.min(window.innerHeight - BTN_SIZE, startPos.current.y + dy)),
-    });
+    // Only move the button (and mark as drag) after exceeding threshold
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+      didDrag.current = true;
+      setPos({
+        x: Math.max(0, Math.min(window.innerWidth - BTN_SIZE, startPos.current.x + dx)),
+        y: Math.max(0, Math.min(window.innerHeight - BTN_SIZE, startPos.current.y + dy)),
+      });
+    }
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
@@ -270,10 +269,13 @@ function useFloatingDrag(initialLeft: number, initialBottom: number) {
       const dx = e.clientX - startPointer.current.x;
       const dy = e.clientY - startPointer.current.y;
       snapToEdge(startPos.current.x + dx, startPos.current.y + dy);
+    } else {
+      // Was a tap/click — fire the callback directly here, not via onClick
+      onTap();
     }
   };
 
-  return { resolvedPos, didDrag, onPointerDown, onPointerMove, onPointerUp };
+  return { resolvedPos, onPointerDown, onPointerMove, onPointerUp };
 }
 
 export function AIChatWidget() {
@@ -298,7 +300,11 @@ export function AIChatWidget() {
   const QUICK_ACTIONS = currentTourSlug ? QUICK_ACTIONS_TOUR : QUICK_ACTIONS_DEFAULT;
 
   // On passeio pages, stay above the bottom tab bar (~64px); elsewhere, sit at normal bottom margin
-  const drag = useFloatingDrag(EDGE_MARGIN, currentTourSlug ? 60 : EDGE_MARGIN);
+  const drag = useFloatingDrag(EDGE_MARGIN, currentTourSlug ? 60 : EDGE_MARGIN, () => {
+    setShowBubble(false);
+    setShowBadge(false);
+    setIsOpen((o) => !o);
+  });
 
   // Show greeting bubble on load, then swap to badge
   useEffect(() => {
@@ -501,7 +507,6 @@ export function AIChatWidget() {
         onPointerUp={drag.onPointerUp}
       >
         <button
-          onClick={() => { if (!drag.didDrag.current) { setShowBubble(false); setShowBadge(false); setIsOpen((o) => !o); } }}
           className="relative w-14 h-14 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 overflow-visible cursor-grab active:cursor-grabbing select-none"
           aria-label={isOpen ? "Fechar chat" : "Falar com a Camila"}
         >
