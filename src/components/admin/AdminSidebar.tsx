@@ -310,7 +310,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   staffAvatarUrl,
   staffLastLogin,
 }) => {
-  const isStaff = !isAdmin && !!staffName;
+  const hasProfile = !!staffName; // true for any user (admin or staff) with a name set
 
   const formatLastLogin = (iso?: string) => {
     if (!iso) return null;
@@ -463,7 +463,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     <div className="grid h-full" style={{ gridTemplateRows: '64px 1fr auto' }}>
       {/* Logo or Staff Avatar */}
       <div className="flex items-center justify-center border-b border-border">
-        {isStaff ? (
+        {hasProfile ? (
           <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-primary/20 shrink-0">
             {staffAvatarUrl ? (
               <img src={staffAvatarUrl} alt={staffName} className="w-full h-full object-cover" />
@@ -588,7 +588,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     <div className="grid h-full" style={{ gridTemplateRows: 'auto 1fr auto' }}>
       {/* Header: logo (admin) or avatar + name + last session (staff) */}
       <div className="border-b border-border">
-        {isStaff ? (
+        {hasProfile ? (
           <div className="flex items-center gap-3 px-3 py-3">
             {/* Avatar */}
             <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary/20 shrink-0">

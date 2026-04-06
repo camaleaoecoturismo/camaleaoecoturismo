@@ -81,15 +81,23 @@ export function useStaffPermissions(): StaffPermissionsResult {
       }
 
       if (roleRow.role === 'admin') {
+        // Load admin profile (name/avatar) and last login in parallel
+        const [profileRes, loginRes] = await Promise.all([
+          supabase.from('staff_profiles').select('name, avatar_url').eq('user_id', userId).maybeSingle(),
+          supabase.from('staff_activity_logs').select('created_at').eq('user_id', userId).eq('action_type', 'login').order('created_at', { ascending: false }).limit(2),
+        ]);
+        if (cancelled) return;
+        const logins = loginRes.data || [];
+        const lastLogin = logins.length > 1 ? logins[1].created_at : logins.length === 1 ? logins[0].created_at : null;
         setResult({
           isAdmin: true,
           isStaff: false,
           permissions: {},
           allowedTabs: null,
           firstAllowedTab: 'gestao-dashboard',
-          staffName: null,
-          staffAvatarUrl: null,
-          staffLastLogin: null,
+          staffName: profileRes.data?.name ?? null,
+          staffAvatarUrl: profileRes.data?.avatar_url ?? null,
+          staffLastLogin: lastLogin,
           loading: false,
         });
         return;

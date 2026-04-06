@@ -166,12 +166,18 @@ const Admin = () => {
         .maybeSingle();
 
       if (twoFASetting?.setting_value === 'true') {
-        const { data: twoFASession } = await supabase
-          .from('admin_2fa_sessions' as any)
+        const deviceFp = localStorage.getItem('admin_device_fp');
+        let query = (supabase.from('admin_2fa_sessions' as any) as any)
           .select('id')
           .eq('user_id', session.user.id)
-          .gt('expires_at', new Date().toISOString())
-          .maybeSingle();
+          .gt('expires_at', new Date().toISOString());
+
+        // If this device has a fingerprint, check for it specifically
+        if (deviceFp) {
+          query = query.eq('device_fingerprint', deviceFp);
+        }
+
+        const { data: twoFASession } = await query.maybeSingle();
 
         if (!twoFASession) {
           await supabase.auth.signOut();

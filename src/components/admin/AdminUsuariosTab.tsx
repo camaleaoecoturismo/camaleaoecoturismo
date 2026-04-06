@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import {
   UserPlus, PowerOff, Power, Eye, EyeOff, RefreshCw,
-  User, Activity, Shield, Clock, Calendar, LogIn, Camera, Loader2, Edit2,
+  User, Activity, Shield, Clock, Calendar, LogIn, Camera, Loader2, Edit2, Pencil,
 } from 'lucide-react';
 import { ALL_SECTIONS, SECTION_TO_TABS } from '@/hooks/useStaffPermissions';
 import {
@@ -338,9 +338,10 @@ function CreateUserModal({
   );
 }
 
-// ─── EditPermissionsModal ─────────────────────────────────────────────────────
+// ─── EditUserModal ────────────────────────────────────────────────────────────
+// Handles both admin (name + photo only) and staff (name + photo + permissions)
 
-function EditPermissionsModal({
+function EditUserModal({
   user,
   open,
   onClose,
@@ -351,28 +352,41 @@ function EditPermissionsModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const [name, setName] = useState('');
+  const [cargo, setCargo] = useState('');
+  const [telefone, setTelefone] = useState('');
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [loadingPerms, setLoadingPerms] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
+
+  const isStaff = user?.role === 'staff';
 
   useEffect(() => {
     if (!user || !open) return;
     setAvatarFile(null);
     setAvatarPreview(null);
-    setLoadingPerms(true);
-    supabase
-      .from('staff_permissions')
-      .select('section, can_access')
-      .eq('user_id', user.user_id)
-      .then(({ data }) => {
-        const map: Record<string, boolean> = {};
-        ALL_SECTIONS.forEach(s => { map[s.key] = false; });
-        (data || []).forEach(row => { map[row.section] = row.can_access; });
-        setPermissions(map);
-        setLoadingPerms(false);
-      });
+    setName(user.name || '');
+    setCargo(user.cargo || '');
+    setTelefone(user.telefone || '');
+    setLoadingData(true);
+
+    const loads: Promise<unknown>[] = [];
+
+    if (isStaff) {
+      loads.push(
+        supabase.from('staff_permissions').select('section, can_access').eq('user_id', user.user_id)
+          .then(({ data }) => {
+            const map: Record<string, boolean> = {};
+            ALL_SECTIONS.forEach(s => { map[s.key] = false; });
+            (data || []).forEach((row: { section: string; can_access: boolean }) => { map[row.section] = row.can_access; });
+            setPermissions(map);
+          })
+      );
+    }
+
+    Promise.all(loads).finally(() => setLoadingData(false));
   }, [user, open]);
 
   const toggle = (key: string) =>
@@ -387,31 +401,43 @@ function EditPermissionsModal({
     if (!user) return;
     setLoading(true);
     try {
-      // Upload avatar if a new file was selected
+      // Upsert profile (name, cargo, telefone)
+      const profileData = {
+        user_id: user.user_id,
+        name: name.trim() || user.name || '',
+        cargo: cargo.trim() || null,
+        telefone: telefone.trim() || null,
+      };
+
+      const { error: profileError } = await supabase
+        .from('staff_profiles')
+        .upsert(profileData, { onConflict: 'user_id' });
+      if (profileError) throw profileError;
+
+      // Upload avatar if new file selected
       if (avatarFile) {
         const avatarUrl = await uploadAvatar(avatarFile, user.user_id);
-        const { error: avatarError } = await supabase
-          .from('staff_profiles')
-          .update({ avatar_url: avatarUrl })
-          .eq('user_id', user.user_id);
-        if (avatarError) throw avatarError;
+        await supabase.from('staff_profiles').update({ avatar_url: avatarUrl }).eq('user_id', user.user_id);
       }
 
-      // Save permissions
-      const sections = ALL_SECTIONS.map(s => s.key);
-      const canAccess = sections.map(k => permissions[k] ?? false);
-      const { error } = await supabase.rpc('update_staff_permissions', {
-        p_user_id: user.user_id,
-        p_sections: sections,
-        p_can_access: canAccess,
-      });
-      if (error) throw error;
+      // Save permissions (staff only)
+      if (isStaff) {
+        const sections = ALL_SECTIONS.map(s => s.key);
+        const canAccess = sections.map(k => permissions[k] ?? false);
+        const { error } = await supabase.rpc('update_staff_permissions', {
+          p_user_id: user.user_id,
+          p_sections: sections,
+          p_can_access: canAccess,
+        });
+        if (error) throw error;
+      }
 
       toast.success('Salvo com sucesso!');
       onSaved();
       onClose();
     } catch (err: unknown) {
       toast.error('Erro ao salvar.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -424,12 +450,12 @@ function EditPermissionsModal({
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
+            <Pencil className="h-5 w-5 text-primary" />
             Editar — {user?.name || user?.email}
           </DialogTitle>
         </DialogHeader>
 
-        {loadingPerms ? (
+        {loadingData ? (
           <div className="py-8 text-center text-muted-foreground">Carregando...</div>
         ) : (
           <div className="space-y-5 py-2">
@@ -443,27 +469,45 @@ function EditPermissionsModal({
               />
             </div>
 
-            {/* Permissions */}
-            <div>
-              <p className="text-sm font-medium mb-3">Permissões de acesso</p>
-              <div className="grid grid-cols-2 gap-2">
-                {ALL_SECTIONS.map(s => (
-                  <label key={s.key} className="flex items-center gap-2 cursor-pointer rounded-lg border border-border px-3 py-2 hover:bg-muted/50 transition-colors">
-                    <Checkbox
-                      checked={permissions[s.key] ?? false}
-                      onCheckedChange={() => toggle(s.key)}
-                    />
-                    <span className="text-sm">{s.label}</span>
-                  </label>
-                ))}
+            {/* Basic info */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <Label>Nome completo</Label>
+                <Input value={name} onChange={e => setName(e.target.value)} placeholder="Nome do usuário" />
+              </div>
+              <div>
+                <Label>Cargo / Função</Label>
+                <Input value={cargo} onChange={e => setCargo(e.target.value)} placeholder="Ex: Secretária" />
+              </div>
+              <div>
+                <Label>Telefone / WhatsApp</Label>
+                <Input value={telefone} onChange={e => setTelefone(e.target.value)} placeholder="(62) 99999-9999" />
               </div>
             </div>
+
+            {/* Permissions (staff only) */}
+            {isStaff && (
+              <div>
+                <p className="text-sm font-medium mb-3">Permissões de acesso</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {ALL_SECTIONS.map(s => (
+                    <label key={s.key} className="flex items-center gap-2 cursor-pointer rounded-lg border border-border px-3 py-2 hover:bg-muted/50 transition-colors">
+                      <Checkbox
+                        checked={permissions[s.key] ?? false}
+                        onCheckedChange={() => toggle(s.key)}
+                      />
+                      <span className="text-sm">{s.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={loading || loadingPerms} className="bg-primary">
+          <Button onClick={handleSave} disabled={loading || loadingData} className="bg-primary">
             {loading ? 'Salvando...' : 'Salvar'}
           </Button>
         </DialogFooter>
@@ -739,24 +783,22 @@ const AdminUsuariosTab: React.FC = () => {
                 >
                   <Activity className="h-4 w-4" />
                 </Button>
+                <Button
+                  variant="ghost" size="icon" title="Editar perfil"
+                  onClick={() => setEditUser(user)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
                 {user.role === 'staff' && (
-                  <>
-                    <Button
-                      variant="ghost" size="icon" title="Editar permissões"
-                      onClick={() => setEditUser(user)}
-                    >
-                      <Shield className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost" size="icon"
-                      title={user.is_active ? 'Desativar usuário' : 'Reativar usuário'}
-                      onClick={() => toggleActive(user)}
-                      disabled={togglingId === user.user_id}
-                      className={user.is_active ? 'hover:text-destructive' : 'hover:text-green-600'}
-                    >
-                      {user.is_active ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
-                    </Button>
-                  </>
+                  <Button
+                    variant="ghost" size="icon"
+                    title={user.is_active ? 'Desativar usuário' : 'Reativar usuário'}
+                    onClick={() => toggleActive(user)}
+                    disabled={togglingId === user.user_id}
+                    className={user.is_active ? 'hover:text-destructive' : 'hover:text-green-600'}
+                  >
+                    {user.is_active ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                  </Button>
                 )}
               </div>
             </div>
@@ -770,7 +812,7 @@ const AdminUsuariosTab: React.FC = () => {
         onClose={() => setCreateOpen(false)}
         onCreated={fetchUsers}
       />
-      <EditPermissionsModal
+      <EditUserModal
         user={editUser}
         open={!!editUser}
         onClose={() => setEditUser(null)}

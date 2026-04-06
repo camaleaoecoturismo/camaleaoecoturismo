@@ -12,6 +12,17 @@ import { logAction } from '@/hooks/useActivityLogger';
 
 type Step = 'email' | 'password' | '2fa';
 
+// ─── Device fingerprint (stable per browser) ──────────────────────────────────
+function getDeviceFingerprint(): string {
+  const key = 'admin_device_fp';
+  let fp = localStorage.getItem(key);
+  if (!fp) {
+    fp = crypto.randomUUID();
+    localStorage.setItem(key, fp);
+  }
+  return fp;
+}
+
 interface UserPreview {
   name: string;
   avatar_url: string | null;
@@ -149,7 +160,9 @@ const Auth = () => {
     if (otpCode.length !== 6) return;
     setVerifying(true);
     try {
-      const res = await supabase.functions.invoke('verify-admin-2fa-code', { body: { email, code: otpCode } });
+      const res = await supabase.functions.invoke('verify-admin-2fa-code', {
+        body: { email, code: otpCode, device_fingerprint: getDeviceFingerprint() },
+      });
       if (res.error || !res.data?.valid) {
         toast({ title: res.data?.error || 'Código inválido ou expirado.', variant: 'destructive' });
         setOtpCode('');
