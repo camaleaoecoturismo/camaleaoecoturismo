@@ -1304,15 +1304,24 @@ const TourManagement: React.FC<TourManagementProps> = ({
             email,
             whatsapp,
             data_nascimento
-          ),
-          tour_boarding_points!fk_reservas_ponto_embarque (
-            nome,
-            endereco
           )
         `).eq('tour_id', tour.id).order('data_reserva', {
         ascending: false
       });
       if (error) throw error;
+
+      // Fetch boarding points separately to avoid schema cache dependency
+      const pontoIds = [...new Set((data || []).map((r: any) => r.ponto_embarque_id).filter(Boolean))];
+      const boardingPointsMap: Record<string, { nome: string; endereco: string }> = {};
+      if (pontoIds.length > 0) {
+        const { data: bpData } = await supabase
+          .from('tour_boarding_points')
+          .select('id, nome, endereco')
+          .in('id', pontoIds);
+        (bpData || []).forEach((bp: any) => {
+          boardingPointsMap[bp.id] = { nome: bp.nome, endereco: bp.endereco };
+        });
+      }
 
       // Transform the data to match our interface
       const processedData = (data || []).map((reserva: any) => ({
@@ -1347,8 +1356,8 @@ const TourManagement: React.FC<TourManagementProps> = ({
           data_nascimento: reserva.clientes?.data_nascimento || ''
         },
         ponto_embarque: {
-          nome: reserva.tour_boarding_points?.nome || '',
-          endereco: reserva.tour_boarding_points?.endereco || ''
+          nome: boardingPointsMap[reserva.ponto_embarque_id]?.nome || '',
+          endereco: boardingPointsMap[reserva.ponto_embarque_id]?.endereco || ''
         }
       }));
       setReservas(processedData as any);

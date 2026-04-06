@@ -131,12 +131,23 @@ export function SuccessPagePreview() {
           selected_optional_items,
           clientes!fk_reservas_cliente(nome_completo, email),
           tours!fk_reservas_tour(name, start_date, whatsapp_group_link),
-          tour_boarding_points!fk_reservas_ponto_embarque(nome, endereco, horario)
+          ponto_embarque_id
         `)
         .eq('id', reservaId)
         .single();
 
       if (reservaError) throw reservaError;
+
+      // Fetch boarding point separately to avoid schema cache dependency
+      let boardingPoint: ReservaPreview['tour_boarding_points'] = null;
+      if (reservaData.ponto_embarque_id) {
+        const { data: bpData } = await supabase
+          .from('tour_boarding_points')
+          .select('nome, endereco, horario')
+          .eq('id', reservaData.ponto_embarque_id)
+          .single();
+        boardingPoint = bpData as ReservaPreview['tour_boarding_points'];
+      }
 
       // Fetch tickets
       const { data: ticketsData } = await supabase
@@ -148,7 +159,7 @@ export function SuccessPagePreview() {
         ...reservaData,
         clientes: reservaData.clientes as ReservaPreview['clientes'],
         tours: reservaData.tours as ReservaPreview['tours'],
-        tour_boarding_points: reservaData.tour_boarding_points as ReservaPreview['tour_boarding_points'],
+        tour_boarding_points: boardingPoint,
         selected_optional_items: reservaData.selected_optional_items as ReservaPreview['selected_optional_items'],
         tickets: ticketsData || []
       };
