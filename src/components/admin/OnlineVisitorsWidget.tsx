@@ -115,14 +115,23 @@ function VisitorDetail({
     const newSessionId = crypto.randomUUID();
 
     // Create a chat_session in manual mode (no AI)
-    await supabase.from('chat_sessions').insert({
+    const now = new Date().toISOString();
+    const { error } = await supabase.from('chat_sessions').insert({
       session_id: newSessionId,
       is_manual_mode: true,
       first_page: session.current_page,
       device_type: session.device_type,
       browser: session.browser,
       os: session.os,
+      started_at: now,
+      last_activity: now,
+      message_count: 0,
     });
+    if (error) {
+      console.error('Erro ao criar chat_session:', error);
+      setStarting(false);
+      return;
+    }
 
     // Notify visitor's LiveChatPopup via broadcast
     await supabase.channel(`visitor-notify-${session.user_id_anon}`)

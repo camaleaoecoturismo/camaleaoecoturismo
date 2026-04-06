@@ -70,8 +70,9 @@ export function AdminFloatingChatPanel({
       .from('chat_sessions')
       .select('*')
       .eq('session_id', sessionId)
-      .single()
-      .then(({ data }) => {
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) console.error('Erro ao carregar chat_session:', error);
         if (data) setSession(data as ChatSession);
       });
 
@@ -206,7 +207,7 @@ export function AdminFloatingChatPanel({
             Conversa #{sessionId.slice(-8)}
           </p>
           <p className="text-[11px] opacity-70">
-            {session ? [session.browser, session.os].filter(Boolean).join(' · ') : 'Carregando...'}
+            {session ? ([session.browser, session.os].filter(Boolean).join(' · ') || '—') : '—'}
           </p>
         </div>
         <div className="flex items-center gap-1 text-white" onClick={e => e.stopPropagation()}>
