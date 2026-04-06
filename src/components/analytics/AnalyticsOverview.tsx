@@ -3,7 +3,7 @@ import { Users, Eye, Clock, TrendingUp, MousePointer, Activity, Brain, Download,
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { format, differenceInDays, eachDayOfInterval } from 'date-fns';
+import { format, differenceInDays, eachDayOfInterval, startOfDay, endOfDay, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   LineChart,
@@ -31,8 +31,8 @@ interface OverviewMetrics {
 
 const AnalyticsOverview: React.FC = () => {
   const [filters, setFilters] = useState<AnalyticsFiltersState>({
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    endDate: new Date(),
+    startDate: startOfDay(subDays(new Date(), 29)),
+    endDate: endOfDay(new Date()),
     deviceType: 'all',
     campaign: 'all',
     pagePath: 'all'

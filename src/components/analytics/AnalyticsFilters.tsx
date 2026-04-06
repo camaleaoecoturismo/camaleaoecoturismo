@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { format, subDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export interface AnalyticsFiltersState {
@@ -23,10 +23,10 @@ interface AnalyticsFiltersProps {
 }
 
 const datePresets = [
-  { label: 'Hoje', getValue: () => ({ start: new Date(), end: new Date() }) },
-  { label: 'Últimos 7 dias', getValue: () => ({ start: subDays(new Date(), 7), end: new Date() }) },
-  { label: 'Últimos 30 dias', getValue: () => ({ start: subDays(new Date(), 30), end: new Date() }) },
-  { label: 'Mês atual', getValue: () => ({ start: startOfMonth(new Date()), end: new Date() }) },
+  { label: 'Hoje', getValue: () => ({ start: startOfDay(new Date()), end: endOfDay(new Date()) }) },
+  { label: 'Últimos 7 dias', getValue: () => ({ start: startOfDay(subDays(new Date(), 6)), end: endOfDay(new Date()) }) },
+  { label: 'Últimos 30 dias', getValue: () => ({ start: startOfDay(subDays(new Date(), 29)), end: endOfDay(new Date()) }) },
+  { label: 'Mês atual', getValue: () => ({ start: startOfMonth(new Date()), end: endOfDay(new Date()) }) },
   { label: 'Mês anterior', getValue: () => ({ start: startOfMonth(subMonths(new Date(), 1)), end: endOfMonth(subMonths(new Date(), 1)) }) },
 ];
 

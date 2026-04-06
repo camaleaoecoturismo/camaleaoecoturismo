@@ -355,51 +355,55 @@ REGRAS ABSOLUTAS:
       .filter((o: any) => typeof o === "string" && o.trim().length > 0)
       .slice(0, 4);
 
-    // Log conversation to DB (fire-and-forget, never blocks response)
+    // Log conversation to DB (awaited — Deno kills fire-and-forget on return)
     if (sessionId && typeof sessionId === "string") {
-      const logDb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      const now = new Date().toISOString();
-      const msgCount = (history as any[]).length + 2;
+      try {
+        const logDb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const now = new Date().toISOString();
+        const msgCount = (history as any[]).length + 2;
 
-      Promise.all([
-        logDb.from("chat_sessions").upsert(
-          {
+        await Promise.all([
+          logDb.from("chat_sessions").upsert(
+            {
+              session_id: sessionId,
+              tour_slug: tourSlug ?? null,
+              last_activity: now,
+              message_count: msgCount,
+              ...(deviceInfo
+                ? {
+                    user_agent: (deviceInfo as any).userAgent ?? null,
+                    device_type: (deviceInfo as any).deviceType ?? null,
+                    browser: (deviceInfo as any).browser ?? null,
+                    os: (deviceInfo as any).os ?? null,
+                    screen_width: (deviceInfo as any).screenWidth ?? null,
+                    screen_height: (deviceInfo as any).screenHeight ?? null,
+                    language: (deviceInfo as any).language ?? null,
+                    referrer: (deviceInfo as any).referrer ?? null,
+                    first_page: (deviceInfo as any).firstPage ?? null,
+                  }
+                : {}),
+            },
+            { onConflict: "session_id" }
+          ),
+          logDb.from("chat_messages").insert({
             session_id: sessionId,
-            tour_slug: tourSlug ?? null,
-            last_activity: now,
-            message_count: msgCount,
-            ...(deviceInfo
-              ? {
-                  user_agent: (deviceInfo as any).userAgent ?? null,
-                  device_type: (deviceInfo as any).deviceType ?? null,
-                  browser: (deviceInfo as any).browser ?? null,
-                  os: (deviceInfo as any).os ?? null,
-                  screen_width: (deviceInfo as any).screenWidth ?? null,
-                  screen_height: (deviceInfo as any).screenHeight ?? null,
-                  language: (deviceInfo as any).language ?? null,
-                  referrer: (deviceInfo as any).referrer ?? null,
-                  first_page: (deviceInfo as any).firstPage ?? null,
-                }
-              : {}),
-          },
-          { onConflict: "session_id" }
-        ),
-        logDb.from("chat_messages").insert({
-          session_id: sessionId,
-          role: "user",
-          content: message,
-          tour_slugs: null,
-          options: null,
-          created_at: now,
-        }),
-        logDb.from("chat_messages").insert({
-          session_id: sessionId,
-          role: "assistant",
-          content: parsed.text ?? "",
-          tour_slugs: tours.length > 0 ? tours.map((t: TourCard) => t.slug) : null,
-          options: options.length > 0 ? options : null,
-        }),
-      ]).catch((e) => console.error("chat log error:", e));
+            role: "user",
+            content: message,
+            tour_slugs: null,
+            options: null,
+            created_at: now,
+          }),
+          logDb.from("chat_messages").insert({
+            session_id: sessionId,
+            role: "assistant",
+            content: parsed.text ?? "",
+            tour_slugs: tours.length > 0 ? tours.map((t: TourCard) => t.slug) : null,
+            options: options.length > 0 ? options : null,
+          }),
+        ]);
+      } catch (e) {
+        console.error("chat log error:", e);
+      }
     }
 
     return new Response(
