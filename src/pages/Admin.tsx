@@ -33,6 +33,7 @@ import AdminStories from "@/components/admin/AdminStories";
 import AdminTourMoments from "@/components/admin/AdminTourMoments";
 import ConversasPage from "@/components/admin/ConversasPage";
 import { AdminNotifications } from "@/components/admin/AdminNotifications";
+import { OnlineVisitorsWidget } from "@/components/admin/OnlineVisitorsWidget";
 import { useToast } from "@/hooks/use-toast";
 import { Tour } from "@/hooks/useTours";
 import { useNoIndex } from '@/hooks/useNoIndex';
@@ -550,10 +551,11 @@ const Admin = () => {
       >
         {/* Header */}
         <header className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-          <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-4">
-            <h1 className="text-xl md:text-2xl font-bold text-foreground">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
+            <h1 className="text-xl md:text-2xl font-bold text-foreground truncate">
               {getPageTitle()}
             </h1>
+            <OnlineVisitorsWidget />
           </div>
         </header>
 
