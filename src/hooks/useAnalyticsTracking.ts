@@ -150,9 +150,12 @@ async function getOrCreateSession(): Promise<SessionData | null> {
       utm_medium: utmParams.medium,
       utm_campaign: utmParams.campaign,
       referer_domain: getRefererDomain(),
+      full_referrer: document.referrer || null,
       is_new_visitor: isNewVisitor,
       first_visit_at: new Date().toISOString(),
       last_visit_at: new Date().toISOString(),
+      last_heartbeat: new Date().toISOString(),
+      current_page: window.location.pathname,
       country: geoData.country,
       state: geoData.state,
       city: geoData.city,
@@ -198,6 +201,45 @@ async function updateSessionMetrics(sessionId: string, pagesCount: number, durat
   }
 }
 
+async function sendHeartbeat(sessionId: string, currentPage: string) {
+  try {
+    await supabase
+      .from('analytics_sessions')
+      .update({
+        current_page: currentPage,
+        last_heartbeat: new Date().toISOString(),
+        last_visit_at: new Date().toISOString(),
+      })
+      .eq('id', sessionId);
+  } catch {
+    // non-critical
+  }
+}
+
+// Call this when a visitor identifies themselves (form submit, reserva, etc.)
+export async function identifyVisitor(data: {
+  sessionId: string | null;
+  name?: string;
+  email?: string;
+  phone?: string;
+  clienteId?: string;
+}) {
+  if (!data.sessionId) return;
+  try {
+    await supabase
+      .from('analytics_sessions')
+      .update({
+        identified_name:  data.name  || null,
+        identified_email: data.email || null,
+        identified_phone: data.phone || null,
+        cliente_id:       data.clienteId || null,
+      })
+      .eq('id', data.sessionId);
+  } catch {
+    // non-critical
+  }
+}
+
 export function useAnalyticsTracking() {
   const location = useLocation();
   const sessionIdRef = useRef<string | null>(null);
@@ -239,6 +281,13 @@ export function useAnalyticsTracking() {
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
 
+    // Heartbeat every 30s — keeps "online now" accurate
+    const heartbeatInterval = setInterval(() => {
+      if (sessionIdRef.current) {
+        sendHeartbeat(sessionIdRef.current, window.location.pathname);
+      }
+    }, 30_000);
+
     // Update session metrics on page unload
     const handleUnload = () => {
       if (sessionIdRef.current) {
@@ -269,6 +318,7 @@ export function useAnalyticsTracking() {
     return () => {
       window.removeEventListener('beforeunload', handleUnload);
       window.removeEventListener('scroll', handleScroll);
+      clearInterval(heartbeatInterval);
     };
   }, []);
   
@@ -310,6 +360,9 @@ export function useAnalyticsTracking() {
         maxScrollDepthRef.current = 0;
 
         pageCountRef.current += 1;
+
+        // Update current_page in session for real-time visibility
+        sendHeartbeat(sessionIdRef.current, pathname);
 
         // Insert new pageview and store its id
         try {
