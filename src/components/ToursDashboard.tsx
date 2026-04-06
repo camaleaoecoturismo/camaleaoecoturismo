@@ -1522,7 +1522,7 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
               </button>
             </div>
           </CardHeader>
-          <CardContent>
+          {!realizadosCollapsed && <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -1583,7 +1583,7 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
                 </TableBody>
               </Table>
             </div>
-          </CardContent>
+          </CardContent>}
         </Card>
       )}
     </div>;
