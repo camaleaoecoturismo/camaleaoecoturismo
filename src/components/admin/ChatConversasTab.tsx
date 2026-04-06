@@ -367,6 +367,29 @@ export default function ChatConversasTab() {
                           <p className="text-[9px] font-semibold text-purple-200 mb-0.5 uppercase tracking-wide">Você (atendente)</p>
                         )}
                         <p className="whitespace-pre-wrap">{msg.content}</p>
+
+                        {/* Tour slugs */}
+                        {msg.tour_slugs && msg.tour_slugs.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {msg.tour_slugs.map((slug) => (
+                              <span key={slug} className="text-[10px] bg-emerald-100 text-emerald-700 rounded-full px-2 py-0.5">
+                                {slug}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Options chosen by user */}
+                        {msg.options && msg.options.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {msg.options.map((opt) => (
+                              <span key={opt} className="text-[10px] border border-gray-200 text-gray-500 rounded-full px-2 py-0.5 bg-white/60">
+                                {opt}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
                         <p className={`text-[10px] mt-1 text-right ${isUser ? 'text-green-700/60' : isAdmin ? 'text-purple-200' : 'text-gray-400'}`}>
                           {formatTime(msg.created_at)}
                         </p>
