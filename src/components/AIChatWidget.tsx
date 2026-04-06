@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Send, MessageCircle, MapPin, Calendar, ChevronRight } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { playChatSound } from "@/utils/notificationSound";
 
 const SUPABASE_URL = "https://guwplwuwriixgvkjlutg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1d3Bsd3V3cmlpeGd2a2psdXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MzE3MDYsImV4cCI6MjA2OTMwNzcwNn0.XqFnllTUiv1SZrnL23hy7pWWeIeWDldfm9lpfO3vIQg";
@@ -361,6 +362,7 @@ export function AIChatWidget() {
           if (payload.new?.role === 'admin') {
             const adminMsg: ChatMsg = { id: uid(), type: 'assistant', content: payload.new.content };
             setMessages((prev) => [...prev, adminMsg]);
+            playChatSound();
             if (!isOpen) setUnreadCount((n) => n + 1);
           }
         }
@@ -478,6 +480,7 @@ export function AIChatWidget() {
 
         const data = await res.json();
 
+        playChatSound();
         setMessages((prev) => {
           const next: ChatMsg[] = [
             ...prev,

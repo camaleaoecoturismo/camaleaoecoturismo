@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Bell, MessageCircle, Users, X, Monitor, Smartphone, Tablet } from 'lucide-react';
+import { playChatSound, playVisitorSound } from '@/utils/notificationSound';
 
 interface Notif {
   id: string;
@@ -44,6 +45,9 @@ export function AdminNotifications({
       if (prev.find(n => n.id === full.id)) return prev;
       return [...prev, full];
     });
+    // Play sound based on notification type
+    if (notif.type === 'chat') playChatSound();
+    else playVisitorSound();
     setTimeout(() => dismiss(notif.id), 8000);
   }, [dismiss]);
 
