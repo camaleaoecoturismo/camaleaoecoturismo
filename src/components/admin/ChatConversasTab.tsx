@@ -177,11 +177,33 @@ export default function ChatConversasTab() {
     if (!text || !selectedSession || sendingAdmin) return;
     setSendingAdmin(true);
     setAdminInput('');
-    await supabase.from('chat_messages').insert({
+
+    const now = new Date().toISOString();
+    const optimisticId = `optimistic-${Date.now()}`;
+
+    // Show immediately (don't wait for realtime)
+    setMessages((prev) => [...prev, {
+      id: optimisticId,
+      session_id: selectedSession.session_id,
+      role: 'admin' as const,
+      content: text,
+      tour_slugs: null,
+      options: null,
+      created_at: now,
+    }]);
+
+    const { error } = await supabase.from('chat_messages').insert({
       session_id: selectedSession.session_id,
       role: 'admin',
       content: text,
+      created_at: now,
     });
+
+    if (error) {
+      console.error('Erro ao enviar mensagem:', error);
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+    }
+
     setSendingAdmin(false);
     adminInputRef.current?.focus();
   };
