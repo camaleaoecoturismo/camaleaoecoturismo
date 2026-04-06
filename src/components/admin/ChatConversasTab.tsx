@@ -60,6 +60,15 @@ function isOnline(lastActivity: string): boolean {
   return Date.now() - new Date(lastActivity).getTime() < 5 * 60 * 1000;
 }
 
+// ─── Unread tracking via localStorage ────────────────────────────────────────
+function getReadCounts(): Record<string, number> {
+  try { return JSON.parse(localStorage.getItem('chat_read_counts') || '{}'); } catch { return {}; }
+}
+function markRead(sessionId: string, count: number) {
+  const c = getReadCounts(); c[sessionId] = count;
+  localStorage.setItem('chat_read_counts', JSON.stringify(c));
+}
+
 export default function ChatConversasTab() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [selectedSession, setSelectedSession] = useState<ChatSession | null>(null);
@@ -68,6 +77,8 @@ export default function ChatConversasTab() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [adminInput, setAdminInput] = useState('');
   const [sendingAdmin, setSendingAdmin] = useState(false);
+  const [lastMessages, setLastMessages] = useState<Record<string, ChatMessage>>({});
+  const [readCounts, setReadCounts] = useState<Record<string, number>>(getReadCounts);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const adminInputRef = useRef<HTMLInputElement>(null);
   const knownSessionsRef = useRef<Map<string, number>>(new Map());
@@ -81,13 +92,28 @@ export default function ChatConversasTab() {
       .limit(100);
 
     const incoming = (data as ChatSession[]) ?? [];
-    // Populate known sessions map (used by global AdminNotifications)
     for (const session of incoming) {
       knownSessionsRef.current.set(session.session_id, new Date(session.last_activity).getTime());
     }
     isFirstLoadRef.current = false;
     setSessions(incoming);
     setLoadingSessions(false);
+
+    // Fetch last message per session in one query
+    if (incoming.length > 0) {
+      const ids = incoming.map(s => s.session_id);
+      const { data: msgs } = await supabase
+        .from('chat_messages')
+        .select('id, session_id, role, content, created_at, tour_slugs, options')
+        .in('session_id', ids)
+        .order('created_at', { ascending: false })
+        .limit(ids.length * 3);
+      const map: Record<string, ChatMessage> = {};
+      for (const m of (msgs as ChatMessage[]) ?? []) {
+        if (!map[m.session_id]) map[m.session_id] = m;
+      }
+      setLastMessages(map);
+    }
   }, []);
 
   const fetchMessages = useCallback(async (sessionId: string) => {
@@ -234,54 +260,83 @@ export default function ChatConversasTab() {
     <div className="relative">
     <div className="flex h-[calc(100vh-120px)] border border-gray-200 rounded-xl overflow-hidden bg-white">
       {/* Session list */}
-      <div className="w-80 shrink-0 border-r border-gray-200 flex flex-col bg-gray-50">
-        <div className="px-4 py-3 border-b border-gray-200 bg-white">
+      <div className="w-80 shrink-0 border-r border-gray-100 flex flex-col bg-white">
+        <div className="px-4 py-3.5 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-900">Conversas da Camila</h2>
-          <p className="text-xs text-gray-500">{sessions.length} sessões registradas</p>
+          <p className="text-xs text-gray-400 mt-0.5">{sessions.length} sessões registradas</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
+        <div className="flex-1 overflow-y-auto">
           {loadingSessions ? (
             <div className="p-6 text-center text-sm text-gray-400">Carregando...</div>
           ) : sessions.length === 0 ? (
             <div className="p-6 text-center">
-              <MessageCircle className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <MessageCircle className="w-8 h-8 text-gray-200 mx-auto mb-2" />
               <p className="text-sm text-gray-400">Nenhuma conversa registrada</p>
             </div>
           ) : (
             sessions.map((session) => {
               const isSelected = selectedSession?.session_id === session.session_id;
               const online = isOnline(session.last_activity);
+              const lastMsg = lastMessages[session.session_id];
+              const readCount = readCounts[session.session_id] ?? 0;
+              const unread = Math.max(0, session.message_count - readCount);
+              const hasUnread = unread > 0 && !isSelected;
+
+              const lastMsgPreview = lastMsg
+                ? lastMsg.role === 'user'
+                  ? lastMsg.content
+                  : lastMsg.role === 'admin'
+                  ? `Você: ${lastMsg.content}`
+                  : `Camila: ${lastMsg.content}`
+                : session.first_page ?? '/';
+
               return (
                 <button
                   key={session.session_id}
-                  onClick={() => setSelectedSession(session)}
-                  className={`w-full text-left px-4 py-3 hover:bg-white transition-colors flex items-start gap-3 ${isSelected ? 'bg-white border-l-2 border-emerald-500' : ''}`}
+                  onClick={() => {
+                    setSelectedSession(session);
+                    markRead(session.session_id, session.message_count);
+                    setReadCounts(prev => ({ ...prev, [session.session_id]: session.message_count }));
+                  }}
+                  className={`w-full text-left px-4 py-3 transition-colors flex items-center gap-3 border-b border-gray-50 ${
+                    isSelected ? 'bg-[#f0fdf4]' : 'hover:bg-gray-50'
+                  }`}
                 >
-                  <div className={`relative mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isSelected ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-200 text-gray-500'}`}>
-                    <DeviceIcon type={session.device_type} />
+                  {/* Avatar */}
+                  <div className="relative shrink-0">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-base font-bold ${
+                      isSelected ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      <DeviceIcon type={session.device_type} />
+                    </div>
                     {online && (
-                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-white rounded-full animate-pulse" />
+                      <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" />
                     )}
                   </div>
+
+                  {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1 mb-0.5">
-                      <span className="text-xs font-mono font-medium text-gray-700 truncate">
+                      <span className={`text-sm truncate ${hasUnread ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
                         #{session.session_id.slice(-8)}
                         {session.is_manual_mode && (
-                          <span className="ml-1 text-[9px] bg-purple-100 text-purple-600 rounded-full px-1.5 py-0.5">manual</span>
+                          <span className="ml-1.5 text-[9px] bg-purple-100 text-purple-600 rounded-full px-1.5 py-0.5 font-normal">manual</span>
                         )}
                       </span>
-                      <span className="text-[10px] text-gray-400 whitespace-nowrap shrink-0">
+                      <span className={`text-[11px] whitespace-nowrap shrink-0 ${hasUnread ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
                         {formatRelativeTime(session.last_activity)}
                       </span>
                     </div>
-                    <p className="text-[11px] text-gray-500 truncate">{session.first_page ?? '/'}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-gray-400">{session.browser ?? 'N/A'} · {session.os ?? 'N/A'}</span>
-                      <span className="ml-auto text-[10px] bg-emerald-50 text-emerald-600 rounded-full px-1.5 py-0.5">
-                        {session.message_count} msg
-                      </span>
+                    <div className="flex items-center justify-between gap-1">
+                      <p className={`text-xs truncate ${hasUnread ? 'text-gray-700' : 'text-gray-400'}`}>
+                        {lastMsgPreview}
+                      </p>
+                      {hasUnread && (
+                        <span className="ml-1.5 min-w-[20px] h-5 bg-green-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center px-1.5 shrink-0">
+                          {unread > 99 ? '99+' : unread}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </button>

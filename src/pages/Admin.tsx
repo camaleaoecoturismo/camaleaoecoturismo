@@ -34,6 +34,7 @@ import AdminTourMoments from "@/components/admin/AdminTourMoments";
 import ConversasPage from "@/components/admin/ConversasPage";
 import { AdminNotifications } from "@/components/admin/AdminNotifications";
 import { OnlineVisitorsWidget } from "@/components/admin/OnlineVisitorsWidget";
+import { AdminFloatingChatPanel } from "@/components/admin/AdminFloatingChatPanel";
 import { useToast } from "@/hooks/use-toast";
 import { Tour } from "@/hooks/useTours";
 import { useNoIndex } from '@/hooks/useNoIndex';
@@ -54,6 +55,7 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('gestao-dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [floatingChatSessionId, setFloatingChatSessionId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const staffPerms = useStaffPermissions();
@@ -510,7 +512,8 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-background flex w-full">
       {/* Global notifications — visitors & chat, always active */}
-      <AdminNotifications onNavigate={setActiveTab} />
+      <AdminNotifications onNavigate={setActiveTab} onOpenChat={setFloatingChatSessionId} />
+      <AdminFloatingChatPanel sessionId={floatingChatSessionId} onClose={() => setFloatingChatSessionId(null)} />
 
       {/* Intro animation — first session only */}
       {showIntro && (

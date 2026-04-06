@@ -8,6 +8,7 @@ interface Notif {
   title: string;
   subtitle: string;
   detail?: string;
+  lastMessage?: string;
   at: number;
   onAction?: () => void;
   actionLabel?: string;
@@ -19,7 +20,13 @@ function DeviceIcon({ type }: { type: string | null }) {
   return <Monitor className="w-3.5 h-3.5 shrink-0" />;
 }
 
-export function AdminNotifications({ onNavigate }: { onNavigate?: (tab: string) => void }) {
+export function AdminNotifications({
+  onNavigate,
+  onOpenChat,
+}: {
+  onNavigate?: (tab: string) => void;
+  onOpenChat?: (sessionId: string) => void;
+}) {
   const [notifs, setNotifs] = useState<Notif[]>([]);
   const knownSessions = useRef<Set<string>>(new Set());
   const knownChats = useRef<Set<string>>(new Set());
@@ -114,15 +121,37 @@ export function AdminNotifications({ onNavigate }: { onNavigate?: (tab: string) 
 
         if (isNew || hasNewMsg) {
           const notifId = `chat-${s.session_id}-${activityMs}`;
-          push({
-            id: notifId,
-            type: 'chat',
-            title: isNew ? 'Nova conversa iniciada' : 'Nova mensagem recebida',
-            subtitle: [s.browser, s.os].filter(Boolean).join(' · ') || 'Visitante',
-            detail: s.first_page || undefined,
-            onAction: onNavigate ? () => onNavigate('conversas') : undefined,
-            actionLabel: 'Ver conversa →',
-          });
+          const sessionId = s.session_id;
+
+          // Fetch last message to show preview
+          supabase
+            .from('chat_messages')
+            .select('content, role')
+            .eq('session_id', sessionId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .then(({ data: msgs }) => {
+              const lastMsg = msgs?.[0];
+              const lastMessage = lastMsg?.role === 'user'
+                ? lastMsg.content
+                : lastMsg?.role === 'admin'
+                ? `Você: ${lastMsg.content}`
+                : lastMsg?.content;
+
+              push({
+                id: notifId,
+                type: 'chat',
+                title: isNew ? 'Nova conversa iniciada' : 'Nova mensagem recebida',
+                subtitle: [s.browser, s.os].filter(Boolean).join(' · ') || 'Visitante',
+                lastMessage,
+                onAction: onOpenChat
+                  ? () => onOpenChat(sessionId)
+                  : onNavigate
+                  ? () => onNavigate('conversas')
+                  : undefined,
+                actionLabel: 'Abrir conversa →',
+              });
+            });
         }
       })
       .subscribe();
@@ -154,7 +183,10 @@ export function AdminNotifications({ onNavigate }: { onNavigate?: (tab: string) 
             <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1 truncate">
               {notif.subtitle}
             </p>
-            {notif.detail && (
+            {notif.lastMessage && (
+              <p className="text-xs text-gray-700 mt-1 line-clamp-2 leading-snug">"{notif.lastMessage}"</p>
+            )}
+            {!notif.lastMessage && notif.detail && (
               <p className="text-xs text-gray-400 truncate">{notif.detail}</p>
             )}
             {notif.onAction && (

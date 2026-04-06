@@ -1402,7 +1402,8 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
             )}
           </div>
         </CardHeader>
-        {!proximosCollapsed && <CardContent>
+        {!proximosCollapsed && (
+        <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -1502,7 +1503,8 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
               </TableBody>
             </Table>
           </div>
-        </CardContent>}
+        </CardContent>
+        )}
       </Card>
 
       {/* Past Tours Table */}
@@ -1522,7 +1524,8 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
               </button>
             </div>
           </CardHeader>
-          {!realizadosCollapsed && <CardContent>
+          {!realizadosCollapsed && (
+          <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -1583,7 +1586,8 @@ const ToursDashboard: React.FC<ToursDashboardProps> = ({
                 </TableBody>
               </Table>
             </div>
-          </CardContent>}
+          </CardContent>
+          )}
         </Card>
       )}
     </div>;
