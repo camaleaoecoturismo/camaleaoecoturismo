@@ -288,6 +288,8 @@ export function AIChatWidget() {
   const [showBubble, setShowBubble] = useState(false);
   const [showBadge, setShowBadge] = useState(false);
   const [isManualMode, setIsManualMode] = useState(false);
+  // Reactive session ID — can be overridden by admin broadcast
+  const [sessionId, setSessionId] = useState(getOrCreateSessionId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -348,10 +350,8 @@ export function AIChatWidget() {
     }
   }, [isOpen]);
 
-  // Realtime: listen for admin messages and manual mode changes
+  // Realtime: listen for admin messages and manual mode changes (re-subscribes when sessionId changes)
   useEffect(() => {
-    const sessionId = getOrCreateSessionId();
-
     const msgsChannel = supabase
       .channel(`widget-msgs-${sessionId}`)
       .on(
@@ -382,6 +382,32 @@ export function AIChatWidget() {
       supabase.removeChannel(msgsChannel);
       supabase.removeChannel(sessionChannel);
     };
+  }, [sessionId]);
+
+  // Listen for admin-initiated chat broadcast (visitor who hasn't opened Camila yet)
+  useEffect(() => {
+    const anonId = localStorage.getItem('analytics_anon_id');
+    if (!anonId) return;
+
+    const channel = supabase
+      .channel(`visitor-notify-${anonId}`)
+      .on('broadcast', { event: 'chat_started' }, (payload) => {
+        const newSessionId: string = payload.payload?.session_id;
+        if (!newSessionId) return;
+        // Adopt the new session created by admin
+        sessionStorage.setItem(CHAT_SESSION_ID_KEY, newSessionId);
+        setSessionId(newSessionId);
+        setIsManualMode(true);
+        setIsOpen(true);
+        setMessages([]);
+        setUnreadCount(0);
+      })
+      .on('broadcast', { event: 'chat_closed' }, () => {
+        setIsManualMode(false);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const sendMessage = useCallback(
@@ -393,8 +419,6 @@ export function AIChatWidget() {
 
       const userMsg: ChatMsg = { id: uid(), type: "user", content: text };
       setMessages((prev) => [...prev, userMsg]);
-
-      const sessionId = getOrCreateSessionId();
 
       // Manual mode: insert directly to DB, human will reply via admin panel
       if (isManualMode) {
