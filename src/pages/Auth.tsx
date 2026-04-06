@@ -161,7 +161,7 @@ const Auth = () => {
     setVerifying(true);
     try {
       const res = await supabase.functions.invoke('verify-admin-2fa-code', {
-        body: { email, code: otpCode, device_fingerprint: getDeviceFingerprint() },
+        body: { email, code: otpCode, user_id: userId, device_fingerprint: getDeviceFingerprint() },
       });
       if (res.error || !res.data?.valid) {
         toast({ title: res.data?.error || 'Código inválido ou expirado.', variant: 'destructive' });

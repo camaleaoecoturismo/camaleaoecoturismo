@@ -9,6 +9,7 @@ const corsHeaders = {
 interface VerifyCodeRequest {
   email: string;
   code: string;
+  user_id?: string;
   device_fingerprint?: string;
 }
 
@@ -18,7 +19,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, code, device_fingerprint }: VerifyCodeRequest = await req.json();
+    const { email, code, user_id: userIdFromClient, device_fingerprint }: VerifyCodeRequest = await req.json();
     const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
 
     if (!email || !code) {
@@ -33,21 +34,25 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Find the verification code (still valid, not yet verified)
-    const { data: verificationCode, error: fetchError } = await supabase
+    // Use limit(1) instead of maybeSingle() to avoid PGRST116 error on duplicate rows
+    const { data: rows, error: fetchError } = await supabase
       .from('email_verification_codes')
       .select('*')
       .eq('email', email)
       .gt('expires_at', new Date().toISOString())
       .is('verified_at', null)
-      .maybeSingle();
+      .order('created_at', { ascending: false })
+      .limit(1);
 
     if (fetchError) {
       console.error("Error fetching verification code:", fetchError);
       return new Response(
-        JSON.stringify({ error: "Erro ao verificar código" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ valid: false, error: "Erro ao verificar código" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const verificationCode = rows?.[0] ?? null;
 
     if (!verificationCode) {
       return new Response(
@@ -95,9 +100,13 @@ const handler = async (req: Request): Promise<Response> => {
       .delete()
       .eq('id', verificationCode.id);
 
-    // Look up the user_id for this admin email
-    const { data: userData } = await supabase.auth.admin.getUserByEmail(email);
-    const userId = userData?.user?.id;
+    // Use user_id from client (already authenticated via signInWithPassword)
+    // Fall back to DB lookup only if not provided
+    let userId = userIdFromClient ?? null;
+    if (!userId) {
+      const { data: userData } = await supabase.auth.admin.getUserByEmail(email);
+      userId = userData?.user?.id ?? null;
+    }
 
     // Create a 2FA session (1 year) with device fingerprint so Admin.tsx can skip 2FA on same device
     if (userId) {
