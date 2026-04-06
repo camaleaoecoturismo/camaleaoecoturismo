@@ -527,8 +527,13 @@ export function AIChatWidget() {
     }
   };
 
-  // Hide chat on admin pages — AFTER all hooks
-  if (location.pathname.startsWith('/admin')) return null;
+  // Hide chat on non-public pages — AFTER all hooks
+  const HIDDEN_PREFIXES = [
+    '/admin', '/auth', '/cliente', '/minha-conta',
+    '/reserva', '/pagamento', '/ticket', '/checkin',
+    '/embarques', '/export-tours',
+  ];
+  if (HIDDEN_PREFIXES.some(p => location.pathname === p || location.pathname.startsWith(p + '/'))) return null;
 
   const showQuickActions = !quickActionsUsed && messages.length === 0;
 

@@ -386,20 +386,21 @@ export default function PagamentoSucesso() {
             </div>
 
           ) : (
-            <div className="bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl overflow-hidden">
+            <div className="bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl overflow-visible">
 
               {/* Header */}
-              <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 px-6 pt-7 pb-6 text-white text-center">
-                <div className="w-20 h-20 mx-auto mb-3">
-                  <img src={joinhaImage} alt="" className="w-full h-full object-contain drop-shadow-lg" />
-                </div>
+              <div className="relative bg-gradient-to-br from-emerald-500 to-emerald-700 px-6 pt-7 pb-16 text-white text-center rounded-t-2xl">
                 <h1 className="text-2xl font-bold">Reserva Confirmada!</h1>
                 {reserva.client_name && (
                   <p className="text-emerald-100 text-sm mt-1">Olá, {reserva.client_name.split(' ')[0]}! Boa aventura.</p>
                 )}
+                {/* Joinha overlapping the header bottom */}
+                <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 w-28 h-28 z-10">
+                  <img src={joinhaImage} alt="" className="w-full h-full object-contain drop-shadow-xl" />
+                </div>
               </div>
 
-              <div className="px-5 py-5 space-y-4">
+              <div className="px-5 pt-16 pb-5 space-y-4">
 
                 {/* Tour info */}
                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
