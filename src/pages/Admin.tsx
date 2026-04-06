@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
+import { useStaffPermissions } from '@/hooks/useStaffPermissions';
+import { logAction } from '@/hooks/useActivityLogger';
+import AdminUsuariosTab from '@/components/admin/AdminUsuariosTab';
 import { ClientesCadastro } from "@/components/ClientesCadastro";
 import TourManagementTab from "@/components/TourManagementTab";
 import { FuncionalidadesTab } from "@/components/FuncionalidadesTab";
@@ -50,6 +53,7 @@ const Admin = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const staffPerms = useStaffPermissions();
 
   useEffect(() => {
     checkAuth();
@@ -106,8 +110,14 @@ const Admin = () => {
     }
 
     try {
-      const { data: userRole, error } = await supabase.rpc('get_current_user_role');
-      if (error || userRole !== 'admin') {
+      const { data: roleRow } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .in('role', ['admin', 'staff'])
+        .maybeSingle();
+
+      if (!roleRow) {
         toast({
           title: "Acesso negado",
           description: "Você não tem permissão para acessar esta área.",
@@ -118,7 +128,29 @@ const Admin = () => {
         return;
       }
 
-      // If 2FA is enabled, verify that the admin completed 2FA in this session
+      // Staff: check if active
+      if (roleRow.role === 'staff') {
+        const { data: profile } = await supabase
+          .from('staff_profiles')
+          .select('is_active')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        if (profile && !profile.is_active) {
+          await supabase.auth.signOut();
+          toast({
+            title: "Acesso desativado",
+            description: "Sua conta foi desativada. Entre em contato com o administrador.",
+            variant: "destructive"
+          });
+          setLoading(false);
+          navigate('/auth');
+          return;
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Admin: check 2FA
       const { data: twoFASetting } = await supabase
         .from('site_settings')
         .select('setting_value')
@@ -145,6 +177,8 @@ const Admin = () => {
           return;
         }
       }
+
+      setLoading(false);
     } catch (error) {
       console.error('Error checking user role:', error);
       toast({
@@ -254,7 +288,15 @@ const Admin = () => {
     }
   };
 
+  // When staff permissions load, redirect to their first allowed tab
+  useEffect(() => {
+    if (!staffPerms.loading && staffPerms.isStaff) {
+      setActiveTab(staffPerms.firstAllowedTab);
+    }
+  }, [staffPerms.loading, staffPerms.isStaff, staffPerms.firstAllowedTab]);
+
   const handleSignOut = async () => {
+    await logAction('logout');
     await supabase.auth.signOut();
     navigate('/auth');
   };
@@ -340,6 +382,8 @@ const Admin = () => {
         return <ChatConversasTab />;
       case 'treinamento':
         return <AITrainingTab />;
+      case 'usuarios':
+        return staffPerms.isAdmin ? <AdminUsuariosTab /> : null;
       default:
         return <TourManagementTab tours={allToursForManagement} onRefresh={fetchTours} viewMode="dashboard" />;
     }
@@ -411,6 +455,7 @@ const Admin = () => {
       'exportar': 'Exportar Passeios',
       'conversas': 'Conversas IA',
       'treinamento': 'Treinamento da Camila',
+      'usuarios': 'Usuários',
     };
     return titles[activeTab] || 'Painel Administrativo';
   };
@@ -432,6 +477,8 @@ const Admin = () => {
         onSignOut={handleSignOut}
         totalReservas={totalReservas}
         onCollapsedChange={setSidebarCollapsed}
+        allowedTabs={staffPerms.allowedTabs ?? undefined}
+        isAdmin={staffPerms.isAdmin}
       />
 
       {/* Main Content */}

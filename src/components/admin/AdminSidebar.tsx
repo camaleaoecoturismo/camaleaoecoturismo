@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Briefcase,
@@ -52,6 +52,7 @@ import {
   Megaphone,
   PanelLeftClose,
   PanelLeftOpen,
+  UserCog,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import AdminSettingsModal from './AdminSettingsModal';
@@ -81,6 +82,10 @@ interface AdminSidebarProps {
   onSignOut: () => void;
   totalReservas?: number;
   onCollapsedChange?: (collapsed: boolean) => void;
+  /** Set of sidebar tab IDs the current user can access. undefined = no restriction (admin). */
+  allowedTabs?: Set<string>;
+  /** Whether the current user is an admin (unrestricted). */
+  isAdmin?: boolean;
 }
 
 const navGroups: NavGroup[] = [
@@ -227,6 +232,7 @@ const navGroups: NavGroup[] = [
       { id: 'loja', label: 'Loja', icon: <ShoppingBag className="h-5 w-5" /> },
       { id: 'mapa-processos', label: 'Processos', icon: <GitBranch className="h-5 w-5" /> },
       { id: 'exportar', label: 'Exportar', icon: <FileSpreadsheet className="h-5 w-5" /> },
+      { id: 'usuarios', label: 'Usuários', icon: <UserCog className="h-5 w-5" /> },
     ],
   },
 ];
@@ -291,6 +297,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onSignOut,
   totalReservas,
   onCollapsedChange,
+  allowedTabs,
+  isAdmin = true,
 }) => {
   const [collapsed, setCollapsed] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -303,6 +311,26 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const logoInputRef = useRef<HTMLInputElement>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const itemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+
+  // Filter nav items based on permissions (allowedTabs = undefined means unrestricted admin)
+  const visibleGroups = useMemo(() => {
+    if (!allowedTabs) return navGroups; // admin sees everything
+    return navGroups
+      .map(group => ({
+        ...group,
+        items: group.items
+          .filter(item => {
+            if (item.id === 'usuarios') return isAdmin;
+            const ids = [item.id, ...(item.subItems?.map(s => s.id) ?? [])];
+            return ids.some(id => allowedTabs.has(id));
+          })
+          .map(item => ({
+            ...item,
+            subItems: item.subItems?.filter(s => allowedTabs.has(s.id)),
+          })),
+      }))
+      .filter(group => group.items.length > 0);
+  }, [allowedTabs, isAdmin]);
 
   useEffect(() => {
     onCollapsedChange?.(true);
@@ -401,7 +429,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   useEffect(() => () => { if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current); }, []);
 
   const hoveredNavItem = hoveredItem
-    ? navGroups.flatMap((g) => g.items).find((i) => i.id === hoveredItem) ?? null
+    ? visibleGroups.flatMap((g) => g.items).find((i) => i.id === hoveredItem) ?? null
     : null;
 
   // ─── Collapsed sidebar content ───────────────────────────────────────────
@@ -433,7 +461,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
       {/* Nav */}
       <nav className="overflow-y-auto py-3 px-1.5" style={{ scrollbarWidth: 'thin', scrollbarColor: 'hsl(var(--border)) transparent' }}>
-        {navGroups.map((group, gi) => (
+        {visibleGroups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-1' : ''}>
             {group.label && <div className="mx-1 my-2 border-t border-border/40" />}
             <ul className="space-y-0.5">
@@ -539,7 +567,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
       {/* Nav */}
       <nav className="overflow-y-auto py-3 px-2" style={{ scrollbarWidth: 'thin', scrollbarColor: 'hsl(var(--border)) transparent' }}>
-        {navGroups.map((group, gi) => (
+        {visibleGroups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-1' : ''}>
             {group.label && (
               <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest px-2 pt-3 pb-1">
@@ -699,7 +727,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
               <X className="h-4 w-4" />
             </button>
             <div className="flex flex-col h-full pt-14 overflow-y-auto">
-              {navGroups.map((group, gi) => (
+              {visibleGroups.map((group, gi) => (
                 <div key={gi} className="px-3">
                   {group.label && (
                     <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest px-2 pt-4 pb-1">{group.label}</p>

@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Shield, Mail, Loader2 } from 'lucide-react';
 import { useNoIndex } from '@/hooks/useNoIndex';
+import { logAction } from '@/hooks/useActivityLogger';
 const Auth = () => {
   useNoIndex();
   const [email, setEmail] = useState('');
@@ -31,9 +32,9 @@ const Auth = () => {
       } = await supabase.auth.getSession();
       if (session) {
         const {
-          data: adminRole
-        } = await supabase.from('user_roles').select('role').eq('user_id', session.user.id).eq('role', 'admin').maybeSingle();
-        if (adminRole) {
+          data: roleRow
+        } = await supabase.from('user_roles').select('role').eq('user_id', session.user.id).in('role', ['admin', 'staff']).maybeSingle();
+        if (roleRow) {
           navigate('/admin');
         } else {
           await supabase.auth.signOut();
@@ -112,11 +113,11 @@ const Auth = () => {
         return;
       }
 
-      // Check if user is admin
+      // Check if user has admin or staff role
       const {
-        data: adminRole
-      } = await supabase.from('user_roles').select('role').eq('user_id', data.user.id).eq('role', 'admin').maybeSingle();
-      if (!adminRole) {
+        data: roleRow
+      } = await supabase.from('user_roles').select('role').eq('user_id', data.user.id).in('role', ['admin', 'staff']).maybeSingle();
+      if (!roleRow) {
         await supabase.auth.signOut();
         toast({
           title: "Acesso negado",
@@ -127,13 +128,40 @@ const Auth = () => {
         return;
       }
 
-      // Check if 2FA is enabled
+      // Check if staff user is active
+      if (roleRow.role === 'staff') {
+        const { data: staffProfile } = await supabase
+          .from('staff_profiles')
+          .select('is_active')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+        if (staffProfile && !staffProfile.is_active) {
+          await supabase.auth.signOut();
+          toast({
+            title: "Acesso desativado",
+            description: "Sua conta foi desativada. Entre em contato com o administrador.",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
+        // Staff skips 2FA, go directly to admin
+        await logAction('login');
+        toast({
+          title: "Login realizado!",
+          description: "Redirecionando para o painel administrativo..."
+        });
+        navigate('/admin');
+        return;
+      }
+
+      // Admin: Check if 2FA is enabled
       const { data: settingData } = await supabase
         .from('site_settings')
         .select('setting_value')
         .eq('setting_key', 'admin_2fa_enabled')
         .maybeSingle();
-      
+
       const is2FAEnabled = settingData?.setting_value === 'true';
 
       if (is2FAEnabled) {
@@ -156,6 +184,7 @@ const Auth = () => {
         }
       } else {
         // 2FA disabled, go directly to admin
+        await logAction('login');
         toast({
           title: "Login realizado!",
           description: "Redirecionando para o painel administrativo..."
