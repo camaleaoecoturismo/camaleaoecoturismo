@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import {
   UserPlus, PowerOff, Power, Eye, EyeOff, RefreshCw,
-  User, Activity, Shield, Clock, Calendar, LogIn, Camera, Loader2,
+  User, Activity, Shield, Clock, Calendar, LogIn, Camera, Loader2, Edit2,
 } from 'lucide-react';
 import { ALL_SECTIONS, SECTION_TO_TABS } from '@/hooks/useStaffPermissions';
 import {
