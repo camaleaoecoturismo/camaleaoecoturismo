@@ -696,7 +696,7 @@ export function AIChatWidget() {
               </button>
             </div>
             <div className="text-[10px] text-gray-400 text-center mt-1.5 flex flex-col items-center gap-0.5">
-              <span>Assistente da Camaleão · datas, destinos e dúvidas em geral.</span>
+              <span>Modo beta · informações podem estar imprecisas</span>
               <a
                 href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Olá! Gostaria de falar com a equipe da Camaleão Ecoturismo.")}`}
                 target="_blank"
@@ -705,9 +705,6 @@ export function AIChatWidget() {
               >
                 Falar com atendente humano
               </a>
-              <span className="mt-0.5 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-600 rounded-full text-[9px] font-medium">
-                Modo beta · informações podem estar imprecisas
-              </span>
             </div>
           </div>
         </div>
