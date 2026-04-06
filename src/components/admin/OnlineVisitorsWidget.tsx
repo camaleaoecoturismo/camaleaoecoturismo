@@ -52,7 +52,7 @@ interface PageView {
 
 function isOnline(hb: string | null) {
   if (!hb) return false;
-  return Date.now() - new Date(hb).getTime() < 2 * 60 * 1000;
+  return Date.now() - new Date(hb).getTime() < 5 * 60 * 1000;
 }
 
 function timeAgo(iso: string | null) {
@@ -311,8 +311,8 @@ export function OnlineVisitorsWidget({ onOpenChat }: { onOpenChat?: (sessionId: 
   const [selected, setSelected] = useState<OnlineSession | null>(null);
 
   const fetchOnline = useCallback(async () => {
-    // Analytics visitors (browsing now — heartbeat < 2min, exclude admin/auth pages)
-    const cutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    // Analytics visitors (browsing now — heartbeat < 5min, exclude admin/auth pages)
+    const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const { data } = await (supabase.from('analytics_sessions' as any) as any)
       .select('*')
       .gte('last_heartbeat', cutoff)
@@ -380,8 +380,13 @@ export function OnlineVisitorsWidget({ onOpenChat }: { onOpenChat?: (sessionId: 
         {totalActivity > 0 && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />}
         <Users className="w-3.5 h-3.5" />
         <span>
-          {count > 0 ? `${count} online` : 'Ninguém online'}
-          {chatSessions.length > 0 && ` · ${chatSessions.length} conv`}
+          {totalActivity === 0
+            ? 'Ninguém online'
+            : count > 0 && chatSessions.length > 0
+            ? `${count} online · ${chatSessions.length} conv`
+            : count > 0
+            ? `${count} online`
+            : `${chatSessions.length} conversando`}
         </span>
       </button>
 
