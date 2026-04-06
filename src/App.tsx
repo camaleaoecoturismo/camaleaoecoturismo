@@ -2,6 +2,7 @@
 import { lazy, Suspense } from "react";
 import { ChunkErrorBoundary } from "@/components/ChunkErrorBoundary";
 import { AIChatWidget } from "@/components/AIChatWidget";
+import { LiveChatPopup } from "@/components/LiveChatPopup";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -94,6 +95,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AIChatWidget />
+            <LiveChatPopup />
           </MaintenanceGuard>
           </Suspense>
           </ChunkErrorBoundary>

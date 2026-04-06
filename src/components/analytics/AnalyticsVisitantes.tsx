@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import {
   Monitor, Smartphone, Tablet, Globe, MapPin, Clock, Eye,
   RefreshCw, ChevronDown, ChevronUp, User, Search, ExternalLink,
   Wifi, WifiOff, MousePointer, ArrowUpRight, Calendar,
+  MessageCircle, Send, X, Circle,
 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -53,6 +54,218 @@ interface PageView {
 interface VisitorHistory {
   sessions: Session[];
   pageviews: PageView[];
+}
+
+interface LiveMessage {
+  id: string;
+  sender_type: 'admin' | 'visitor';
+  content: string;
+  sent_at: string;
+}
+
+interface LiveChat {
+  id: string;
+  visitor_anon_id: string;
+  status: 'active' | 'closed';
+}
+
+// ─── Admin Chat Panel ─────────────────────────────────────────────────────────
+
+function AdminChatPanel({
+  session,
+  onClose,
+}: {
+  session: Session;
+  onClose: () => void;
+}) {
+  const [chatId, setChatId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<LiveMessage[]>([]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const identified = session.identified_name || session.identified_email;
+  const visitorLabel = identified || `Visitante ${session.user_id_anon.slice(-6)}`;
+
+  // Check for existing active chat
+  useEffect(() => {
+    (supabase.from('visitor_live_chats' as any) as any)
+      .select('id, status')
+      .eq('visitor_anon_id', session.user_id_anon)
+      .eq('status', 'active')
+      .limit(1)
+      .then(({ data }: any) => {
+        if (data?.[0]) {
+          setChatId(data[0].id);
+        }
+      });
+  }, [session.user_id_anon]);
+
+  // Load messages when chatId is known
+  useEffect(() => {
+    if (!chatId) return;
+    (supabase.from('visitor_live_messages' as any) as any)
+      .select('*')
+      .eq('chat_id', chatId)
+      .order('sent_at', { ascending: true })
+      .then(({ data }: any) => { if (data) setMessages(data as LiveMessage[]); });
+
+    const channel = supabase
+      .channel(`admin-chat-${chatId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'visitor_live_messages',
+        filter: `chat_id=eq.${chatId}`,
+      }, (payload) => {
+        setMessages(prev => [...prev, payload.new as LiveMessage]);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [chatId]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const startChat = async () => {
+    setStarting(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const adminName = user?.email?.split('@')[0] || 'Admin';
+
+    const { data, error } = await (supabase.from('visitor_live_chats' as any) as any).insert({
+      visitor_anon_id: session.user_id_anon,
+      admin_user_id: user?.id,
+      admin_name: adminName,
+      visitor_name: identified || null,
+      visitor_current_page: session.current_page,
+      status: 'active',
+    }).select('id').single();
+
+    if (!error && data) {
+      setChatId(data.id);
+      // Notify visitor via Realtime broadcast
+      await supabase
+        .channel(`visitor-notify-${session.user_id_anon}`)
+        .send({
+          type: 'broadcast',
+          event: 'chat_started',
+          payload: { chat_id: data.id, admin_name: adminName },
+        });
+    }
+    setStarting(false);
+  };
+
+  const closeChat = async () => {
+    if (!chatId) { onClose(); return; }
+    await (supabase.from('visitor_live_chats' as any) as any)
+      .update({ status: 'closed', closed_at: new Date().toISOString() })
+      .eq('id', chatId);
+    await supabase
+      .channel(`visitor-notify-${session.user_id_anon}`)
+      .send({ type: 'broadcast', event: 'chat_closed', payload: {} });
+    onClose();
+  };
+
+  const sendMessage = async () => {
+    if (!input.trim() || !chatId || sending) return;
+    setSending(true);
+    const content = input.trim();
+    setInput('');
+    await (supabase.from('visitor_live_messages' as any) as any).insert({
+      chat_id: chatId,
+      visitor_anon_id: session.user_id_anon,
+      sender_type: 'admin',
+      content,
+    });
+    setSending(false);
+  };
+
+  return (
+    <div className="fixed right-6 bottom-6 z-50 w-80 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-primary/20 bg-background"
+      style={{ maxHeight: '460px' }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <User className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold leading-none truncate">{visitorLabel}</p>
+            {session.current_page && (
+              <p className="text-xs text-white/70 mt-0.5 truncate">{session.current_page}</p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {chatId && (
+            <button onClick={closeChat} title="Encerrar chat"
+              className="text-white/70 hover:text-white text-xs px-2 py-1 rounded border border-white/20 hover:border-white/40 transition-colors">
+              Encerrar
+            </button>
+          )}
+          <button onClick={onClose} className="text-white/70 hover:text-white transition-colors ml-1">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Body */}
+      {!chatId ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6 bg-muted/20">
+          <div className="text-center">
+            <MessageCircle className="w-10 h-10 text-primary/40 mx-auto mb-2" />
+            <p className="text-sm font-medium">{visitorLabel}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {isOnline(session.last_heartbeat) ? '🟢 Online agora' : 'Não está online no momento'}
+            </p>
+          </div>
+          <Button onClick={startChat} disabled={starting} size="sm" className="w-full">
+            {starting ? 'Iniciando...' : 'Iniciar conversa'}
+          </Button>
+        </div>
+      ) : (
+        <>
+          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 bg-muted/10" style={{ minHeight: 200 }}>
+            {messages.length === 0 && (
+              <p className="text-center text-xs text-muted-foreground py-4">
+                Chat aberto. Aguardando o visitante...
+              </p>
+            )}
+            {messages.map(msg => (
+              <div key={msg.id} className={`flex ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-snug ${
+                  msg.sender_type === 'admin'
+                    ? 'bg-primary text-primary-foreground rounded-br-sm'
+                    : 'bg-background border border-border rounded-bl-sm'
+                }`}>
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+            <div ref={bottomRef} />
+          </div>
+          <div className="px-3 py-2 border-t flex items-center gap-2 bg-background">
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+              placeholder="Escrever mensagem..."
+              className="flex-1 text-sm outline-none bg-transparent placeholder:text-muted-foreground"
+            />
+            <button
+              onClick={sendMessage}
+              disabled={!input.trim() || sending}
+              className="w-8 h-8 rounded-full bg-primary flex items-center justify-center disabled:opacity-40 hover:opacity-90 transition-opacity"
+            >
+              <Send className="w-3.5 h-3.5 text-primary-foreground" />
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -118,10 +331,12 @@ function VisitorCard({
   session,
   onClick,
   selected,
+  onChat,
 }: {
   session: Session;
   onClick: () => void;
   selected: boolean;
+  onChat: (s: Session) => void;
 }) {
   const online = isOnline(session.last_heartbeat);
   const identified = session.identified_name || session.identified_email;
@@ -194,7 +409,18 @@ function VisitorCard({
           </div>
         </div>
 
-        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${selected ? 'rotate-180' : ''}`} />
+        <div className="flex items-center gap-1 shrink-0">
+          {online && (
+            <button
+              onClick={e => { e.stopPropagation(); onChat(session); }}
+              title="Iniciar chat"
+              className="p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${selected ? 'rotate-180' : ''}`} />
+        </div>
       </div>
     </button>
   );
@@ -349,6 +575,7 @@ export default function AnalyticsVisitantes() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'online' | 'identified' | 'converted'>('all');
   const [onlineCount, setOnlineCount] = useState(0);
+  const [chatSession, setChatSession] = useState<Session | null>(null);
 
   const fetchSessions = useCallback(async () => {
     setLoading(true);
@@ -498,6 +725,7 @@ export default function AnalyticsVisitantes() {
                 onClick={() => setSelectedAnon(
                   selectedAnon === session.user_id_anon ? null : session.user_id_anon
                 )}
+                onChat={s => setChatSession(s)}
               />
               {selectedAnon === session.user_id_anon && (
                 <div className="mx-2 px-4 pb-4 bg-card border border-t-0 border-border rounded-b-xl -mt-1">
@@ -507,6 +735,14 @@ export default function AnalyticsVisitantes() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Admin chat panel */}
+      {chatSession && (
+        <AdminChatPanel
+          session={chatSession}
+          onClose={() => setChatSession(null)}
+        />
       )}
     </div>
   );
