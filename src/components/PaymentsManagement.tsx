@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { logAction } from '@/hooks/useActivityLogger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -436,7 +437,14 @@ export default function PaymentsManagement() {
         refund_amount: amount
       });
 
-      toast({ 
+      logAction('update', 'financeiro-pagamentos', {
+        acao: refundType === 'full' ? 'reembolso_total' : 'reembolso_parcial',
+        reserva_numero: selectedPayment.reserva_numero,
+        cliente: selectedPayment.cliente_nome,
+        valor: amount,
+        motivo: refundReason,
+      });
+      toast({
         title: 'Reembolso registrado!',
         description: 'Lembre-se de realizar o reembolso no painel InfinitePay.'
       });
@@ -535,6 +543,12 @@ export default function PaymentsManagement() {
         }).catch(console.error);
       }
 
+      logAction('update', 'financeiro-pagamentos', {
+        reserva_numero: selectedPayment.reserva_numero,
+        cliente: selectedPayment.cliente_nome,
+        status_anterior: selectedPayment.payment_status,
+        status_novo: newStatus,
+      });
       toast({ title: 'Status atualizado!' });
       fetchPayments();
       setSelectedPayment({ ...selectedPayment, payment_status: newStatus });

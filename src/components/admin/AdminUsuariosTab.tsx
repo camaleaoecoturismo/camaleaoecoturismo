@@ -633,33 +633,58 @@ function ActivityModal({
             {filtered.length === 0 ? (
               <div className="text-center text-muted-foreground py-4 text-sm">Nenhum registro encontrado.</div>
             ) : (
-              <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
-                {filtered.map(log => (
-                  <div key={log.id} className="flex items-start gap-3 py-2 px-3 rounded-lg hover:bg-muted/40 text-sm">
-                    <div className="shrink-0 mt-0.5">
-                      {log.action_type === 'login' ? <LogIn className="h-4 w-4 text-green-500" /> :
-                       log.action_type === 'logout' ? <LogIn className="h-4 w-4 text-red-400 rotate-180" /> :
-                       log.action_type === 'page_view' ? <Eye className="h-4 w-4 text-blue-400" /> :
-                       <Edit2 className="h-4 w-4 text-orange-400" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{ACTION_LABELS[log.action_type] || log.action_type}</span>
-                        {log.section && (
-                          <Badge variant="secondary" className="text-xs py-0">
-                            {ALL_SECTIONS.find(s => s.key === log.section)?.label || log.section}
-                          </Badge>
-                        )}
-                        {log.duration_sec && log.duration_sec > 0 && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Clock className="h-3 w-3" />{formatDuration(log.duration_sec)}
-                          </span>
-                        )}
+              <div className="space-y-1 max-h-96 overflow-y-auto pr-1">
+                {filtered.map(log => {
+                  const details = log.details as Record<string, unknown> | null;
+                  const detailLine = details
+                    ? Object.entries(details)
+                        .filter(([k]) => k !== 'duration_sec')
+                        .map(([k, v]) => {
+                          const labels: Record<string, string> = {
+                            reserva_numero: 'Reserva', cliente: 'Cliente',
+                            status_anterior: 'De', status_novo: 'Para',
+                            acao: 'Ação', valor: 'Valor', motivo: 'Motivo',
+                            tour: 'Passeio', participante: 'Participante',
+                          };
+                          return `${labels[k] || k}: ${v}`;
+                        })
+                        .join(' · ')
+                    : null;
+
+                  return (
+                    <div key={log.id} className="flex items-start gap-3 py-2 px-3 rounded-lg hover:bg-muted/40 text-sm">
+                      <div className="shrink-0 mt-0.5">
+                        {log.action_type === 'login'     ? <LogIn className="h-4 w-4 text-green-500" /> :
+                         log.action_type === 'logout'    ? <LogIn className="h-4 w-4 text-red-400 rotate-180" /> :
+                         log.action_type === 'page_view' ? <Eye className="h-4 w-4 text-blue-400" /> :
+                         log.action_type === 'create'    ? <Activity className="h-4 w-4 text-emerald-500" /> :
+                         log.action_type === 'delete'    ? <Activity className="h-4 w-4 text-red-500" /> :
+                                                           <Edit2 className="h-4 w-4 text-orange-400" />}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{formatDate(log.created_at)}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">{ACTION_LABELS[log.action_type] || log.action_type}</span>
+                          {log.section && (
+                            <Badge variant="secondary" className="text-xs py-0">
+                              {ALL_SECTIONS.find(s => s.key === log.section)?.label || log.section}
+                            </Badge>
+                          )}
+                          {log.duration_sec && log.duration_sec > 0 && (
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Clock className="h-3 w-3" />{formatDuration(log.duration_sec)}
+                            </span>
+                          )}
+                        </div>
+                        {detailLine && (
+                          <div className="text-xs text-muted-foreground mt-0.5 truncate" title={detailLine}>
+                            {detailLine}
+                          </div>
+                        )}
+                        <div className="text-xs text-muted-foreground/60 mt-0.5">{formatDate(log.created_at)}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

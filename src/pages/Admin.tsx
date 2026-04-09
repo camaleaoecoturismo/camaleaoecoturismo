@@ -332,6 +332,18 @@ const Admin = () => {
     }
   }, [staffPerms.loading, staffPerms.isStaff, staffPerms.firstAllowedTab]);
 
+  // Track time spent on each tab
+  useEffect(() => {
+    const enterTime = Date.now();
+    logAction('page_view', activeTab);
+    return () => {
+      const duration_sec = Math.round((Date.now() - enterTime) / 1000);
+      if (duration_sec >= 2) {
+        logAction('page_view', activeTab, { duration_sec });
+      }
+    };
+  }, [activeTab]);
+
   const handleSignOut = async () => {
     await logAction('logout');
     await supabase.auth.signOut();
