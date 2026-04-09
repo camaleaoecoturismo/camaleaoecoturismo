@@ -930,14 +930,26 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
       let bpMap: Record<string, { nome: string; endereco?: string }> = {};
       
       if (bpIds.length > 0) {
+        // Query legacy table first
         const { data: bpData } = await supabase
           .from('tour_boarding_points')
           .select('id, nome, endereco')
           .in('id', bpIds);
-        
         (bpData || []).forEach((bp: any) => {
           bpMap[bp.id] = { nome: bp.nome, endereco: bp.endereco };
         });
+
+        // Query global table for IDs not found above
+        const missing = bpIds.filter(id => !bpMap[id]);
+        if (missing.length > 0) {
+          const { data: peData } = await supabase
+            .from('pontos_embarque')
+            .select('id, nome, endereco')
+            .in('id', missing);
+          (peData || []).forEach((bp: any) => {
+            bpMap[bp.id] = { nome: bp.nome, endereco: bp.endereco };
+          });
+        }
       }
 
       // Create tickets in batch

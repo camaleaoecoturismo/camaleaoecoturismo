@@ -161,25 +161,26 @@ async function getOrCreateSession(): Promise<SessionData | null> {
       city: geoData.city,
     };
     
-    const { data, error } = await supabase
+    // Generate UUID client-side to avoid needing SELECT permission after INSERT
+    const newSessionId = crypto.randomUUID();
+
+    const { error } = await supabase
       .from('analytics_sessions')
-      .insert(sessionData)
-      .select('id')
-      .single();
-    
+      .insert({ id: newSessionId, ...sessionData });
+
     if (error) {
       console.error('Error creating analytics session:', error);
       return null;
     }
-    
+
     // Mark as returning visitor for future visits
     localStorage.setItem('analytics_returning_visitor', 'true');
-    
+
     // Store session
-    sessionStorage.setItem(SESSION_KEY, data.id);
+    sessionStorage.setItem(SESSION_KEY, newSessionId);
     sessionStorage.setItem(SESSION_EXPIRY_KEY, (Date.now() + SESSION_DURATION).toString());
-    
-    return { id: data.id, ...sessionData };
+
+    return { id: newSessionId, ...sessionData };
   } catch (error) {
     console.error('Analytics session error:', error);
     return null;
