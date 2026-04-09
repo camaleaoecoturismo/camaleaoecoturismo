@@ -2,21 +2,31 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  ClipboardList, Users, Clock, TrendingUp, X, DollarSign,
+  ClipboardList, Users, Clock, X, MessageCircle,
+  Globe, Star, TrendingUp, MousePointerClick,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+interface TopPasseio {
+  name: string;
+  tentativas: number;
+}
 
 interface Summary {
   new_reservas: number;
   new_clientes: number;
   pending: number;
-  revenue: number;
+  chat_msgs: number;
+  site_acessos: number;
+  interessados: number;
+  cta_clicks: number;
+  top_passeios: TopPasseio[];
 }
 
 interface ActivitySummaryModalProps {
   open: boolean;
   onClose: () => void;
-  sinceDate: string | null; // ISO timestamp of last login
+  sinceDate: string | null;
   isAdmin: boolean;
   userName?: string | null;
 }
@@ -31,10 +41,6 @@ function formatSince(iso: string) {
   if (diffH < 24) return `há ${diffH} hora${diffH > 1 ? 's' : ''}`;
   if (diffD === 1) return 'ontem';
   return `há ${diffD} dias`;
-}
-
-function formatCurrency(val: number) {
-  return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 interface StatCardProps {
@@ -94,14 +100,15 @@ export default function ActivitySummaryModal({
   };
 
   const hasActivity = summary && (
-    summary.new_reservas > 0 || summary.new_clientes > 0 || summary.pending > 0
+    summary.new_reservas > 0 || summary.new_clientes > 0 ||
+    summary.pending > 0 || summary.chat_msgs > 0 ||
+    summary.site_acessos > 0 || summary.interessados > 0
   );
 
   return (
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
           <motion.div
             key="backdrop"
             className="fixed inset-0 z-[9998] bg-black/70 backdrop-blur-sm"
@@ -111,7 +118,6 @@ export default function ActivitySummaryModal({
             onClick={onClose}
           />
 
-          {/* Modal */}
           <motion.div
             key="modal"
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
@@ -120,9 +126,9 @@ export default function ActivitySummaryModal({
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
           >
-            <div className="bg-[#0f1e18] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="bg-[#0f1e18] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
               {/* Header */}
-              <div className="relative px-6 pt-6 pb-4">
+              <div className="relative px-6 pt-6 pb-4 shrink-0">
                 <button
                   onClick={onClose}
                   className="absolute top-4 right-4 p-1.5 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/10 transition-colors"
@@ -150,11 +156,10 @@ export default function ActivitySummaryModal({
                 </motion.div>
               </div>
 
-              {/* Divider */}
-              <div className="mx-6 border-t border-white/8" />
+              <div className="mx-6 border-t border-white/8 shrink-0" />
 
               {/* Content */}
-              <div className="px-6 py-5">
+              <div className="px-6 py-5 overflow-y-auto flex-1">
                 {loading ? (
                   <div className="flex items-center justify-center py-8 text-white/40 gap-2">
                     <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -179,49 +184,118 @@ export default function ActivitySummaryModal({
                   </motion.div>
                 ) : (
                   <div className="space-y-3">
-                    {summary.new_reservas > 0 && (
+                    {/* Acessos ao site */}
+                    {(summary?.site_acessos ?? 0) > 0 && (
                       <StatCard
-                        icon={<ClipboardList className="h-5 w-5 text-white" />}
-                        label="Novas reservas"
-                        value={summary.new_reservas}
-                        color="bg-emerald-600/80"
-                        delay={0.15}
+                        icon={<Globe className="h-5 w-5 text-white" />}
+                        label="Visitas ao site"
+                        value={summary!.site_acessos}
+                        sub="Sessões únicas"
+                        color="bg-sky-600/80"
+                        delay={0.10}
                       />
                     )}
-                    {summary.new_clientes > 0 && (
+
+                    {/* Mensagens no chat IA */}
+                    {(summary?.chat_msgs ?? 0) > 0 && (
                       <StatCard
-                        icon={<Users className="h-5 w-5 text-white" />}
-                        label="Novos clientes"
-                        value={summary.new_clientes}
-                        color="bg-blue-600/80"
+                        icon={<MessageCircle className="h-5 w-5 text-white" />}
+                        label="Mensagens no chat IA"
+                        value={summary!.chat_msgs}
+                        sub="Enviadas por visitantes"
+                        color="bg-violet-600/80"
+                        delay={0.16}
+                      />
+                    )}
+
+                    {/* Tentativas de reserva (CTA clicks) */}
+                    {(summary?.cta_clicks ?? 0) > 0 && (
+                      <StatCard
+                        icon={<MousePointerClick className="h-5 w-5 text-white" />}
+                        label="Tentativas de reserva"
+                        value={summary!.cta_clicks}
+                        sub="Cliques em "Reservar vaga""
+                        color="bg-amber-600/80"
                         delay={0.22}
                       />
                     )}
-                    {summary.pending > 0 && (
+
+                    {/* Novas reservas */}
+                    {(summary?.new_reservas ?? 0) > 0 && (
+                      <StatCard
+                        icon={<ClipboardList className="h-5 w-5 text-white" />}
+                        label="Novas reservas"
+                        value={summary!.new_reservas}
+                        color="bg-emerald-600/80"
+                        delay={0.28}
+                      />
+                    )}
+
+                    {/* Reservas pendentes */}
+                    {(summary?.pending ?? 0) > 0 && (
                       <StatCard
                         icon={<Clock className="h-5 w-5 text-white" />}
                         label="Reservas pendentes"
-                        value={summary.pending}
+                        value={summary!.pending}
                         sub="Aguardando confirmação"
-                        color="bg-amber-600/80"
-                        delay={0.29}
+                        color="bg-orange-600/80"
+                        delay={0.34}
                       />
                     )}
-                    {summary.revenue > 0 && (
+
+                    {/* Novos clientes */}
+                    {(summary?.new_clientes ?? 0) > 0 && (
                       <StatCard
-                        icon={<DollarSign className="h-5 w-5 text-white" />}
-                        label="Receita confirmada"
-                        value={formatCurrency(summary.revenue)}
-                        color="bg-teal-600/80"
-                        delay={0.36}
+                        icon={<Users className="h-5 w-5 text-white" />}
+                        label="Novos clientes"
+                        value={summary!.new_clientes}
+                        color="bg-blue-600/80"
+                        delay={0.40}
                       />
+                    )}
+
+                    {/* Interessados */}
+                    {(summary?.interessados ?? 0) > 0 && (
+                      <StatCard
+                        icon={<TrendingUp className="h-5 w-5 text-white" />}
+                        label="Novos interessados"
+                        value={summary!.interessados}
+                        sub="Lista de espera / interesse"
+                        color="bg-teal-600/80"
+                        delay={0.46}
+                      />
+                    )}
+
+                    {/* Top passeios */}
+                    {summary?.top_passeios && summary.top_passeios.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.52, duration: 0.35 }}
+                        className="bg-white/5 rounded-xl p-4 border border-white/8"
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-8 h-8 rounded-lg bg-yellow-600/80 flex items-center justify-center shrink-0">
+                            <Star className="h-4 w-4 text-white" />
+                          </div>
+                          <span className="text-sm text-white/70 font-medium">Passeios mais vistos</span>
+                        </div>
+                        <div className="space-y-2">
+                          {summary.top_passeios.map((p, i) => (
+                            <div key={i} className="flex items-center justify-between gap-2">
+                              <span className="text-sm text-white/80 truncate">{p.name}</span>
+                              <span className="text-xs text-white/40 shrink-0">{p.tentativas}x</span>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
                     )}
                   </div>
                 )}
               </div>
 
               {/* Footer */}
-              <div className="px-6 pb-5">
+              <div className="px-6 pb-5 shrink-0">
                 <Button
                   onClick={onClose}
                   className="w-full bg-emerald-600 hover:bg-emerald-500 text-white h-11 font-medium"
