@@ -55,6 +55,9 @@ export interface Tour {
   mp_installments_max: number;
   pix_discount_percent?: number | null;
   has_accommodation?: boolean;
+  is_cancelled?: boolean;
+  cancelled_at?: string | null;
+  cancellation_reason?: string | null;
   pricing_options: TourPricingOption[];
 }
 

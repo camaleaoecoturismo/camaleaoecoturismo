@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Search, Users, Target, Plus, Settings, CreditCard, Calendar, UserPlus, Download, RefreshCw, Trash2, Link, Check, X, Edit, MessageCircle, Clock, Copy, Lock, LockOpen, Building2, Shield, ChevronsUp, ChevronsDown } from 'lucide-react';
+import { ArrowLeft, Search, Users, Target, Plus, Settings, CreditCard, Calendar, UserPlus, Download, RefreshCw, Trash2, Link, Check, X, Edit, MessageCircle, Clock, Copy, Lock, LockOpen, Building2, Shield, ChevronsUp, ChevronsDown, XCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -24,6 +24,7 @@ import { CustomColumnsManager, CustomColumn, CustomColumnInput } from '@/compone
 import ParticipantsTable, { Reserva } from '@/components/ParticipantsTable';
 import ParticipantDetailsModal from '@/components/ParticipantDetailsModal';
 import CancelReservationModal, { CancelReservationData } from '@/components/CancelReservationModal';
+import CancelTourModal from '@/components/CancelTourModal';
 import { RoomDistributionManager } from '@/components/accommodation';
 import { TourRocaPanel } from '@/components/roca';
 import { BoardingExportTemplateModal } from '@/components/BoardingExportTemplateModal';
@@ -203,6 +204,10 @@ const TourManagement: React.FC<TourManagementProps> = ({
     participantName: string;
     valorPago: number;
   }>({ open: false, reservaId: '', participantName: '', valorPago: 0 });
+
+  // Cancel tour modal state
+  const [showCancelTourModal, setShowCancelTourModal] = useState(false);
+  const [tourIsCancelled, setTourIsCancelled] = useState(tour.is_cancelled ?? false);
 
   // Copy boarding points modal state
   const [copyBoardingModal, setCopyBoardingModal] = useState<{ open: boolean; text: string }>({ open: false, text: '' });
@@ -1729,6 +1734,28 @@ const TourManagement: React.FC<TourManagementProps> = ({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          {!tourIsCancelled && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowCancelTourModal(true)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Cancelar passeio</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {tourIsCancelled && (
+            <span className="text-xs font-semibold text-destructive bg-destructive/10 px-2 py-1 rounded">
+              Cancelado
+            </span>
+          )}
         </div>
       </div>
 
@@ -2078,7 +2105,7 @@ const TourManagement: React.FC<TourManagementProps> = ({
           )}
         </div>}
 
-      {/* Modal de Cancelamento */}
+      {/* Modal de Cancelamento de Reserva */}
       <CancelReservationModal
         open={cancelModal.open}
         onClose={() => setCancelModal({ open: false, reservaId: '', participantName: '', valorPago: 0 })}
@@ -2086,6 +2113,20 @@ const TourManagement: React.FC<TourManagementProps> = ({
         reservaId={cancelModal.reservaId}
         participantName={cancelModal.participantName}
         valorPago={cancelModal.valorPago}
+      />
+
+      {/* Modal de Cancelamento de Passeio */}
+      <CancelTourModal
+        open={showCancelTourModal}
+        onClose={() => setShowCancelTourModal(false)}
+        onConfirmed={() => {
+          setTourIsCancelled(true);
+          setVagasFechadas(true);
+          fetchReservas();
+          onTourUpdated?.();
+        }}
+        tour={tour}
+        reservas={reservas}
       />
 
       {/* Modal de Detalhes do Participante */}
