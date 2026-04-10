@@ -299,7 +299,8 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
       const { data: tpeData } = await supabase
         .from("tour_pontos_embarque")
         .select("horario, pontos_embarque(id, nome, endereco, maps_link, foto_url)")
-        .eq("tour_id", tour.id);
+        .eq("tour_id", tour.id)
+        .order("horario", { ascending: true });
 
       if (tpeData && tpeData.length > 0) {
         const mappedPontos = tpeData
@@ -311,7 +312,12 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
             horario: r.horario || null,
             maps_link: r.pontos_embarque.maps_link || null,
             foto_url: r.pontos_embarque.foto_url || null,
-          }));
+          }))
+          .sort((a: any, b: any) => {
+            if (!a.horario) return 1;
+            if (!b.horario) return -1;
+            return a.horario.localeCompare(b.horario);
+          });
         setPontosEmbarque(mappedPontos);
       } else {
         // Fallback: legacy per-tour boarding points
