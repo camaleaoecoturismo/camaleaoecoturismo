@@ -306,6 +306,19 @@ const BalancoCompetencia: React.FC<BalancoCompetenciaProps> = ({
     };
   }, [withAccumulated]);
 
+  // Totals only up to and including the current month (for current year view)
+  const currentMonthIndex = today.getMonth(); // 0-based
+  const isCurrentYear = year === today.getFullYear();
+  const totalsAteAgora = useMemo(() => {
+    const rows = withAccumulated.filter(m =>
+      m.hasData && (!isCurrentYear || m.mi <= currentMonthIndex)
+    );
+    return {
+      receita: rows.reduce((s, m) => s + m.receita, 0),
+      resultado: rows.reduce((s, m) => s + m.resultado, 0),
+    };
+  }, [withAccumulated, isCurrentYear, currentMonthIndex]);
+
   const availableYears = useMemo(() => {
     const years = new Set<number>([new Date().getFullYear()]);
     tours.forEach(t => { if (t.start_date) years.add(Number(t.start_date.slice(0, 4))); });
@@ -336,7 +349,7 @@ const BalancoCompetencia: React.FC<BalancoCompetenciaProps> = ({
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           {
             label: 'Receita Total',
@@ -370,6 +383,20 @@ const BalancoCompetencia: React.FC<BalancoCompetenciaProps> = ({
             bg: 'bg-blue-50',
             text: 'text-blue-700',
           },
+          {
+            label: isCurrentYear
+              ? `Resultado até ${MONTH_ABBR[currentMonthIndex]}`
+              : 'Resultado no ano',
+            value: fmtSigned(totalsAteAgora.resultado),
+            icon: totalsAteAgora.resultado >= 0
+              ? <TrendingUp className="h-4 w-4 text-violet-600" />
+              : <TrendingDown className="h-4 w-4 text-orange-600" />,
+            bg: totalsAteAgora.resultado >= 0 ? 'bg-violet-50' : 'bg-orange-50',
+            text: totalsAteAgora.resultado >= 0 ? 'text-violet-700' : 'text-orange-700',
+            subtitle: totalsAteAgora.receita > 0
+              ? `Margem: ${((totalsAteAgora.resultado / totalsAteAgora.receita) * 100).toFixed(1)}%`
+              : 'Meses já realizados',
+          },
         ].map(card => (
           <Card key={card.label} className="border-0 shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
@@ -379,6 +406,9 @@ const BalancoCompetencia: React.FC<BalancoCompetenciaProps> = ({
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">{card.label}</p>
                 <p className={`text-base font-bold ${card.text} truncate`}>{card.value}</p>
+                {'subtitle' in card && card.subtitle && (
+                  <p className="text-[10px] text-muted-foreground">{card.subtitle}</p>
+                )}
               </div>
             </CardContent>
           </Card>
