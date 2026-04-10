@@ -9,7 +9,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { MaintenanceGuard } from "@/components/MaintenanceGuard";
-const Home = lazy(() => import("./pages/Home"));
+// Home é carregada de forma eager (não lazy) para garantir abertura no browser do Instagram
+import Home from "./pages/Home";
 const Index = lazy(() => import("./pages/Index"));
 
 // Lazy load all non-critical routes

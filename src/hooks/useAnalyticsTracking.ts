@@ -97,24 +97,33 @@ function getRefererDomain(): string | null {
   }
 }
 
+function safeStorage(type: 'local' | 'session', action: 'get' | 'set', key: string, value?: string): string | null {
+  try {
+    const store = type === 'local' ? localStorage : sessionStorage;
+    if (action === 'get') return store.getItem(key);
+    if (action === 'set' && value !== undefined) store.setItem(key, value);
+  } catch {}
+  return null;
+}
+
 function generateAnonId(): string {
-  let anonId = localStorage.getItem('analytics_anon_id');
+  let anonId = safeStorage('local', 'get', 'analytics_anon_id');
   if (!anonId) {
     anonId = 'anon_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
-    localStorage.setItem('analytics_anon_id', anonId);
+    safeStorage('local', 'set', 'analytics_anon_id', anonId);
   }
   return anonId;
 }
 
 async function getOrCreateSession(): Promise<SessionData | null> {
   try {
-    const existingSessionId = sessionStorage.getItem(SESSION_KEY);
-    const sessionExpiry = sessionStorage.getItem(SESSION_EXPIRY_KEY);
-    
+    const existingSessionId = safeStorage('session', 'get', SESSION_KEY);
+    const sessionExpiry = safeStorage('session', 'get', SESSION_EXPIRY_KEY);
+
     // Check if session is still valid
     if (existingSessionId && sessionExpiry && Date.now() < parseInt(sessionExpiry)) {
       // Extend session
-      sessionStorage.setItem(SESSION_EXPIRY_KEY, (Date.now() + SESSION_DURATION).toString());
+      safeStorage('session', 'set', SESSION_EXPIRY_KEY, (Date.now() + SESSION_DURATION).toString());
       
       // Update last_visit_at
       await supabase
@@ -128,13 +137,14 @@ async function getOrCreateSession(): Promise<SessionData | null> {
     // Create new session
     const utmParams = getUTMParams();
     const anonId = generateAnonId();
-    const isNewVisitor = !localStorage.getItem('analytics_returning_visitor');
+    const isNewVisitor = !safeStorage('local', 'get', 'analytics_returning_visitor');
 
     // Geo lookup via IP (non-critical, best-effort)
     let geoData: { country: string | null; state: string | null; city: string | null } =
       { country: null, state: null, city: null };
     try {
-      const geo = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(3000) }).then(r => r.json());
+      const signal = typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined;
+      const geo = await fetch('https://ipapi.co/json/', { signal }).then(r => r.json());
       geoData = {
         country: geo.country_name || null,
         state: geo.region || null,
@@ -175,11 +185,11 @@ async function getOrCreateSession(): Promise<SessionData | null> {
     }
 
     // Mark as returning visitor for future visits
-    localStorage.setItem('analytics_returning_visitor', 'true');
+    safeStorage('local', 'set', 'analytics_returning_visitor', 'true');
 
     // Store session
-    sessionStorage.setItem(SESSION_KEY, newSessionId);
-    sessionStorage.setItem(SESSION_EXPIRY_KEY, (Date.now() + SESSION_DURATION).toString());
+    safeStorage('session', 'set', SESSION_KEY, newSessionId);
+    safeStorage('session', 'set', SESSION_EXPIRY_KEY, (Date.now() + SESSION_DURATION).toString());
 
     return { id: newSessionId, ...sessionData };
   } catch (error) {
