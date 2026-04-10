@@ -120,6 +120,56 @@ interface FinanceiroTabProps {
   onNavigate?: (tab: string) => void;
 }
 const IR_RATE = 0.06; // 6%
+
+const formatCurrency = (value: number) => value.toLocaleString('pt-BR', {
+  style: 'currency',
+  currency: 'BRL'
+});
+const formatPercent = (value: number) => value.toLocaleString('pt-BR', {
+  style: 'percent',
+  minimumFractionDigits: 1
+});
+
+// Stable module-level component — prevents remount (and chart re-animation) on parent re-renders
+const FinancialPieChart = ({
+  faturamento,
+  gastosViagem,
+  custosVariados,
+  custosRecorrentes,
+  proLabore,
+  impostoRenda,
+  lucroLiquido
+}: {
+  faturamento: number;
+  gastosViagem: number;
+  custosVariados: number;
+  custosRecorrentes: number;
+  proLabore: number;
+  impostoRenda: number;
+  lucroLiquido: number;
+}) => {
+  if (faturamento === 0) return null;
+  const data = [
+    { name: 'Gastos Viagens', value: gastosViagem, color: '#DC2626' },
+    { name: 'Custos Variados', value: custosVariados, color: '#F97316' },
+    { name: 'Custos Fixos', value: custosRecorrentes, color: '#3B82F6' },
+    { name: 'Pró-Labore', value: proLabore, color: '#8B5CF6' },
+    { name: 'IR (6%)', value: impostoRenda, color: '#6B7280' },
+    { name: 'Lucro Líquido', value: Math.max(0, lucroLiquido), color: '#22C55E' },
+  ].filter(d => d.value > 0);
+
+  return <ResponsiveContainer width="100%" height={220}>
+      <PieChart>
+        <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={2} dataKey="value" label={({
+        percent
+      }) => `${(percent * 100).toFixed(0)}%`} labelLine={false} isAnimationActive={false}>
+          {data.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+        </Pie>
+        <Tooltip formatter={(value: number) => formatCurrency(value)} />
+      </PieChart>
+    </ResponsiveContainer>;
+};
+
 // Password validation done server-side via site_settings
 
 // Editable input that doesn't lose focus
@@ -1150,54 +1200,6 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
       proLaborePorCliente: clientesMes > 0 ? proLabore / clientesMes : 0
     };
   };
-  const formatCurrency = (value: number) => value.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  });
-  const formatPercent = (value: number) => value.toLocaleString('pt-BR', {
-    style: 'percent',
-    minimumFractionDigits: 1
-  });
-
-  // Compact pie chart component for financial distribution
-  const FinancialPieChart = ({
-    faturamento,
-    gastosViagem,
-    custosVariados,
-    custosRecorrentes,
-    proLabore,
-    impostoRenda,
-    lucroLiquido
-  }: {
-    faturamento: number;
-    gastosViagem: number;
-    custosVariados: number;
-    custosRecorrentes: number;
-    proLabore: number;
-    impostoRenda: number;
-    lucroLiquido: number;
-  }) => {
-    if (faturamento === 0) return null;
-    const data = [
-      { name: 'Gastos Viagens', value: gastosViagem, color: '#DC2626' },
-      { name: 'Custos Variados', value: custosVariados, color: '#F97316' },
-      { name: 'Custos Fixos', value: custosRecorrentes, color: '#3B82F6' },
-      { name: 'Pró-Labore', value: proLabore, color: '#8B5CF6' },
-      { name: 'IR (6%)', value: impostoRenda, color: '#6B7280' },
-      { name: 'Lucro Líquido', value: Math.max(0, lucroLiquido), color: '#22C55E' },
-    ].filter(d => d.value > 0);
-
-    return <ResponsiveContainer width="100%" height={220}>
-        <PieChart>
-          <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={2} dataKey="value" label={({
-          percent
-        }) => `${(percent * 100).toFixed(0)}%`} labelLine={false}>
-            {data.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-          </Pie>
-          <Tooltip formatter={(value: number) => formatCurrency(value)} />
-        </PieChart>
-      </ResponsiveContainer>;
-  };
 
   // Tour costs table - Excel-like layout
   const TourCostsTable = () => {
@@ -1784,7 +1786,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
                         formatter={(value: number) => formatCurrency(value)}
                         contentStyle={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px' }}
                       />
-                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                      <Bar dataKey="value" radius={[0, 4, 4, 0]} isAnimationActive={false}>
                         {chartDataByType.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                         ))}
@@ -1833,7 +1835,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
                         labelFormatter={(label) => chartDataByItem.find(d => d.name === label)?.fullName || label}
                         contentStyle={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px' }}
                       />
-                      <Bar dataKey="value" fill="#8b5cf6" radius={[0, 4, 4, 0]}>
+                      <Bar dataKey="value" fill="#8b5cf6" radius={[0, 4, 4, 0]} isAnimationActive={false}>
                         {chartDataByItem.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                         ))}
@@ -2875,7 +2877,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
                     <XAxis type="number" tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} fontSize={10} />
                     <YAxis type="category" dataKey="name" fontSize={11} width={45} />
                     <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                    <Bar dataKey="value" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]} isAnimationActive={false} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
