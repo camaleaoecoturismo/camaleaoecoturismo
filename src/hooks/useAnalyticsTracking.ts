@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, createContext, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { generateUUID } from '@/utils/uuid';
 
 const SESSION_KEY = 'analytics_session_id';
 const SESSION_EXPIRY_KEY = 'analytics_session_expiry';
@@ -162,7 +163,7 @@ async function getOrCreateSession(): Promise<SessionData | null> {
     };
     
     // Generate UUID client-side to avoid needing SELECT permission after INSERT
-    const newSessionId = crypto.randomUUID();
+    const newSessionId = generateUUID();
 
     const { error } = await supabase
       .from('analytics_sessions')

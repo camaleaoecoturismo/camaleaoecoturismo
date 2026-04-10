@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { generateUUID } from "@/utils/uuid";
 import { Tour } from "@/hooks/useTours";
 import { validarCPF, validarTelefone, formatarCPF, formatarTelefone, cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -488,7 +489,7 @@ setChatMessages([]);
       analytics.trackModalOpen("reserva", tour.id, tour.name);
       
       // Initialize form abandonment tracking
-      const sessionId = crypto.randomUUID();
+      const sessionId = generateUUID();
       setTrackingSessionId(sessionId);
       trackingIdRef.current = null;
     }
@@ -1315,7 +1316,7 @@ setChatMessages([]);
       const buyerPontoEmbarque = buyerPontoEmbarqueRaw === 'outro' ? null : buyerPontoEmbarqueRaw;
 
       if (!clienteId) {
-        const newClienteId = crypto.randomUUID();
+        const newClienteId = generateUUID();
         const cpfClean = buyerCpf.replace(/\D/g, "");
 
         const { error: clienteInsertError } = await supabase.from("clientes").insert({
@@ -1354,7 +1355,7 @@ setChatMessages([]);
         throw new Error("Não foi possível identificar o cliente para criar a reserva.");
       }
 
-      const newReservaId = crypto.randomUUID();
+      const newReservaId = generateUUID();
       // Calculate valor_passeio from full participants data or fallback
       const valorPasseio =
         fullParticipantsData.length > 0 ? packageSubtotal : (tour.valor_padrao || 0) * numParticipants;
@@ -1425,7 +1426,7 @@ setChatMessages([]);
         console.log("Creating participants from fullParticipantsData:", fullParticipantsData.length);
         for (let i = 0; i < fullParticipantsData.length; i++) {
           const p = fullParticipantsData[i];
-          const participantId = crypto.randomUUID();
+          const participantId = generateUUID();
 
           const { error: participantError } = await supabase.from("reservation_participants").insert({
             id: participantId,
@@ -1465,7 +1466,7 @@ setChatMessages([]);
         // Fallback: Create primary participant without package (old flow)
         console.log("Using fallback flow for participant creation, numero_participantes:", formData.numero_participantes);
         const dataNascimento = `${formData.ano_nascimento}-${formData.mes_nascimento.padStart(2, "0")}-${formData.dia_nascimento.padStart(2, "0")}`;
-        const participantId = crypto.randomUUID();
+        const participantId = generateUUID();
         
         const { error: participantError } = await supabase.from("reservation_participants").insert({
           id: participantId,
@@ -1496,7 +1497,7 @@ setChatMessages([]);
         // Create placeholder participants for remaining spots
         const numP = parseInt(formData.numero_participantes) || 1;
         for (let i = 2; i <= numP; i++) {
-          const additionalId = crypto.randomUUID();
+          const additionalId = generateUUID();
           const { error: additionalError } = await supabase.from("reservation_participants").insert({
             id: additionalId,
             reserva_id: newReservaId,

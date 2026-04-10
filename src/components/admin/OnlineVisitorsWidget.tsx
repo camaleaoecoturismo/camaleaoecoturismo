@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { generateUUID } from '@/utils/uuid';
 import {
   Users, X, Monitor, Smartphone, Tablet,
   MapPin, Globe, ChevronLeft, MousePointer, ArrowUpRight, MessageCircle,
@@ -133,7 +134,7 @@ function VisitorDetail({
     }
 
     // Create a new chat_session in manual mode
-    const newSessionId = crypto.randomUUID();
+    const newSessionId = generateUUID();
     const now = new Date().toISOString();
     const { error } = await supabase.from('chat_sessions').insert({
       session_id: newSessionId,

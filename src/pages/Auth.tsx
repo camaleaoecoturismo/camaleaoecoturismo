@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { generateUUID } from '@/utils/uuid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -17,7 +18,7 @@ function getDeviceFingerprint(): string {
   const key = 'admin_device_fp';
   let fp = localStorage.getItem(key);
   if (!fp) {
-    fp = crypto.randomUUID();
+    fp = generateUUID();
     localStorage.setItem(key, fp);
   }
   return fp;
