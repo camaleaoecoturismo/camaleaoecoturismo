@@ -8,9 +8,32 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// Some restricted WebViews (e.g. Instagram in-app browser on iOS) throw a
+// SecurityError when accessing localStorage. This safe wrapper falls back to
+// an in-memory store so the app still boots without crashing.
+function getSafeStorage(): Storage {
+  try {
+    // Verify read/write actually work (not just that the property exists)
+    const testKey = '__sb_storage_test__';
+    localStorage.setItem(testKey, '1');
+    localStorage.removeItem(testKey);
+    return localStorage;
+  } catch {
+    const mem: Record<string, string> = {};
+    return {
+      getItem: (k: string) => mem[k] ?? null,
+      setItem: (k: string, v: string) => { mem[k] = v; },
+      removeItem: (k: string) => { delete mem[k]; },
+      clear: () => { Object.keys(mem).forEach(k => delete mem[k]); },
+      key: (i: number) => Object.keys(mem)[i] ?? null,
+      get length() { return Object.keys(mem).length; },
+    } as Storage;
+  }
+}
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: localStorage,
+    storage: getSafeStorage(),
     persistSession: true,
     autoRefreshToken: true,
   }
