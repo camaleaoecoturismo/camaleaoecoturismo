@@ -214,7 +214,7 @@ export default function ActivitySummaryModal({
                         icon={<MousePointerClick className="h-5 w-5 text-white" />}
                         label="Tentativas de reserva"
                         value={summary!.cta_clicks}
-                        sub="Cliques em "Reservar vaga""
+                        sub={'Cliques em "Reservar vaga"'}
                         color="bg-amber-600/80"
                         delay={0.22}
                       />
