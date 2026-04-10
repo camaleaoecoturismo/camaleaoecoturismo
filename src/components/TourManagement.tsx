@@ -949,10 +949,37 @@ const TourManagement: React.FC<TourManagementProps> = ({
   };
   const fetchBoardingPoints = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('tour_boarding_points').select('id, nome, endereco, horario').eq('tour_id', tour.id).order('order_index');
+      // Try new global system first
+      const { data: tpeData } = await supabase
+        .from('tour_pontos_embarque')
+        .select('horario, pontos_embarque(id, nome, endereco)')
+        .eq('tour_id', tour.id)
+        .order('horario', { ascending: true });
+
+      if (tpeData && tpeData.length > 0) {
+        const mapped = tpeData
+          .filter((r: any) => r.pontos_embarque)
+          .map((r: any) => ({
+            id: r.pontos_embarque.id,
+            nome: r.pontos_embarque.nome,
+            endereco: r.pontos_embarque.endereco || '',
+            horario: r.horario || null,
+          }))
+          .sort((a: any, b: any) => {
+            if (!a.horario) return 1;
+            if (!b.horario) return -1;
+            return a.horario.localeCompare(b.horario);
+          });
+        setBoardingPoints(mapped);
+        return;
+      }
+
+      // Fallback: legacy per-tour table
+      const { data, error } = await supabase
+        .from('tour_boarding_points')
+        .select('id, nome, endereco, horario')
+        .eq('tour_id', tour.id)
+        .order('order_index');
       if (error) throw error;
       setBoardingPoints(data || []);
     } catch (error: any) {
