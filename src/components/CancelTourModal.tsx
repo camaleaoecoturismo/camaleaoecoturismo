@@ -232,6 +232,23 @@ const CancelTourModal: React.FC<CancelTourModalProps> = ({
       // Cancel all tickets for this tour
       await supabase.from('tickets').update({ status: 'cancelled' }).eq('tour_id', tour.id);
 
+      // Auto-create refund cost entries so devoluções aparecem no financeiro do passeio
+      const refundTreatments = treatments.filter(t => t.treatment === 'reembolso' && t.valorPago > 0);
+      if (refundTreatments.length > 0) {
+        await supabase.from('tour_costs').insert(
+          refundTreatments.map((t, i) => ({
+            tour_id: tour.id,
+            product_service: `Devolução — ${t.clienteName}`,
+            quantity: 1,
+            unit_value: t.valorPago,
+            valor_pago: t.valorPago,
+            expense_type: 'devolucao',
+            order_index: 9000 + i,
+            auto_scale_participants: false,
+          }))
+        );
+      }
+
       // Mark sunk costs
       const sunkIds = sunkCosts.filter(c => c.is_sunk_cost).map(c => c.id);
       if (sunkIds.length > 0) {

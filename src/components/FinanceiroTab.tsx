@@ -75,6 +75,7 @@ const EXPENSE_TYPES = [
   { value: 'servico_bordo', label: 'Serviço de Bordo' },
   { value: 'taxas_entradas', label: 'Taxas e Entradas' },
   { value: 'outros', label: 'Outros' },
+  { value: 'devolucao', label: 'Devolução' },
 ];
 interface MonthlyGeneralCost {
   id: string;
@@ -1255,6 +1256,9 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     const totalCosts = tourCosts.reduce((sum, c) => sum + getEffectiveQuantity(c) * c.unit_value, 0);
     const totalPago = tourCosts.reduce((sum, c) => sum + (c.valor_pago || 0), 0);
     const totalFalta = totalCosts - totalPago;
+    const totalDevolucoes = tourCosts
+      .filter(c => c.expense_type === 'devolucao')
+      .reduce((sum, c) => sum + getEffectiveQuantity(c) * c.unit_value, 0);
     
     const [newItemName, setNewItemName] = useState('');
     const [newItemQty, setNewItemQty] = useState('1');
@@ -1347,6 +1351,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
         servico_bordo: 'bg-indigo-100 text-indigo-700',
         taxas_entradas: 'bg-amber-100 text-amber-700',
         outros: 'bg-slate-100 text-slate-700',
+        devolucao: 'bg-red-100 text-red-700',
       };
       return colors[type] || colors.outros;
     };
@@ -1462,10 +1467,11 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
                   const valorPago = cost.valor_pago || 0;
                   const falta = valorTotal - valorPago;
                   
+                  const isRefund = cost.expense_type === 'devolucao';
                   return (
-                    <div 
-                      key={cost.id} 
-                      className="grid grid-cols-[32px_100px_minmax(150px,1fr)_70px_50px_80px_90px_50px_80px_90px_90px_32px] gap-0 items-center group hover:bg-muted/30 text-sm"
+                    <div
+                      key={cost.id}
+                      className={`grid grid-cols-[32px_100px_minmax(150px,1fr)_70px_50px_80px_90px_50px_80px_90px_90px_32px] gap-0 items-center group text-sm ${isRefund ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-muted/30'}`}
                     >
                       {/* # */}
                       <div className="p-1 text-center text-xs text-muted-foreground border-r">{index + 1}</div>
@@ -1659,10 +1665,11 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
                       
                       {/* Delete button */}
                       <div className="p-0.5 flex justify-center">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-5 w-5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={`h-5 w-5 text-muted-foreground hover:text-red-600 ${isRefund ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                          title={isRefund ? 'Desfazer devolução' : 'Excluir'}
                           onClick={() => deleteTourCost(cost.id)}
                         >
                           <Trash2 className="h-3 w-3" />
@@ -1843,6 +1850,12 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
                   );
                 })}
               </div>
+              {totalDevolucoes > 0 && (
+                <div className="mt-3 flex justify-between items-center text-sm text-red-600 bg-red-50 rounded px-3 py-2">
+                  <span className="font-medium flex items-center gap-1">↩ Devoluções (cancelamento)</span>
+                  <span className="font-bold">{formatCurrency(totalDevolucoes)}</span>
+                </div>
+              )}
               <div className="mt-4 pt-4 border-t flex justify-between items-center">
                 <span className="text-sm font-medium">Total de Custos</span>
                 <span className="text-xl font-bold text-red-600">{formatCurrency(totalCosts)}</span>
