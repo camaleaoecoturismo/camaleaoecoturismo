@@ -96,12 +96,12 @@ const Index = () => {
   }, [tours, hiddenMonthYears]);
 
   const [selectedMonth, setSelectedMonth] = useState<string>(
-    () => sessionStorage.getItem("camaleao_selected_month") || ""
+    () => { try { return sessionStorage.getItem("camaleao_selected_month") || ""; } catch { return ""; } }
   );
 
   // Persist selected month so navigating back restores it
   useEffect(() => {
-    if (selectedMonth) sessionStorage.setItem("camaleao_selected_month", selectedMonth);
+    if (selectedMonth) { try { sessionStorage.setItem("camaleao_selected_month", selectedMonth); } catch {} }
   }, [selectedMonth]);
   const [reservaModalOpen, setReservaModalOpen] = useState(false);
   const [tourParaReserva, setTourParaReserva] = useState<Tour | null>(null);

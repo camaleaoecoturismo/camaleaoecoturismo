@@ -5,6 +5,12 @@
       "has": [{ "type": "host", "value": "agenda.camaleaoecoturismo.com" }],
       "destination": "https://www.camaleaoecoturismo.com.br/$1",
       "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "camaleaoecoturismo.com.br" }],
+      "destination": "https://www.camaleaoecoturismo.com.br/$1",
+      "permanent": true
     }
   ],
   "rewrites": [

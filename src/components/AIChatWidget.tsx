@@ -11,12 +11,16 @@ const SESSION_KEY = "cami_chat_v3";
 const CHAT_SESSION_ID_KEY = "cami_session_id_v1";
 
 function getOrCreateSessionId(): string {
-  let id = sessionStorage.getItem(CHAT_SESSION_ID_KEY);
-  if (!id) {
-    id = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    sessionStorage.setItem(CHAT_SESSION_ID_KEY, id);
+  try {
+    let id = sessionStorage.getItem(CHAT_SESSION_ID_KEY);
+    if (!id) {
+      id = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      sessionStorage.setItem(CHAT_SESSION_ID_KEY, id);
+    }
+    return id;
+  } catch {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   }
-  return id;
 }
 
 function getDeviceInfo() {
@@ -388,7 +392,8 @@ export function AIChatWidget() {
 
   // Link visitor_anon_id to chat_session (so admin can de-duplicate)
   useEffect(() => {
-    const anonId = localStorage.getItem('analytics_anon_id');
+    let anonId: string | null = null;
+    try { anonId = localStorage.getItem('analytics_anon_id'); } catch {}
     if (!anonId || !sessionId) return;
     supabase
       .from('chat_sessions')
@@ -400,7 +405,8 @@ export function AIChatWidget() {
 
   // Listen for admin-initiated chat broadcast (visitor who hasn't opened Camila yet)
   useEffect(() => {
-    const anonId = localStorage.getItem('analytics_anon_id');
+    let anonId: string | null = null;
+    try { anonId = localStorage.getItem('analytics_anon_id'); } catch {}
     if (!anonId) return;
 
     const channel = supabase
@@ -409,7 +415,7 @@ export function AIChatWidget() {
         const newSessionId: string = payload.payload?.session_id;
         if (!newSessionId) return;
         // Adopt the new session created by admin
-        sessionStorage.setItem(CHAT_SESSION_ID_KEY, newSessionId);
+        try { sessionStorage.setItem(CHAT_SESSION_ID_KEY, newSessionId); } catch {}
         setSessionId(newSessionId);
         setIsManualMode(true);
         setIsOpen(true);
