@@ -263,6 +263,25 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     impostoRenda: true,
   });
 
+  // TourCostsTable state (lifted to prevent unmount/remount on parent re-renders)
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemQty, setNewItemQty] = useState('1');
+  const [newItemValue, setNewItemValue] = useState('');
+  const [newItemType, setNewItemType] = useState('outros');
+  const [newItemAutoScale, setNewItemAutoScale] = useState(false);
+  const [showCostsChart, setShowCostsChart] = useState(false);
+  const [paymentDetailsCostId, setPaymentDetailsCostId] = useState<string | null>(null);
+  const [paymentDetailsCostName, setPaymentDetailsCostName] = useState('');
+  const [paymentDetailsTotalExpected, setPaymentDetailsTotalExpected] = useState(0);
+
+  // MonthlyGeneralCostsTable state (lifted to prevent unmount/remount on parent re-renders)
+  const [newExpenseName, setNewExpenseName] = useState('');
+  const [newExpenseValue, setNewExpenseValue] = useState('');
+  const [newExpenseType, setNewExpenseType] = useState<string>('outros');
+  const [newPaymentMethod, setNewPaymentMethod] = useState<string>('avista');
+  const [newInstallments, setNewInstallments] = useState<string>('1');
+  const [isAddingInstallments, setIsAddingInstallments] = useState(false);
+
   // Get ALL tours sorted by date (descending - newest first), grouped by year/month
   const allToursSorted = useMemo(() => {
     return [...tours].sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
@@ -879,7 +898,11 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     };
     
     const getPricingOptionCountForCalc = (pricingOptionId: string): number => {
-      return tourParticipants.filter(p => p.pricing_option_id === pricingOptionId).length;
+      const optionName = tourPricingOptions.find(o => o.id === pricingOptionId)?.option_name;
+      return tourParticipants.filter(p =>
+        p.pricing_option_id === pricingOptionId ||
+        (p.pricing_option_id === null && optionName && p.pricing_option_name === optionName)
+      ).length;
     };
     
     const gastosViagem = tourCostsFiltered.reduce((sum, c) => {
@@ -969,7 +992,11 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
         });
         effectiveQty = count || 0;
       } else if (cost.auto_scale_pricing_option_id) {
-        effectiveQty = tourParticipantsForCalc.filter(p => p.pricing_option_id === cost.auto_scale_pricing_option_id).length;
+        const optName = tourPricingOptions.find(o => o.id === cost.auto_scale_pricing_option_id)?.option_name;
+        effectiveQty = tourParticipantsForCalc.filter(p =>
+          p.pricing_option_id === cost.auto_scale_pricing_option_id ||
+          (p.pricing_option_id === null && optName && p.pricing_option_name === optName)
+        ).length;
       } else if (cost.auto_scale_participants) {
         effectiveQty = numClientes;
       }
@@ -1209,7 +1236,11 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     
     // Count participants who selected a specific pricing option/package
     const getPricingOptionCount = (pricingOptionId: string): number => {
-      return tourParticipants.filter(p => p.pricing_option_id === pricingOptionId).length;
+      const optionName = tourPricingOptions.find(o => o.id === pricingOptionId)?.option_name;
+      return tourParticipants.filter(p =>
+        p.pricing_option_id === pricingOptionId ||
+        (p.pricing_option_id === null && optionName && p.pricing_option_name === optionName)
+      ).length;
     };
     
     // Get the name of an optional item by ID
@@ -1260,44 +1291,30 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
       .filter(c => c.expense_type === 'devolucao')
       .reduce((sum, c) => sum + getEffectiveQuantity(c) * c.unit_value, 0);
     
-    const [newItemName, setNewItemName] = useState('');
-    const [newItemQty, setNewItemQty] = useState('1');
-    const [newItemValue, setNewItemValue] = useState('');
-    const [newItemType, setNewItemType] = useState('outros');
-    const [newItemAutoScale, setNewItemAutoScale] = useState(false);
-    const [showCostsChart, setShowCostsChart] = useState(false);
-    const [paymentDetailsCostId, setPaymentDetailsCostId] = useState<string | null>(null);
-    const [paymentDetailsCostName, setPaymentDetailsCostName] = useState('');
-    const [paymentDetailsTotalExpected, setPaymentDetailsTotalExpected] = useState(0);
-    
     // Chart data by expense type
-    const chartDataByType = useMemo(() => {
-      const grouped: Record<string, number> = {};
-      tourCosts.forEach(cost => {
-        const effectiveQty = getEffectiveQuantity(cost);
-        const total = effectiveQty * cost.unit_value;
-        const type = cost.expense_type || 'outros';
-        grouped[type] = (grouped[type] || 0) + total;
-      });
-      return Object.entries(grouped).map(([type, value]) => ({
-        name: EXPENSE_TYPES.find(t => t.value === type)?.label || type,
-        value,
-        type
-      })).sort((a, b) => b.value - a.value);
-    }, [tourCosts, numClientes]);
-    
+    const grouped: Record<string, number> = {};
+    tourCosts.forEach(cost => {
+      const effectiveQty = getEffectiveQuantity(cost);
+      const total = effectiveQty * cost.unit_value;
+      const type = cost.expense_type || 'outros';
+      grouped[type] = (grouped[type] || 0) + total;
+    });
+    const chartDataByType = Object.entries(grouped).map(([type, value]) => ({
+      name: EXPENSE_TYPES.find(t => t.value === type)?.label || type,
+      value,
+      type
+    })).sort((a, b) => b.value - a.value);
+
     // Chart data by individual item
-    const chartDataByItem = useMemo(() => {
-      return tourCosts.map(cost => {
-        const effectiveQty = getEffectiveQuantity(cost);
-        return {
-          name: cost.product_service.length > 20 ? cost.product_service.substring(0, 17) + '...' : cost.product_service,
-          fullName: cost.product_service,
-          value: effectiveQty * cost.unit_value,
-          type: cost.expense_type
-        };
-      }).sort((a, b) => b.value - a.value);
-    }, [tourCosts, numClientes]);
+    const chartDataByItem = tourCosts.map(cost => {
+      const effectiveQty = getEffectiveQuantity(cost);
+      return {
+        name: cost.product_service.length > 20 ? cost.product_service.substring(0, 17) + '...' : cost.product_service,
+        fullName: cost.product_service,
+        value: effectiveQty * cost.unit_value,
+        type: cost.expense_type
+      };
+    }).sort((a, b) => b.value - a.value);
     
     const CHART_COLORS = [
       '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', 
@@ -1887,12 +1904,6 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   const MonthlyGeneralCostsTable = () => {
     const costsWithoutProLabore = monthlyGeneralCosts.filter(c => c.expense_type !== 'pro_labore');
     const totalCosts = costsWithoutProLabore.reduce((sum, c) => sum + c.quantity * c.unit_value, 0);
-    const [newExpenseName, setNewExpenseName] = useState('');
-    const [newExpenseValue, setNewExpenseValue] = useState('');
-    const [newExpenseType, setNewExpenseType] = useState<string>('outros');
-    const [newPaymentMethod, setNewPaymentMethod] = useState<string>('avista');
-    const [newInstallments, setNewInstallments] = useState<string>('1');
-    const [isAddingInstallments, setIsAddingInstallments] = useState(false);
     
     const handleQuickAddExpense = async () => {
       if (!newExpenseName.trim()) return;
@@ -2873,7 +2884,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
         )}
 
         {/* Tour costs table */}
-        <TourCostsTable />
+        {TourCostsTable()}
       </div>
     );
   };
@@ -3164,7 +3175,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
         <ProLaboreSection clientesMes={financials.clientesMes} />
 
         {/* Monthly general costs table */}
-        <MonthlyGeneralCostsTable />
+        {MonthlyGeneralCostsTable()}
 
         {/* Recurring costs */}
         <RecurringCostsManager recurringCosts={recurringCosts} onRefresh={fetchRecurringCosts} />
