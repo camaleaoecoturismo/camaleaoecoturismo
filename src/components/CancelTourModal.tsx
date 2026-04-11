@@ -60,7 +60,7 @@ const CancelTourModal: React.FC<CancelTourModalProps> = ({
   const [activeTours, setActiveTours] = useState<Tour[]>([]);
   const [processing, setProcessing] = useState(false);
 
-  const activeReservas = reservas.filter(r => r.status !== 'cancelado');
+  const activeReservas = reservas.filter(r => r.status === 'confirmada' || r.status === 'confirmado');
 
   useEffect(() => {
     if (!open) return;
