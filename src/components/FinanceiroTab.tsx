@@ -401,6 +401,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   const [tourPricingOptions, setTourPricingOptions] = useState<TourPricingOption[]>([]);
   const [tourParticipants, setTourParticipants] = useState<ParticipantData[]>([]);
   const [allParticipants, setAllParticipants] = useState<ParticipantData[]>([]);
+  const [allPricingOptionsMap, setAllPricingOptionsMap] = useState<Map<string, string>>(new Map()); // id → option_name
   const [allCostPayments, setAllCostPayments] = useState<{ id: string; tour_cost_id: string; amount: number; payment_date: string | null }[]>([]);
   const [allParcelas, setAllParcelas] = useState<{ reserva_id: string; valor: number; data_pagamento: string; forma_pagamento: string }[]>([]);
 
@@ -625,6 +626,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     fetchClientes();
     fetchRecurringCosts();
     fetchAllParticipants();
+    fetchAllPricingOptions();
     fetchAllCostPayments();
     fetchAllParcelas();
   }, [isUnlocked]);
@@ -787,6 +789,19 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
       })));
     } catch (error) {
       console.error('Error fetching all participants:', error);
+    }
+  };
+  const fetchAllPricingOptions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tour_pricing_options')
+        .select('id, option_name');
+      if (error) throw error;
+      const map = new Map<string, string>();
+      (data || []).forEach(o => map.set(o.id, o.option_name));
+      setAllPricingOptionsMap(map);
+    } catch (error) {
+      console.error('Error fetching all pricing options:', error);
     }
   };
   const fetchMonthlyGeneralCosts = async (month: string) => {
@@ -2667,9 +2682,10 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
           });
           qty = count || 0;
         } else if (c.auto_scale_pricing_option_id) {
+          const optName = allPricingOptionsMap.get(c.auto_scale_pricing_option_id);
           qty = tourParticipantsForCard.filter(p =>
             p.pricing_option_id === c.auto_scale_pricing_option_id ||
-            (p.pricing_option_id === null && p.pricing_option_name != null)
+            (p.pricing_option_id === null && optName != null && p.pricing_option_name === optName)
           ).length;
         } else if (c.auto_scale_participants) {
           qty = numClientesForCalc;
