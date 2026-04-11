@@ -2539,16 +2539,51 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     // Uses same calculation logic as calculateTourFinancials for consistency
     const TourCard = ({ tour }: { tour: Tour }) => {
       const tourReservations = reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status));
+      const cancelledWithPayment = reservations.filter(r =>
+        r.tour_id === tour.id &&
+        (r.status === 'cancelada' || r.status === 'cancelado') &&
+        (r.valor_pago || 0) > 0
+      );
+      const allRevenueRes = [...tourReservations, ...cancelledWithPayment];
       const clientes = tourReservations.reduce((sum, r) => sum + (r.numero_participantes || 1), 0);
       const numClientesForCalc = clientes || 1;
-      
-      // Use shared helper for consistent faturamento calculation
-      const faturamento = calcFaturamentoBase(tourReservations, allParticipants);
-      
+
+      // Faturamento: confirmed + cancelled-with-payment (same as calculateTourFinancials)
+      const faturamento = allRevenueRes.reduce((sum, r) => {
+        const isCancelled = r.status === 'cancelada' || r.status === 'cancelado';
+        const rawPago = r.valor_pago || 0;
+        const valorTotal = calcValorTotalReserva(r, allParticipants);
+        if (rawPago === 0) return isCancelled ? sum : sum + valorTotal;
+        let pagoBase = rawPago;
+        if (isCardPaymentMethod(r.payment_method)) {
+          const fee = r.card_fee_amount || 0;
+          pagoBase = fee > 0 ? Math.max(0, rawPago - fee) : valorTotal;
+        }
+        return sum + pagoBase;
+      }, 0);
+
       const tourCostsFiltered = allTourCosts.filter(c => c.tour_id === tour.id);
+      const tourParticipantsForCard = allParticipants.filter(p => tourReservations.some(r => r.id === p.reserva_id));
       const custos = tourCostsFiltered.reduce((sum, c) => {
-        const effectiveQty = c.auto_scale_participants ? numClientesForCalc : c.quantity;
-        return sum + effectiveQty * c.unit_value;
+        let qty = c.quantity;
+        if (c.auto_scale_optional_item_id) {
+          let count = 0;
+          tourParticipantsForCard.forEach(p => {
+            if (p.selected_optionals?.some((o: any) => o.id === c.auto_scale_optional_item_id || o.optional_id === c.auto_scale_optional_item_id)) count++;
+          });
+          tourReservations.forEach(r => {
+            (r.selected_optional_items || []).forEach((o: any) => { if (o.id === c.auto_scale_optional_item_id) count += o.quantity || 1; });
+          });
+          qty = count || 0;
+        } else if (c.auto_scale_pricing_option_id) {
+          qty = tourParticipantsForCard.filter(p =>
+            p.pricing_option_id === c.auto_scale_pricing_option_id ||
+            (p.pricing_option_id === null && p.pricing_option_name != null)
+          ).length;
+        } else if (c.auto_scale_participants) {
+          qty = numClientesForCalc;
+        }
+        return sum + qty * c.unit_value;
       }, 0);
       const lucro = faturamento - custos - (faturamento * IR_RATE);
       const tourDate = new Date(tour.start_date);
