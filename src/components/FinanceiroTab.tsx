@@ -170,6 +170,68 @@ const FinancialPieChart = ({
     </ResponsiveContainer>;
 };
 
+// Stable memo component — only re-renders when financial values change, not on every keystroke
+const TourFinancialCharts = React.memo(({
+  faturamento, gastosViagem, impostoRenda, lucroLiquido
+}: {
+  faturamento: number; gastosViagem: number; impostoRenda: number; lucroLiquido: number;
+}) => {
+  if (faturamento <= 0) return null;
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Card>
+        <CardHeader className="py-3 pb-0">
+          <CardTitle className="text-sm font-medium">Distribuição</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-2">
+          <div className="flex items-center justify-center">
+            <div className="w-44 h-44">
+              <FinancialPieChart
+                faturamento={faturamento}
+                gastosViagem={gastosViagem}
+                custosVariados={0}
+                custosRecorrentes={0}
+                proLabore={0}
+                impostoRenda={0}
+                lucroLiquido={lucroLiquido}
+              />
+            </div>
+          </div>
+          <div className="flex justify-center gap-4 mt-2">
+            <div className="flex items-center gap-1.5 text-xs"><div className="w-2.5 h-2.5 rounded-full bg-red-500" /><span>Custos</span></div>
+            <div className="flex items-center gap-1.5 text-xs"><div className="w-2.5 h-2.5 rounded-full bg-gray-400" /><span>IR</span></div>
+            <div className="flex items-center gap-1.5 text-xs"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /><span>Lucro</span></div>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="py-3 pb-0">
+          <CardTitle className="text-sm font-medium">Comparativo</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-2">
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart
+              data={[
+                { name: 'Fat.', value: faturamento, fill: '#10b981' },
+                { name: 'Custos', value: gastosViagem, fill: '#ef4444' },
+                { name: 'IR', value: impostoRenda, fill: '#6b7280' },
+                { name: 'Lucro', value: Math.max(0, lucroLiquido), fill: '#3b82f6' },
+              ]}
+              layout="vertical"
+              margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+            >
+              <XAxis type="number" tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} fontSize={10} />
+              <YAxis type="category" dataKey="name" fontSize={11} width={45} />
+              <Tooltip formatter={(value: number) => formatCurrency(value)} />
+              <Bar dataKey="value" radius={[0, 4, 4, 0]} isAnimationActive={false} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    </div>
+  );
+});
+
 // Password validation done server-side via site_settings
 
 // Editable input that doesn't lose focus
@@ -2879,72 +2941,13 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
           </div>
         )}
 
-        {/* Charts section - side by side */}
-        {financials.faturamento > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Pie Chart - Distribution */}
-            <Card>
-              <CardHeader className="py-3 pb-0">
-                <CardTitle className="text-sm font-medium">Distribuição</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <div className="flex items-center justify-center">
-                  <div className="w-44 h-44">
-                    <FinancialPieChart 
-                      faturamento={financials.faturamento} 
-                      gastosViagem={financials.gastosViagem} 
-                      custosVariados={0}
-                      custosRecorrentes={0}
-                      proLabore={0}
-                      impostoRenda={0}
-                      lucroLiquido={financials.lucroLiquido} 
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-center gap-4 mt-2">
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                    <span>Custos</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <div className="w-2.5 h-2.5 rounded-full bg-gray-400" />
-                    <span>IR</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                    <span>Lucro</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Bar Chart - Breakdown comparison */}
-            <Card>
-              <CardHeader className="py-3 pb-0">
-                <CardTitle className="text-sm font-medium">Comparativo</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <ResponsiveContainer width="100%" height={180}>
-                  <BarChart 
-                    data={[
-                      { name: 'Fat.', value: financials.faturamento, fill: '#10b981' },
-                      { name: 'Custos', value: financials.gastosViagem, fill: '#ef4444' },
-                      { name: 'IR', value: financials.impostoRenda, fill: '#6b7280' },
-                      { name: 'Lucro', value: Math.max(0, financials.lucroLiquido), fill: '#3b82f6' },
-                    ]}
-                    layout="vertical"
-                    margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
-                  >
-                    <XAxis type="number" tickFormatter={(v) => `R$${(v/1000).toFixed(0)}k`} fontSize={10} />
-                    <YAxis type="category" dataKey="name" fontSize={11} width={45} />
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                    <Bar dataKey="value" radius={[0, 4, 4, 0]} isAnimationActive={false} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {/* Charts section - stable memo, won't re-render on keystroke */}
+        <TourFinancialCharts
+          faturamento={financials.faturamento}
+          gastosViagem={financials.gastosViagem}
+          impostoRenda={financials.impostoRenda}
+          lucroLiquido={financials.lucroLiquido}
+        />
 
         {/* Tour costs table */}
         {TourCostsTable()}
