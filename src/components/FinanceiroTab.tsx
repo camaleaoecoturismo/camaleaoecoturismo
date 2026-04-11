@@ -438,6 +438,31 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     return [...tours].sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
   }, [tours]);
 
+  // TourView filter state — lifted here so TourView can be called as {TourView()} without hooks
+  const [tourYearFilter, setTourYearFilter] = useState<number>(new Date().getFullYear());
+  const [tourStatusFilter, setTourStatusFilter] = useState<'all' | 'future' | 'past'>('all');
+  const [tourMonthFilter, setTourMonthFilter] = useState<string>('all');
+  const tourAvailableYears = useMemo(() => {
+    const years = new Set<number>();
+    tours.forEach(t => years.add(new Date(t.start_date).getFullYear()));
+    years.add(new Date().getFullYear());
+    return Array.from(years).sort((a, b) => b - a);
+  }, [tours]);
+  const tourFilteredTours = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return allToursSorted.filter(t => {
+      const tourDate = new Date(t.start_date);
+      const tourYear = tourDate.getFullYear();
+      const tourMonth = String(tourDate.getMonth() + 1).padStart(2, '0');
+      const isPast = new Date(t.end_date || t.start_date) < today;
+      if (tourYear !== tourYearFilter) return false;
+      if (tourMonthFilter !== 'all' && tourMonth !== tourMonthFilter) return false;
+      if (tourStatusFilter === 'future' && isPast) return false;
+      if (tourStatusFilter === 'past' && !isPast) return false;
+      return true;
+    }).sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+  }, [allToursSorted, tourYearFilter, tourMonthFilter, tourStatusFilter]);
+
   // Group tours by year and month for the selector
   const toursByYearMonth = useMemo(() => {
     const grouped: Record<string, {
@@ -2555,21 +2580,19 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     );
   };
 
-  // Tour View - Clean and functional redesign
+  // Tour View — no hooks inside (all state lifted to FinanceiroTab so this can be called as {TourView()})
   const TourView = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const [yearFilter, setYearFilter] = useState<number>(new Date().getFullYear());
-    const [statusFilter, setStatusFilter] = useState<'all' | 'future' | 'past'>('all');
-    const [monthFilter, setMonthFilter] = useState<string>('all');
-    
-    // Available years from tours
-    const availableYears = useMemo(() => {
-      const years = new Set<number>();
-      tours.forEach(t => years.add(new Date(t.start_date).getFullYear()));
-      years.add(new Date().getFullYear());
-      return Array.from(years).sort((a, b) => b - a);
-    }, [tours]);
+    // State and derived values are in parent scope (tourYearFilter, tourStatusFilter, etc.)
+    const yearFilter = tourYearFilter;
+    const setYearFilter = setTourYearFilter;
+    const statusFilter = tourStatusFilter;
+    const setStatusFilter = setTourStatusFilter;
+    const monthFilter = tourMonthFilter;
+    const setMonthFilter = setTourMonthFilter;
+    const availableYears = tourAvailableYears;
+    const filteredTours = tourFilteredTours;
 
     // Months for filter
     const MONTHS = [
@@ -2587,29 +2610,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
       { value: '11', label: 'Novembro' },
       { value: '12', label: 'Dezembro' },
     ];
-    
-    // Filter tours based on year, month, and status
-    const filteredTours = useMemo(() => {
-      return allToursSorted.filter(t => {
-        const tourDate = new Date(t.start_date);
-        const tourYear = tourDate.getFullYear();
-        const tourMonth = String(tourDate.getMonth() + 1).padStart(2, '0');
-        const isPast = new Date(t.end_date || t.start_date) < today;
-        
-        // Year filter
-        if (tourYear !== yearFilter) return false;
-        
-        // Month filter
-        if (monthFilter !== 'all' && tourMonth !== monthFilter) return false;
-        
-        // Status filter
-        if (statusFilter === 'future' && isPast) return false;
-        if (statusFilter === 'past' && !isPast) return false;
-        
-        return true;
-      }).sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
-    }, [allToursSorted, yearFilter, monthFilter, statusFilter, today]);
-    
+
     // Separate future and past from filtered tours
     const futureTours = filteredTours.filter(t => new Date(t.end_date || t.start_date) >= today);
     const pastTours = filteredTours.filter(t => new Date(t.end_date || t.start_date) < today);
@@ -3461,7 +3462,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
          viewMode === 'analise' ? <FinanceiroAnaliseInteligente tours={tours} reservations={reservations} allTourCosts={allTourCosts} allMonthlyGeneralCosts={allMonthlyGeneralCosts} /> :
          viewMode === 'comparacao' ? <FinanceiroComparacao tours={tours} reservations={reservations} allTourCosts={allTourCosts} allMonthlyGeneralCosts={allMonthlyGeneralCosts} /> :
          viewMode === 'dashboard' ? <DashboardView /> :
-         viewMode === 'passeio' ? <TourView /> :
+         viewMode === 'passeio' ? TourView() :
          viewMode === 'balanco' ? <BalancoView /> :
          viewMode === 'grafica' ? <AnaliseGraficaView /> :
          viewMode === 'historico' ? <HistoricoView /> :
