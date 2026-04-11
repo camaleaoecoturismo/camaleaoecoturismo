@@ -263,8 +263,9 @@ const TourFinancialCharts = React.memo(({
 
 // Password validation done server-side via site_settings
 
-// Editable input that doesn't lose focus
-const EditableInput = ({
+// Uncontrolled input — React never touches the DOM value on re-renders, so focus is never broken.
+// The current value is read from the DOM only on blur, then saved.
+const EditableInput = React.memo(({
   value,
   onChange,
   type = "text",
@@ -277,12 +278,24 @@ const EditableInput = ({
   step?: string;
   className?: string;
 }) => {
-  const [localValue, setLocalValue] = useState(String(value));
-  useEffect(() => {
-    setLocalValue(String(value));
+  const ref = React.useRef<HTMLInputElement>(null);
+  // Sync external value changes (e.g. after save) only when the input is NOT focused
+  React.useEffect(() => {
+    if (ref.current && document.activeElement !== ref.current) {
+      ref.current.value = String(value);
+    }
   }, [value]);
-  return <Input type={type} step={step} value={localValue} onChange={e => setLocalValue(e.target.value)} onBlur={() => onChange(localValue)} className={className} />;
-};
+  return (
+    <Input
+      ref={ref}
+      type={type}
+      step={step}
+      defaultValue={String(value)}
+      onBlur={() => ref.current && onChange(ref.current.value)}
+      className={className}
+    />
+  );
+});
 
 // Password protection component - validates against server-side stored hash
 const PasswordGate = ({
