@@ -54,6 +54,11 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
   const [confirmAccessPassword, setConfirmAccessPassword] = useState('');
   const [showNewAccessPassword, setShowNewAccessPassword] = useState(false);
 
+  // Change financeiro password
+  const [newFinanceiroPassword, setNewFinanceiroPassword] = useState('');
+  const [confirmFinanceiroPassword, setConfirmFinanceiroPassword] = useState('');
+  const [showNewFinanceiroPassword, setShowNewFinanceiroPassword] = useState(false);
+
   // Active sessions
   const [sessions, setSessions] = useState<ActiveSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
@@ -192,6 +197,29 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
       toast.success('Senha do administrador alterada com sucesso');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao alterar senha');
+    }
+  };
+
+  const handleSaveFinanceiroPassword = async () => {
+    if (!newFinanceiroPassword.trim()) {
+      toast.error('Digite uma senha válida');
+      return;
+    }
+    if (newFinanceiroPassword !== confirmFinanceiroPassword) {
+      toast.error('As senhas não coincidem');
+      return;
+    }
+    if (newFinanceiroPassword.length < 4) {
+      toast.error('A senha deve ter no mínimo 4 caracteres');
+      return;
+    }
+    try {
+      await updateSetting('financeiro_password', newFinanceiroPassword);
+      setNewFinanceiroPassword('');
+      setConfirmFinanceiroPassword('');
+      toast.success('Senha do financeiro atualizada');
+    } catch {
+      toast.error('Erro ao salvar senha');
     }
   };
 
@@ -500,6 +528,58 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
                     disabled={!newAccessPassword || !confirmAccessPassword}
                   >
                     Alterar Senha de Acesso
+                  </Button>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Change Financeiro Password */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <KeyRound className="h-4 w-4 text-emerald-600" />
+                  <Label className="text-sm font-medium">Senha do Financeiro</Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Senha solicitada ao abrir o módulo financeiro
+                </p>
+                <div className="space-y-3 pl-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="newFinanceiroPassword" className="text-xs">Nova senha</Label>
+                    <div className="relative">
+                      <Input
+                        id="newFinanceiroPassword"
+                        type={showNewFinanceiroPassword ? 'text' : 'password'}
+                        value={newFinanceiroPassword}
+                        onChange={(e) => setNewFinanceiroPassword(e.target.value)}
+                        placeholder="Mínimo 4 caracteres"
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewFinanceiroPassword(!showNewFinanceiroPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showNewFinanceiroPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmFinanceiroPassword" className="text-xs">Confirmar nova senha</Label>
+                    <Input
+                      id="confirmFinanceiroPassword"
+                      type="password"
+                      value={confirmFinanceiroPassword}
+                      onChange={(e) => setConfirmFinanceiroPassword(e.target.value)}
+                      placeholder="Confirme a nova senha"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveFinanceiroPassword}
+                    disabled={!newFinanceiroPassword || !confirmFinanceiroPassword}
+                  >
+                    Alterar Senha do Financeiro
                   </Button>
                 </div>
               </div>
