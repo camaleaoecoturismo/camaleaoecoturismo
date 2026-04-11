@@ -177,33 +177,62 @@ const TourFinancialCharts = React.memo(({
   faturamento: number; gastosViagem: number; impostoRenda: number; lucroLiquido: number;
 }) => {
   if (faturamento <= 0) return null;
+
+  const lucroPositivo = Math.max(0, lucroLiquido);
+  const prejuizo = lucroLiquido < 0 ? Math.abs(lucroLiquido) : 0;
+
+  // Pie: whole = faturamento → custos + IR + lucro (+ prejuizo slice if negative)
+  const pieData = [
+    { name: 'Custos Viagem', value: gastosViagem, color: '#ef4444' },
+    { name: 'IR (6%)', value: impostoRenda, color: '#6b7280' },
+    ...(lucroPositivo > 0 ? [{ name: 'Lucro', value: lucroPositivo, color: '#22c55e' }] : []),
+    ...(prejuizo > 0 ? [{ name: 'Prejuízo', value: prejuizo, color: '#f97316' }] : []),
+  ].filter(d => d.value > 0);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Pie chart */}
       <Card>
         <CardHeader className="py-3 pb-0">
-          <CardTitle className="text-sm font-medium">Distribuição</CardTitle>
+          <CardTitle className="text-sm font-medium">Distribuição do Faturamento</CardTitle>
         </CardHeader>
-        <CardContent className="pt-2">
-          <div className="flex items-center justify-center">
-            <div className="w-44 h-44">
-              <FinancialPieChart
-                faturamento={faturamento}
-                gastosViagem={gastosViagem}
-                custosVariados={0}
-                custosRecorrentes={0}
-                proLabore={0}
-                impostoRenda={0}
-                lucroLiquido={lucroLiquido}
-              />
-            </div>
-          </div>
-          <div className="flex justify-center gap-4 mt-2">
-            <div className="flex items-center gap-1.5 text-xs"><div className="w-2.5 h-2.5 rounded-full bg-red-500" /><span>Custos</span></div>
-            <div className="flex items-center gap-1.5 text-xs"><div className="w-2.5 h-2.5 rounded-full bg-gray-400" /><span>IR</span></div>
-            <div className="flex items-center gap-1.5 text-xs"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /><span>Lucro</span></div>
+        <CardContent className="pt-3">
+          <ResponsiveContainer width="100%" height={180}>
+            <PieChart>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                innerRadius={45}
+                outerRadius={75}
+                paddingAngle={2}
+                dataKey="value"
+                isAnimationActive={false}
+              >
+                {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+              </Pie>
+              <Tooltip formatter={(value: number) => formatCurrency(value)} />
+            </PieChart>
+          </ResponsiveContainer>
+          {/* Legend with values */}
+          <div className="mt-2 space-y-1">
+            {pieData.map(d => (
+              <div key={d.name} className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                  <span className="text-muted-foreground">{d.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{formatCurrency(d.value)}</span>
+                  <span className="text-muted-foreground w-10 text-right">{((d.value / faturamento) * 100).toFixed(1)}%</span>
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
+
+      {/* Bar chart */}
       <Card>
         <CardHeader className="py-3 pb-0">
           <CardTitle className="text-sm font-medium">Comparativo</CardTitle>
@@ -215,7 +244,7 @@ const TourFinancialCharts = React.memo(({
                 { name: 'Fat.', value: faturamento, fill: '#10b981' },
                 { name: 'Custos', value: gastosViagem, fill: '#ef4444' },
                 { name: 'IR', value: impostoRenda, fill: '#6b7280' },
-                { name: 'Lucro', value: Math.max(0, lucroLiquido), fill: '#3b82f6' },
+                { name: 'Lucro', value: lucroPositivo, fill: '#3b82f6' },
               ]}
               layout="vertical"
               margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
