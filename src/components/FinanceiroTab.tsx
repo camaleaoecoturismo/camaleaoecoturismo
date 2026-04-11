@@ -1117,11 +1117,13 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     });
     
     // FATURAMENTO TOTAL: regime de caixa - soma das parcelas pagas no mês
+    // Includes cancelled reservations that had actual payment (refunds are counted as costs separately)
     let faturamentoTotal = 0;
     reservations.forEach(r => {
-      if (!isConfirmed(r.status)) return;
+      const isCancelled = r.status === 'cancelada' || r.status === 'cancelado';
+      if (!isConfirmed(r.status) && !(isCancelled && (r.valor_pago || 0) > 0)) return;
       const parcelas = parcelasMap.get(r.id);
-      
+
       if (parcelas && parcelas.length > 0) {
         // Sum actual parcela values paid in this month
         parcelas.forEach(p => {
@@ -1134,7 +1136,9 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
         if (!r.data_pagamento) return;
         const payDate = new Date(r.data_pagamento);
         if (payDate >= monthStart && payDate <= monthEnd) {
-          faturamentoTotal += calcRealTourValueLocal(r);
+          faturamentoTotal += isCancelled
+            ? (r.valor_pago || 0) - (r.card_fee_amount || 0)
+            : calcRealTourValueLocal(r);
         }
       }
     });

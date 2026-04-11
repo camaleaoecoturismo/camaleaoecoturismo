@@ -210,15 +210,25 @@ const BalancoCompetencia: React.FC<BalancoCompetenciaProps> = ({
         isConfirmed(r.status) && monthTours.some(t => t.id === r.tour_id)
       );
 
+      // Also include cancelled reservations that had actual payment
+      const cancelledWithPayment = reservations.filter(r =>
+        (r.status === 'cancelada' || r.status === 'cancelado') &&
+        (r.valor_pago || 0) > 0 &&
+        monthTours.some(t => t.id === r.tour_id)
+      );
+
       // RECEITA: sum all parcelas for those reservations (no date filter)
       let receita = 0;
-      monthReservations.forEach(r => {
+      [...monthReservations, ...cancelledWithPayment].forEach(r => {
+        const isCancelled = r.status === 'cancelada' || r.status === 'cancelado';
         const rParcelas = parcelasMap.get(r.id);
         if (rParcelas && rParcelas.length > 0) {
           rParcelas.forEach(p => { receita += Number(p.valor); });
         } else if (r.valor_pago) {
           // Fallback: net value (subtract card fees)
-          receita += r.valor_pago - (r.card_fee_amount || 0);
+          receita += isCancelled
+            ? (r.valor_pago || 0) - (r.card_fee_amount || 0)
+            : r.valor_pago - (r.card_fee_amount || 0);
         }
       });
 
