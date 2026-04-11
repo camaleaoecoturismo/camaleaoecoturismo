@@ -55,6 +55,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
   const [showNewAccessPassword, setShowNewAccessPassword] = useState(false);
 
   // Change financeiro password
+  const [financeiroPasswordEnabled, setFinanceiroPasswordEnabled] = useState(false);
   const [newFinanceiroPassword, setNewFinanceiroPassword] = useState('');
   const [confirmFinanceiroPassword, setConfirmFinanceiroPassword] = useState('');
   const [showNewFinanceiroPassword, setShowNewFinanceiroPassword] = useState(false);
@@ -84,7 +85,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
       const { data } = await supabase
         .from('site_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['admin_2fa_enabled', 'maintenance_mode']);
+        .in('setting_key', ['admin_2fa_enabled', 'maintenance_mode', 'financeiro_password_enabled']);
 
       const settings = (data || []).reduce((acc, item) => {
         acc[item.setting_key] = item.setting_value;
@@ -93,6 +94,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
 
       setTwoFactorEnabled(settings['admin_2fa_enabled'] === 'true');
       setMaintenanceEnabled(settings['maintenance_mode'] === 'true');
+      setFinanceiroPasswordEnabled(settings['financeiro_password_enabled'] === 'true');
     } catch (error) {
       console.error('Error loading settings:', error);
     }
@@ -197,6 +199,16 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
       toast.success('Senha do administrador alterada com sucesso');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao alterar senha');
+    }
+  };
+
+  const handleToggleFinanceiroPassword = async (enabled: boolean) => {
+    setFinanceiroPasswordEnabled(enabled);
+    await updateSetting('financeiro_password_enabled', enabled ? 'true' : 'false');
+    if (!enabled) {
+      setNewFinanceiroPassword('');
+      setConfirmFinanceiroPassword('');
+      toast.success('Senha do financeiro desativada');
     }
   };
 
@@ -534,54 +546,65 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
 
               <Separator />
 
-              {/* Change Financeiro Password */}
+              {/* Financeiro Password Toggle */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <KeyRound className="h-4 w-4 text-emerald-600" />
-                  <Label className="text-sm font-medium">Senha do Financeiro</Label>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <KeyRound className="h-4 w-4 text-emerald-600" />
+                    <Label className="text-sm font-medium">Senha do Financeiro</Label>
+                  </div>
+                  <Switch
+                    checked={financeiroPasswordEnabled}
+                    onCheckedChange={handleToggleFinanceiroPassword}
+                  />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Senha solicitada ao abrir o módulo financeiro
+                  {financeiroPasswordEnabled
+                    ? 'Senha ativada — financeiro exige senha para abrir'
+                    : 'Desativado — financeiro abre sem senha'}
                 </p>
-                <div className="space-y-3 pl-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="newFinanceiroPassword" className="text-xs">Nova senha</Label>
-                    <div className="relative">
-                      <Input
-                        id="newFinanceiroPassword"
-                        type={showNewFinanceiroPassword ? 'text' : 'password'}
-                        value={newFinanceiroPassword}
-                        onChange={(e) => setNewFinanceiroPassword(e.target.value)}
-                        placeholder="Mínimo 4 caracteres"
-                        className="pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewFinanceiroPassword(!showNewFinanceiroPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showNewFinanceiroPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
+
+                {financeiroPasswordEnabled && (
+                  <div className="space-y-3 pl-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="newFinanceiroPassword" className="text-xs">Nova senha</Label>
+                      <div className="relative">
+                        <Input
+                          id="newFinanceiroPassword"
+                          type={showNewFinanceiroPassword ? 'text' : 'password'}
+                          value={newFinanceiroPassword}
+                          onChange={(e) => setNewFinanceiroPassword(e.target.value)}
+                          placeholder="Mínimo 4 caracteres"
+                          className="pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewFinanceiroPassword(!showNewFinanceiroPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showNewFinanceiroPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmFinanceiroPassword" className="text-xs">Confirmar nova senha</Label>
+                      <Input
+                        id="confirmFinanceiroPassword"
+                        type="password"
+                        value={confirmFinanceiroPassword}
+                        onChange={(e) => setConfirmFinanceiroPassword(e.target.value)}
+                        placeholder="Confirme a nova senha"
+                      />
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveFinanceiroPassword}
+                      disabled={!newFinanceiroPassword || !confirmFinanceiroPassword}
+                    >
+                      Alterar Senha do Financeiro
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmFinanceiroPassword" className="text-xs">Confirmar nova senha</Label>
-                    <Input
-                      id="confirmFinanceiroPassword"
-                      type="password"
-                      value={confirmFinanceiroPassword}
-                      onChange={(e) => setConfirmFinanceiroPassword(e.target.value)}
-                      placeholder="Confirme a nova senha"
-                    />
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={handleSaveFinanceiroPassword}
-                    disabled={!newFinanceiroPassword || !confirmFinanceiroPassword}
-                  >
-                    Alterar Senha do Financeiro
-                  </Button>
-                </div>
+                )}
               </div>
 
             </div>

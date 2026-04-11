@@ -272,6 +272,15 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     toast
   } = useToast();
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [passwordRequired, setPasswordRequired] = useState<boolean | null>(null); // null = loading
+
+  useEffect(() => {
+    supabase.from('site_settings').select('setting_value').eq('setting_key', 'financeiro_password_enabled').maybeSingle().then(({ data }) => {
+      const enabled = data?.setting_value === 'true';
+      setPasswordRequired(enabled);
+      if (!enabled) setIsUnlocked(true);
+    });
+  }, []);
   // Map prop viewMode to internal viewMode format
   const viewMode: 'dashboard' | 'passeio' | 'mensal' | 'balanco' | 'grafica' | 'analise' | 'diario' | 'comparacao' | 'historico' | 'competencia' =
     propViewMode === 'passeio' ? 'passeio' :
@@ -543,6 +552,10 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   }, [selectedMonth, isUnlocked]);
 
   // Password gate - MUST be after all hooks
+  if (passwordRequired === null) {
+    return <div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+  }
+
   if (!isUnlocked) {
     return <PasswordGate onUnlock={() => setIsUnlocked(true)} />;
   }
