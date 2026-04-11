@@ -875,6 +875,13 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   // since tourCosts and tourParticipants are loaded specifically for that tour
   const calculateTourFinancials = (tourId: string) => {
     const tourReservations = reservations.filter(r => r.tour_id === tourId && isConfirmed(r.status));
+    // Also include cancelled reservations that had actual payment — their revenue is real even if refunded later
+    const cancelledWithPayment = reservations.filter(r =>
+      r.tour_id === tourId &&
+      (r.status === 'cancelada' || r.status === 'cancelado') &&
+      (r.valor_pago || 0) > 0
+    );
+    const allRevenueReservations = [...tourReservations, ...cancelledWithPayment];
     // Use tourCosts directly since it's already filtered by selectedTourId in fetchTourCosts
     const tourCostsFiltered = tourCosts;
     const numClientes = tourReservations.reduce((sum, r) => sum + (r.numero_participantes || 1), 0) || 1;
@@ -893,7 +900,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
       return m === 'credit_card' || m === 'cartao' || m === 'card';
     };
 
-    tourReservations.forEach(r => {
+    allRevenueReservations.forEach(r => {
       const valorTotalReserva = calcValorTotalReserva(r, tourParticipants);
 
       const rawPago = r.valor_pago || 0;
@@ -911,14 +918,16 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
       }
 
       // Faturamento = valor pago sem taxas (ou valor esperado se não pagou)
+      // For cancelled reservations, only count what was actually paid (not expected value)
+      const isCancelled = r.status === 'cancelada' || r.status === 'cancelado';
       if (rawPago === 0) {
-        faturamento += valorTotalReserva;
+        if (!isCancelled) faturamento += valorTotalReserva;
       } else {
         faturamento += pagoBase;
       }
 
       valorRecebidoBase += pagoBase;
-      valorEmAbertoRaw += (valorTotalReserva - pagoBase);
+      if (!isCancelled) valorEmAbertoRaw += (valorTotalReserva - pagoBase);
     });
 
     const valorEmAberto = Math.max(0, valorEmAbertoRaw);
