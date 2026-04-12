@@ -64,7 +64,8 @@ const Admin = () => {
   const [showIntro, setShowIntro] = useState(() => !sessionStorage.getItem('intro_shown'));
   const [showSummary, setShowSummary] = useState(false);
   const [introLogoUrl, setIntroLogoUrl] = useState<string | null>(null);
-  const [lastLoginDate, setLastLoginDate] = useState<string | null>(null);
+  // Read "since last visit" from localStorage BEFORE updating it — so it always reflects the actual last visit
+  const [lastLoginDate] = useState<string | null>(() => localStorage.getItem('admin_last_seen'));
 
   useEffect(() => {
     checkAuth();
@@ -308,23 +309,6 @@ const Admin = () => {
       .then(({ data }) => { if (data?.setting_value) setIntroLogoUrl(data.setting_value); });
   }, [showIntro]);
 
-  // Load last login date for activity summary (second-to-last login entry)
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return;
-      supabase.from('staff_activity_logs')
-        .select('created_at')
-        .eq('user_id', session.user.id)
-        .eq('action_type', 'login')
-        .order('created_at', { ascending: false })
-        .limit(2)
-        .then(({ data }) => {
-          if (data && data.length > 1) setLastLoginDate(data[1].created_at);
-          else if (data && data.length === 1) setLastLoginDate(null); // first ever login
-        });
-    });
-  }, []);
-
   // When staff permissions load, redirect to their first allowed tab
   useEffect(() => {
     if (!staffPerms.loading && staffPerms.isStaff) {
@@ -509,6 +493,8 @@ const Admin = () => {
 
   const handleIntroComplete = () => {
     sessionStorage.setItem('intro_shown', 'true');
+    // Record current visit timestamp so the NEXT session knows "since when"
+    localStorage.setItem('admin_last_seen', new Date().toISOString());
     setShowIntro(false);
     setShowSummary(true);
   };
