@@ -194,7 +194,7 @@ const Passeio = () => {
       const today = new Date().toISOString().split("T")[0];
       const { data: related } = await db
         .from("tours")
-        .select(`*, pricing_options:tour_pricing_options(id, option_name, pix_price, card_price)`)
+        .select(`*, pricing_options:tour_pricing_options(id, option_name, description, pix_price, card_price)`)
         .eq("city", data.city)
         .eq("is_active", true)
         .eq("is_exclusive", false)
@@ -659,6 +659,9 @@ const Passeio = () => {
                       >
                         <div>
                           <p className="text-sm font-semibold text-foreground">{opt.option_name}</p>
+                          {opt.description && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{opt.description}</p>
+                          )}
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <PixIcon size={12} />
                             <span className="text-sm font-bold text-primary">{formatCurrency(opt.pix_price)}</span>
@@ -954,6 +957,9 @@ const Passeio = () => {
                         >
                           <div>
                             <p className="text-sm font-semibold text-foreground">{opt.option_name}</p>
+                            {opt.description && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{opt.description}</p>
+                            )}
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <PixIcon size={12} />
                               <span className="text-sm font-bold text-primary">{formatCurrency(opt.pix_price)}</span>
