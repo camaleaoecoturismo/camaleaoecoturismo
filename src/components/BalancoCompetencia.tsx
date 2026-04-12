@@ -288,7 +288,7 @@ const BalancoCompetencia: React.FC<BalancoCompetenciaProps> = ({
         let tourCusto = 0;
         costs.forEach(c => { tourCusto += calcEffectiveQty(c, confirmedCount, tourParticipants, tourRes) * c.unit_value; });
 
-        return { tour, receita: tourReceita, custo: tourCusto, clientes: tourRes.length };
+        return { tour, receita: tourReceita, custo: tourCusto, clientes: confirmedCount };
       });
 
       return { mi, receita, gastosViagem, manutencao, proLabore, ir, gastosTotal, resultado, isFuture, hasData, tourDetail };
