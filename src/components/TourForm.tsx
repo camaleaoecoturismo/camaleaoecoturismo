@@ -1086,6 +1086,25 @@ const TourForm = ({ tour, onSuccess, onCancel }: TourFormProps) => {
                           />
                         </div>
 
+                        <FormField
+                          control={form.control}
+                          name={`pricing_options.${index}.description`}
+                          render={({ field }) => (
+                            <FormItem className="mt-3">
+                              <FormLabel className="text-slate-600 text-xs">Descrição (opcional)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Ex: Acomodação em quarto duplo com banheiro privativo"
+                                  {...field}
+                                  value={field.value ?? ''}
+                                  className="bg-white h-9 text-sm"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
                         {index === 0 && (
                           <div className="mt-3 p-3 bg-white rounded border text-xs space-y-1">
                             <div className="flex justify-between">
