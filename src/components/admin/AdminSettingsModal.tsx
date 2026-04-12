@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Lock, KeyRound, Eye, EyeOff, Settings, AlertTriangle, WrenchIcon, MonitorSmartphone, LogOut, Trash2, RefreshCw } from 'lucide-react';
+import { Shield, Lock, KeyRound, Eye, EyeOff, Settings, AlertTriangle, WrenchIcon, MonitorSmartphone, LogOut, Trash2, RefreshCw, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -43,6 +43,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
   // Settings states
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
+  const [chatbotEnabled, setChatbotEnabled] = useState(true);
 
   // Change admin password
   const [newAdminPassword, setNewAdminPassword] = useState('');
@@ -85,7 +86,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
       const { data } = await supabase
         .from('site_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['admin_2fa_enabled', 'maintenance_mode', 'financeiro_password_enabled']);
+        .in('setting_key', ['admin_2fa_enabled', 'maintenance_mode', 'financeiro_password_enabled', 'chatbot_enabled']);
 
       const settings = (data || []).reduce((acc, item) => {
         acc[item.setting_key] = item.setting_value;
@@ -95,6 +96,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
       setTwoFactorEnabled(settings['admin_2fa_enabled'] === 'true');
       setMaintenanceEnabled(settings['maintenance_mode'] === 'true');
       setFinanceiroPasswordEnabled(settings['financeiro_password_enabled'] === 'true');
+      setChatbotEnabled(settings['chatbot_enabled'] !== 'false'); // default true if not set
     } catch (error) {
       console.error('Error loading settings:', error);
     }
@@ -173,6 +175,16 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
       await updateSetting('maintenance_mode', enabled.toString());
       setMaintenanceEnabled(enabled);
       toast.success(`Modo manutenção ${enabled ? 'ativado' : 'desativado'}`);
+    } catch {
+      toast.error('Erro ao atualizar configuração');
+    }
+  };
+
+  const handleToggleChatbot = async (enabled: boolean) => {
+    try {
+      await updateSetting('chatbot_enabled', enabled.toString());
+      setChatbotEnabled(enabled);
+      toast.success(`Chat da Camila ${enabled ? 'ativado' : 'desativado'}`);
     } catch {
       toast.error('Erro ao atualizar configuração');
     }
@@ -370,6 +382,22 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ open, onOpenCha
                   </p>
                 </div>
                 <Switch checked={maintenanceEnabled} onCheckedChange={handleToggleMaintenance} />
+              </div>
+
+              <Separator />
+
+              {/* Chatbot Camila */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                    <Label className="text-sm font-medium">Chat da Camila (IA)</Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {chatbotEnabled ? 'Visível para visitantes do site' : 'Oculto para visitantes do site'}
+                  </p>
+                </div>
+                <Switch checked={chatbotEnabled} onCheckedChange={handleToggleChatbot} />
               </div>
 
               <Separator />

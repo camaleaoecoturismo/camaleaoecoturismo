@@ -293,6 +293,7 @@ export function AIChatWidget() {
   const [showBubble, setShowBubble] = useState(false);
   const [showBadge, setShowBadge] = useState(false);
   const [isManualMode, setIsManualMode] = useState(false);
+  const [chatbotEnabled, setChatbotEnabled] = useState<boolean | null>(null);
   // Reactive session ID — can be overridden by admin broadcast
   const [sessionId, setSessionId] = useState(getOrCreateSessionId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -312,6 +313,15 @@ export function AIChatWidget() {
     setShowBadge(false);
     setIsOpen((o) => !o);
   });
+
+  // Check if chatbot is enabled
+  useEffect(() => {
+    supabase.from('site_settings').select('setting_value')
+      .eq('setting_key', 'chatbot_enabled').maybeSingle()
+      .then(({ data }) => {
+        setChatbotEnabled(data?.setting_value !== 'false');
+      });
+  }, []);
 
   // Show greeting bubble on load, then swap to badge
   useEffect(() => {
@@ -532,6 +542,9 @@ export function AIChatWidget() {
       sendMessage(input);
     }
   };
+
+  // Hide if disabled by admin
+  if (chatbotEnabled === false) return null;
 
   // Hide chat on non-public pages — AFTER all hooks
   const HIDDEN_PREFIXES = [
