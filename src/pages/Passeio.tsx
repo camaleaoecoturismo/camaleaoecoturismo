@@ -75,6 +75,7 @@ const Passeio = () => {
   const [packageQuantities, setPackageQuantities] = useState<Record<string, number>>({});
   const [showInstallments, setShowInstallments] = useState(false);
   const [tourMoments, setTourMoments] = useState<Story[]>([]);
+  const [showBottomBar, setShowBottomBar] = useState(false);
   const [storyModalIdx, setStoryModalIdx] = useState<number | null>(null);
   const [viewedStoryIds, setViewedStoryIds] = useState<Set<string>>(() => {
     try {
@@ -84,6 +85,12 @@ const Passeio = () => {
   });
 
   const { availability } = useTourAvailability(tour?.id);
+
+  useEffect(() => {
+    const onScroll = () => setShowBottomBar(window.scrollY > 300);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     if (!tourId) return;
@@ -1179,14 +1186,9 @@ const Passeio = () => {
         </div>{/* end grid */}
       </div>{/* end outer wrapper */}
 
-      {/* ── BOTTOM BAR: only Reservar button ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 dark:bg-card/95 backdrop-blur-sm border-t border-border shadow-lg">
-        <div className="flex items-center justify-center max-w-lg mx-auto px-4 py-3 gap-3">
-          {minPrice > 0 && !isSoldOut && (
-            <span className="text-sm font-bold text-primary">
-              {formatCurrency(minPrice)}
-            </span>
-          )}
+      {/* ── BOTTOM BAR: only Reservar button — appears on scroll ── */}
+      <div className={`fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 dark:bg-card/95 backdrop-blur-sm border-t border-border shadow-lg transition-transform duration-300 ${showBottomBar ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div className="flex items-center justify-center max-w-lg mx-auto px-4 py-3">
           <button
             onClick={isSoldOut && isFutureTour ? () => setWaitlistOpen(true) : !isSoldOut ? () => setReservaOpen(true) : undefined}
             disabled={isSoldOut && !isFutureTour}
