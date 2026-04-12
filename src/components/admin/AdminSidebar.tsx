@@ -819,7 +819,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             >
               <X className="h-4 w-4" />
             </button>
-            <div className="flex flex-col h-full pt-14 overflow-y-auto">
+            <div className="flex-1 min-h-0 pt-14 pb-6 overflow-y-auto">
               {visibleGroups.map((group, gi) => (
                 <div key={gi} className="px-3">
                   {group.label && (
