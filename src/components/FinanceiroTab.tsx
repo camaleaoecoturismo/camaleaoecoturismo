@@ -442,6 +442,9 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   const [newExpenseName, setNewExpenseName] = useState('');
   const [newExpenseValue, setNewExpenseValue] = useState('');
   const [newExpenseType, setNewExpenseType] = useState<string>('outros');
+
+  // MonthlyView state (lifted so MonthlyView can be called as {MonthlyView()})
+  const [expandedBreakdown, setExpandedBreakdown] = useState<string | null>(null);
   const [newPaymentMethod, setNewPaymentMethod] = useState<string>('avista');
   const [newInstallments, setNewInstallments] = useState<string>('1');
   const [isAddingInstallments, setIsAddingInstallments] = useState(false);
@@ -3014,10 +3017,10 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     );
   };
 
-  // Monthly View - completely redesigned with minimalist approach
+  // Monthly View — no hooks inside (expandedBreakdown lifted to parent so this can be called as {MonthlyView()})
   const MonthlyView = () => {
     const financials = calculateMonthlyFinancials();
-    const [expandedBreakdown, setExpandedBreakdown] = useState<string | null>(null);
+    // expandedBreakdown / setExpandedBreakdown are in parent scope
     const [year, month] = selectedMonth.split('-');
     const monthLabel = format(new Date(parseInt(year), parseInt(month) - 1), "MMMM 'de' yyyy", {
       locale: ptBR
@@ -3480,7 +3483,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
          viewMode === 'grafica' ? <AnaliseGraficaView /> :
          viewMode === 'historico' ? <HistoricoView /> :
          viewMode === 'competencia' ? <CompetenciaView /> :
-         <MonthlyView />}
+         MonthlyView()}
       </ScrollArea>
     </div>;
 };
