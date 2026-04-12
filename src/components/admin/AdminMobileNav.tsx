@@ -1,12 +1,12 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { 
-  Briefcase, 
-  DollarSign, 
-  CalendarDays, 
-  Wrench, 
-  Users, 
-  Crown, 
+import {
+  Briefcase,
+  DollarSign,
+  CalendarDays,
+  Wrench,
+  Users,
+  Crown,
   FileQuestion,
   LogOut,
   MoreHorizontal,
@@ -35,7 +35,13 @@ import {
   ChevronRight,
   ChevronDown,
   Activity,
-  Bus
+  Bus,
+  Settings,
+  MessageCircle,
+  UserCog,
+  Instagram,
+  BookOpen,
+  MapPin,
 } from 'lucide-react';
 import {
   Sheet,
@@ -43,6 +49,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import AdminSettingsModal from './AdminSettingsModal';
 
 interface SubMenuItem {
   id: string;
@@ -61,6 +68,7 @@ interface AdminMobileNavProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   onSignOut: () => void;
+  isAdmin?: boolean;
 }
 
 const menuItems: MenuItem[] = [
@@ -143,6 +151,16 @@ const moreMenuItems: MenuItem[] = [
     ]
   },
   {
+    id: 'marketing',
+    label: 'Marketing',
+    icon: <Instagram className="h-5 w-5" />,
+    subItems: [
+      { id: 'jornada', label: 'Jornada', icon: <MapPin className="h-4 w-4" /> },
+      { id: 'conteudo-calendario', label: 'Social', icon: <Instagram className="h-4 w-4" /> },
+      { id: 'paginas-institucionais', label: 'Blog & FAQ', icon: <BookOpen className="h-4 w-4" /> },
+    ]
+  },
+  {
     id: 'formularios',
     label: 'Formulários',
     icon: <FileQuestion className="h-5 w-5" />,
@@ -151,6 +169,21 @@ const moreMenuItems: MenuItem[] = [
     id: 'categorias',
     label: 'Categorias',
     icon: <Tag className="h-5 w-5" />,
+  },
+  {
+    id: 'conversas',
+    label: 'Conversas',
+    icon: <MessageCircle className="h-5 w-5" />,
+  },
+  {
+    id: 'guias',
+    label: 'Guias',
+    icon: <Users className="h-5 w-5" />,
+  },
+  {
+    id: 'usuarios',
+    label: 'Usuários',
+    icon: <UserCog className="h-5 w-5" />,
   },
   {
     id: 'analytics',
@@ -166,15 +199,17 @@ const moreMenuItems: MenuItem[] = [
   },
 ];
 
-const AdminMobileNav: React.FC<AdminMobileNavProps> = ({ 
-  activeTab, 
-  onTabChange, 
-  onSignOut 
+const AdminMobileNav: React.FC<AdminMobileNavProps> = ({
+  activeTab,
+  onTabChange,
+  onSignOut,
+  isAdmin = false,
 }) => {
   const [moreSheetOpen, setMoreSheetOpen] = React.useState(false);
   const [subMenuSheetOpen, setSubMenuSheetOpen] = React.useState(false);
   const [selectedMenuItem, setSelectedMenuItem] = React.useState<MenuItem | null>(null);
   const [expandedItems, setExpandedItems] = React.useState<string[]>([]);
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
 
   const isItemActive = (item: MenuItem) => {
     if (item.subItems) {
@@ -351,7 +386,7 @@ const AdminMobileNav: React.FC<AdminMobileNavProps> = ({
             ))}
 
             {/* More menu items with expandable submenus */}
-            {moreMenuItems.map((item) => (
+            {moreMenuItems.filter(item => item.id !== 'usuarios' || isAdmin).map((item) => (
               <div key={item.id}>
                 <button
                   onClick={() => handleMoreItemClick(item)}
@@ -392,8 +427,17 @@ const AdminMobileNav: React.FC<AdminMobileNavProps> = ({
               </div>
             ))}
             
-            {/* Logout in More menu */}
-            <div className="pt-4 mt-4 border-t border-border">
+            {/* Settings + Logout */}
+            <div className="pt-4 mt-4 border-t border-border space-y-1">
+              {isAdmin && (
+                <button
+                  onClick={() => { setSettingsOpen(true); setMoreSheetOpen(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-foreground hover:bg-muted active:bg-muted transition-colors"
+                >
+                  <Settings className="h-5 w-5" />
+                  <span>Configurações</span>
+                </button>
+              )}
               <button
                 onClick={onSignOut}
                 className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-destructive hover:bg-destructive/10 active:bg-destructive/10 transition-colors"
@@ -405,6 +449,11 @@ const AdminMobileNav: React.FC<AdminMobileNavProps> = ({
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Settings Modal */}
+      {isAdmin && (
+        <AdminSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
+      )}
     </>
   );
 };

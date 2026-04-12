@@ -583,10 +583,11 @@ const Admin = () => {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <AdminMobileNav 
+      <AdminMobileNav
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onSignOut={handleSignOut}
+        isAdmin={staffPerms.isAdmin}
       />
 
       {/* Task Panel */}
