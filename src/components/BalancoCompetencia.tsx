@@ -71,6 +71,7 @@ interface ParticipantData {
   id: string;
   reserva_id: string;
   pricing_option_id: string | null;
+  pricing_option_name: string | null;
   selected_optionals: any[] | null;
 }
 
@@ -124,6 +125,7 @@ const calcEffectiveQty = (
   confirmedCount: number,
   participants: ParticipantData[],
   tourReservations: Reservation[],
+  pricingOptionsMap?: Map<string, string>, // id → option_name
 ): number => {
   if (cost.auto_scale_optional_item_id) {
     let count = 0;
@@ -138,7 +140,11 @@ const calcEffectiveQty = (
     return count || 0;
   }
   if (cost.auto_scale_pricing_option_id) {
-    return participants.filter(p => p.pricing_option_id === cost.auto_scale_pricing_option_id).length;
+    const optionName = pricingOptionsMap?.get(cost.auto_scale_pricing_option_id);
+    return participants.filter(p =>
+      p.pricing_option_id === cost.auto_scale_pricing_option_id ||
+      (p.pricing_option_id === null && optionName != null && p.pricing_option_name === optionName)
+    ).length;
   }
   if (cost.auto_scale_participants && confirmedCount > 0) return confirmedCount;
   return cost.quantity;
@@ -157,6 +163,7 @@ const BalancoCompetencia: React.FC<BalancoCompetenciaProps> = ({
 }) => {
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [participants, setParticipants] = useState<ParticipantData[]>([]);
+  const [pricingOptionsMap, setPricingOptionsMap] = useState<Map<string, string>>(new Map());
   const [detailMonth, setDetailMonth] = useState<number | null>(null);
   const [internalYear, setInternalYear] = useState(selectedYear);
 
@@ -165,17 +172,22 @@ const BalancoCompetencia: React.FC<BalancoCompetenciaProps> = ({
 
   useEffect(() => {
     const fetch = async () => {
-      const [pRes, partRes] = await Promise.all([
+      const [pRes, partRes, optRes] = await Promise.all([
         supabase.from('reserva_parcelas').select('reserva_id, valor, data_pagamento'),
-        supabase.from('reservation_participants' as any).select('id, reserva_id, pricing_option_id, selected_optionals'),
+        supabase.from('reservation_participants' as any).select('id, reserva_id, pricing_option_id, pricing_option_name, selected_optionals'),
+        supabase.from('tour_pricing_options').select('id, option_name'),
       ]);
       setParcelas((pRes.data || []) as Parcela[]);
       setParticipants(((partRes.data || []) as any[]).map((p: any) => ({
         id: p.id,
         reserva_id: p.reserva_id,
         pricing_option_id: p.pricing_option_id || null,
+        pricing_option_name: p.pricing_option_name || null,
         selected_optionals: Array.isArray(p.selected_optionals) ? p.selected_optionals : null,
       })));
+      const map = new Map<string, string>();
+      ((optRes.data || []) as any[]).forEach((o: any) => { if (o.id && o.option_name) map.set(o.id, o.option_name); });
+      setPricingOptionsMap(map);
     };
     fetch();
   }, []);
@@ -240,7 +252,7 @@ const BalancoCompetencia: React.FC<BalancoCompetenciaProps> = ({
         const confirmedCount = tourRes.reduce((s, r) => s + (r.numero_participantes || 1), 0);
         const tourParticipants = participants.filter(p => tourRes.some(r => r.id === p.reserva_id));
         costs.forEach(c => {
-          gastosViagem += calcEffectiveQty(c, confirmedCount, tourParticipants, tourRes) * c.unit_value;
+          gastosViagem += calcEffectiveQty(c, confirmedCount, tourParticipants, tourRes, pricingOptionsMap) * c.unit_value;
         });
       });
 
@@ -286,7 +298,7 @@ const BalancoCompetencia: React.FC<BalancoCompetenciaProps> = ({
         const confirmedCount = tourRes.reduce((s, r) => s + (r.numero_participantes || 1), 0);
         const tourParticipants = participants.filter(p => tourRes.some(r => r.id === p.reserva_id));
         let tourCusto = 0;
-        costs.forEach(c => { tourCusto += calcEffectiveQty(c, confirmedCount, tourParticipants, tourRes) * c.unit_value; });
+        costs.forEach(c => { tourCusto += calcEffectiveQty(c, confirmedCount, tourParticipants, tourRes, pricingOptionsMap) * c.unit_value; });
 
         return { tour, receita: tourReceita, custo: tourCusto, clientes: confirmedCount };
       });

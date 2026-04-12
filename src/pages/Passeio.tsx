@@ -28,8 +28,6 @@ import {
   FileText,
   Clock,
   Info,
-  Map as MapIcon,
-  CheckSquare,
   ShoppingCart,
   Plus,
   Minus,
@@ -53,7 +51,6 @@ const MONTH_NAMES = [
   "jul", "ago", "set", "out", "nov", "dez",
 ];
 
-type NavItem = { id: string; label: string; icon: React.ElementType };
 
 const scrollTo = (id: string, block: ScrollLogicalPosition = "start") => {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block });
@@ -351,15 +348,6 @@ const Passeio = () => {
     tour.etiqueta !== "Vagas encerradas" &&
     tour.etiqueta !== "vagas encerradas";
 
-  // Section nav items — only show sections that have content
-  const navItems: NavItem[] = [
-    { id: "sobre", label: "Sobre", icon: Info, show: !!tour.about },
-    { id: "roteiro", label: "Roteiro", icon: MapIcon, show: !!tour.itinerary },
-    { id: "incluso", label: "Incluso", icon: CheckSquare, show: !!(tour.includes || tour.not_includes) },
-    { id: "embarques", label: "Embarques", icon: MapPin, show: true },
-  ].filter((item): item is NavItem & { show: boolean } => item.show).map(({ id, label, icon }) => ({ id, label, icon }));
-
-  const midIndex = Math.ceil(navItems.length / 2);
 
   return (
     <div className="min-h-screen bg-background">
@@ -1191,45 +1179,26 @@ const Passeio = () => {
         </div>{/* end grid */}
       </div>{/* end outer wrapper */}
 
-      {/* ── SECTION NAV BAR with elevated center Reservar button ── */}
+      {/* ── BOTTOM BAR: only Reservar button ── */}
       <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 dark:bg-card/95 backdrop-blur-sm border-t border-border shadow-lg">
-        <div className="flex items-end max-w-lg mx-auto px-2">
-          {navItems.slice(0, midIndex).map(({ id, label, icon: Icon }) => (
-            <button key={id} onClick={() => scrollTo(id)} className="flex-1 flex flex-col items-center gap-0.5 py-3 text-muted-foreground hover:text-primary transition-colors">
-              <Icon className="w-5 h-5" />
-              <span className="text-[10px] font-medium leading-none">{label}</span>
-            </button>
-          ))}
-
-          {/* Center elevated Reservar button */}
-          <div className="flex-1 flex flex-col items-center -mt-5 pb-2">
-            {minPrice > 0 && !isSoldOut && (
-              <span className="text-[9px] font-bold text-primary leading-none mb-1">
-                {formatCurrency(minPrice)}
-              </span>
-            )}
-            <button
-              onClick={isSoldOut && isFutureTour ? () => setWaitlistOpen(true) : !isSoldOut ? () => setReservaOpen(true) : undefined}
-              disabled={isSoldOut && !isFutureTour}
-              className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center border-4 border-white dark:border-card transition-colors ${
-                isSoldOut && isFutureTour ? "bg-orange-500 hover:bg-orange-600 text-white"
-                : isSoldOut ? "bg-muted text-muted-foreground"
-                : "bg-primary hover:bg-primary/90 text-primary-foreground"
-              }`}
-            >
-              {isSoldOut && isFutureTour ? <Bell className="w-5 h-5" /> : <ShoppingCart className="w-5 h-5" />}
-            </button>
-            <span className={`text-[10px] font-semibold leading-none mt-1 ${isSoldOut && isFutureTour ? "text-orange-500" : isSoldOut ? "text-muted-foreground" : "text-primary"}`}>
-              {isSoldOut && isFutureTour ? "Espera" : "Reservar"}
+        <div className="flex items-center justify-center max-w-lg mx-auto px-4 py-3 gap-3">
+          {minPrice > 0 && !isSoldOut && (
+            <span className="text-sm font-bold text-primary">
+              {formatCurrency(minPrice)}
             </span>
-          </div>
-
-          {navItems.slice(midIndex).map(({ id, label, icon: Icon }) => (
-            <button key={id} onClick={() => scrollTo(id)} className="flex-1 flex flex-col items-center gap-0.5 py-3 text-muted-foreground hover:text-primary transition-colors">
-              <Icon className="w-5 h-5" />
-              <span className="text-[10px] font-medium leading-none">{label}</span>
-            </button>
-          ))}
+          )}
+          <button
+            onClick={isSoldOut && isFutureTour ? () => setWaitlistOpen(true) : !isSoldOut ? () => setReservaOpen(true) : undefined}
+            disabled={isSoldOut && !isFutureTour}
+            className={`flex items-center gap-2 px-6 py-3 rounded-full shadow-lg font-semibold text-sm transition-colors ${
+              isSoldOut && isFutureTour ? "bg-orange-500 hover:bg-orange-600 text-white"
+              : isSoldOut ? "bg-muted text-muted-foreground"
+              : "bg-primary hover:bg-primary/90 text-primary-foreground"
+            }`}
+          >
+            {isSoldOut && isFutureTour ? <Bell className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
+            {isSoldOut && isFutureTour ? "Entrar na lista de espera" : "Reservar agora"}
+          </button>
         </div>
       </div>
 

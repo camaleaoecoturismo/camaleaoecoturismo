@@ -387,44 +387,54 @@ export function ReservaModal({ isOpen, onClose, tour, preSelectedQuantities }: R
 
   // Start chat when modal opens - show package selection first (if tour has packages)
   useEffect(() => {
-    if (isOpen && questions.length > 0 && chatMessages.length === 0 && tour) {
-      const hasPreSelection = preSelectedQuantities && Object.values(preSelectedQuantities).some(q => q > 0);
+    if (!isOpen || !tour) return;
+    if (questions.length === 0) return;
+    // Only initialize if we're at the very start (no messages, no selection in progress)
+    if (chatMessages.length > 0 || showPackageSelection || showParticipantsDataForm) return;
 
-      if (hasPreSelection && tour.pricing_options && tour.pricing_options.length > 0) {
-        // Packages already chosen on the page — skip selection, go straight to participants form
-        setTimeout(() => {
-          const quantities = preSelectedQuantities!;
-          setPackageQuantities(quantities);
-          const participants: FullParticipantData[] = [];
-          Object.entries(quantities).forEach(([optionId, qty]) => {
-            const option = tour.pricing_options?.find(o => o.id === optionId);
-            if (option && qty > 0) {
-              for (let i = 0; i < qty; i++) {
-                participants.push(createEmptyParticipantForm(optionId, option.option_name, option.pix_price));
-              }
+    const hasPreSelection = preSelectedQuantities && Object.values(preSelectedQuantities).some(q => q > 0);
+    let timers: ReturnType<typeof setTimeout>[] = [];
+
+    if (hasPreSelection && tour.pricing_options && tour.pricing_options.length > 0) {
+      // Packages already chosen on the page — skip selection, go straight to participants form
+      const t1 = setTimeout(() => {
+        const quantities = preSelectedQuantities!;
+        setPackageQuantities(quantities);
+        const participants: FullParticipantData[] = [];
+        Object.entries(quantities).forEach(([optionId, qty]) => {
+          const option = tour.pricing_options?.find(o => o.id === optionId);
+          if (option && qty > 0) {
+            for (let i = 0; i < qty; i++) {
+              participants.push(createEmptyParticipantForm(optionId, option.option_name, option.pix_price));
             }
-          });
-          setFullParticipantsData(participants);
-          setFormData(prev => ({ ...prev, numero_participantes: participants.length.toString() }));
-          setIsTyping(true);
-          setTimeout(() => {
-            setIsTyping(false);
-            setChatMessages([{ type: "question", text: "Preencha os dados de cada participante:" }]);
-            setShowParticipantsDataForm(true);
-          }, 800);
-          updateTrackingProgress('package_selection', 1);
-        }, 300);
-      } else if (tour.pricing_options && tour.pricing_options.length > 0) {
-        // No pre-selection: show package selection inside the modal
-        setTimeout(() => {
-          setShowPackageSelection(true);
-          updateTrackingProgress('package_selection', 1);
-        }, 500);
-      } else {
-        // Fallback to old flow for tours without packages
-        setTimeout(() => showNextQuestion(), 500);
-      }
+          }
+        });
+        setFullParticipantsData(participants);
+        setFormData(prev => ({ ...prev, numero_participantes: participants.length.toString() }));
+        setIsTyping(true);
+        const t2 = setTimeout(() => {
+          setIsTyping(false);
+          setChatMessages([{ type: "question", text: "Preencha os dados de cada participante:" }]);
+          setShowParticipantsDataForm(true);
+        }, 800);
+        timers.push(t2);
+        updateTrackingProgress('package_selection', 1);
+      }, 300);
+      timers.push(t1);
+    } else if (tour.pricing_options && tour.pricing_options.length > 0) {
+      // No pre-selection: show package selection inside the modal
+      const t = setTimeout(() => {
+        setShowPackageSelection(true);
+        updateTrackingProgress('package_selection', 1);
+      }, 300);
+      timers.push(t);
+    } else {
+      // Fallback to old flow for tours without packages
+      const t = setTimeout(() => showNextQuestion(), 300);
+      timers.push(t);
     }
+
+    return () => { timers.forEach(clearTimeout); };
   }, [isOpen, questions, tour]);
 
   // Lock body scroll when modal is open (vertical + horizontal)
@@ -2006,6 +2016,7 @@ setChatMessages([]);
     setShowParticipantsDataForm(false);
     setFullParticipantsData([]);
     setPackageQuantities({});
+    setShowCloseConfirmation(false);
   };
 
   const resetForm = () => {
@@ -2870,7 +2881,9 @@ setChatMessages([]);
       setShowCloseConfirmation(true);
       return;
     }
-    // No data — register abandonment and close
+    // No data — close immediately, then register abandonment in background
+    onClose();
+    resetFormState();
     if (trackingIdRef.current) {
       supabase
         .from('form_abandonment_tracking')
@@ -2881,8 +2894,6 @@ setChatMessages([]);
         })
         .eq('id', trackingIdRef.current);
     }
-    resetFormState();
-    onClose();
   };
 
   const confirmClose = () => {
