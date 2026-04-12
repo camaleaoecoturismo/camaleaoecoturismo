@@ -56,28 +56,29 @@ const AnalyticsBehavior: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch sessions first
-      let sessionsQuery = supabase
-        .from('analytics_sessions')
-        .select('id, utm_campaign')
-        .gte('first_visit_at', filters.startDate.toISOString())
-        .lte('first_visit_at', filters.endDate.toISOString());
+      // Fetch pageviews with embedded session data (avoids .in() with thousands of IDs)
+      let pageviewsQuery = supabase
+        .from('analytics_pageviews')
+        .select('*, analytics_sessions!inner(utm_campaign, device_type)')
+        .gte('viewed_at', filters.startDate.toISOString())
+        .lte('viewed_at', filters.endDate.toISOString());
 
       if (filters.deviceType !== 'all') {
-        sessionsQuery = sessionsQuery.eq('device_type', filters.deviceType);
+        pageviewsQuery = pageviewsQuery.eq('analytics_sessions.device_type', filters.deviceType);
       }
       if (filters.campaign !== 'all') {
-        sessionsQuery = sessionsQuery.eq('utm_campaign', filters.campaign);
+        pageviewsQuery = pageviewsQuery.eq('analytics_sessions.utm_campaign', filters.campaign);
       }
 
-      const { data: sessions } = await sessionsQuery;
-      const sessionIds = sessions?.map(s => s.id) || [];
+      const { data: pageviews } = await pageviewsQuery;
 
-      // Fetch pageviews
-      const { data: pageviews } = await supabase
-        .from('analytics_pageviews')
-        .select('*')
-        .in('session_id', sessionIds.length > 0 ? sessionIds : ['00000000-0000-0000-0000-000000000000']);
+      // Fetch unique campaigns for filter dropdown
+      const { data: sessions } = await supabase
+        .from('analytics_sessions')
+        .select('utm_campaign')
+        .gte('first_visit_at', filters.startDate.toISOString())
+        .lte('first_visit_at', filters.endDate.toISOString())
+        .not('utm_campaign', 'is', null);
 
       // Group by page
       const pageGroups: Record<string, { views: any[], time: number, scroll: number, cta: number }> = {};
@@ -146,7 +147,7 @@ const AnalyticsBehavior: React.FC = () => {
       const uniquePages = [...new Set(pageviews?.map(pv => pv.page_path).filter(Boolean) as string[])];
       const uniqueCampaigns = [...new Set(sessions?.map(s => s.utm_campaign).filter(Boolean) as string[])];
       setPages(uniquePages);
-      setCampaigns(uniqueCampaigns);
+      setCampaigns(uniqueCampaigns as string[]);
 
       // Generate insights
       generateInsights(tableData, funnelResults);

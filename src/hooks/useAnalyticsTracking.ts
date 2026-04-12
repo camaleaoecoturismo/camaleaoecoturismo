@@ -376,20 +376,20 @@ export function useAnalyticsTracking() {
         // Update current_page in session for real-time visibility
         sendHeartbeat(sessionIdRef.current, pathname);
 
-        // Insert new pageview and store its id
+        // Insert new pageview — generate UUID client-side to avoid needing SELECT after INSERT
         try {
-          const { data, error } = await supabase
+          const newPageviewId = generateUUID();
+          const { error } = await supabase
             .from('analytics_pageviews')
             .insert({
+              id: newPageviewId,
               session_id: sessionIdRef.current,
               page_path: pathname,
               page_title: document.title || pathname,
               viewed_at: new Date().toISOString(),
-            })
-            .select('id')
-            .single();
-          if (!error && data) {
-            currentPageviewIdRef.current = data.id;
+            });
+          if (!error) {
+            currentPageviewIdRef.current = newPageviewId;
           }
         } catch {
           // non-critical

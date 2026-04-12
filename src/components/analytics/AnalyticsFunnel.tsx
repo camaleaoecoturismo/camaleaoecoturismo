@@ -59,10 +59,10 @@ const AnalyticsFunnel: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch sessions
+      // Fetch sessions for count and conversion data
       let sessionsQuery = supabase
         .from('analytics_sessions')
-        .select('*')
+        .select('id, converted, conversion_goal, utm_campaign')
         .gte('first_visit_at', filters.startDate.toISOString())
         .lte('first_visit_at', filters.endDate.toISOString());
 
@@ -74,13 +74,22 @@ const AnalyticsFunnel: React.FC = () => {
       }
 
       const { data: sessions } = await sessionsQuery;
-      const sessionIds = sessions?.map(s => s.id) || [];
 
-      // Fetch pageviews
-      const { data: pageviews } = await supabase
+      // Fetch pageviews with join to avoid .in() with thousands of IDs
+      let pageviewsQuery = supabase
         .from('analytics_pageviews')
-        .select('*')
-        .in('session_id', sessionIds.length > 0 ? sessionIds : ['00000000-0000-0000-0000-000000000000']);
+        .select('session_id, page_path, clicked_main_cta, analytics_sessions!inner(device_type, utm_campaign)')
+        .gte('viewed_at', filters.startDate.toISOString())
+        .lte('viewed_at', filters.endDate.toISOString());
+
+      if (filters.deviceType !== 'all') {
+        pageviewsQuery = pageviewsQuery.eq('analytics_sessions.device_type', filters.deviceType);
+      }
+      if (filters.campaign !== 'all') {
+        pageviewsQuery = pageviewsQuery.eq('analytics_sessions.utm_campaign', filters.campaign);
+      }
+
+      const { data: pageviews } = await pageviewsQuery;
 
       // Define funnel steps based on goal
       const totalSessions = sessions?.length || 0;

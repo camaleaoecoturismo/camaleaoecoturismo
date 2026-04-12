@@ -81,17 +81,22 @@ const AnalyticsOverview: React.FC = () => {
       }
 
       const { data: sessions, error: sessionsError } = await sessionsQuery;
-      
+
       if (sessionsError) throw sessionsError;
 
-      const sessionIds = sessions?.map(s => s.id) || [];
-
-      // Fetch pageviews
+      // Fetch pageviews directly by date with join (avoids .in() with thousands of IDs)
       let pageviewsQuery = supabase
         .from('analytics_pageviews')
-        .select('*')
-        .in('session_id', sessionIds.length > 0 ? sessionIds : ['00000000-0000-0000-0000-000000000000']);
+        .select('*, analytics_sessions!inner(device_type, utm_campaign, user_id_anon)')
+        .gte('viewed_at', filters.startDate.toISOString())
+        .lte('viewed_at', filters.endDate.toISOString());
 
+      if (filters.deviceType !== 'all') {
+        pageviewsQuery = pageviewsQuery.eq('analytics_sessions.device_type', filters.deviceType);
+      }
+      if (filters.campaign !== 'all') {
+        pageviewsQuery = pageviewsQuery.eq('analytics_sessions.utm_campaign', filters.campaign);
+      }
       if (filters.pagePath !== 'all') {
         pageviewsQuery = pageviewsQuery.eq('page_path', filters.pagePath);
       }
