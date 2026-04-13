@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStaffPermissions } from '@/hooks/useStaffPermissions';
 import { logAction } from '@/hooks/useActivityLogger';
 import AdminUsuariosTab from '@/components/admin/AdminUsuariosTab';
+import VagasAdminTab from '@/components/admin/VagasAdminTab';
 import IntroAnimation from '@/components/admin/IntroAnimation';
 import ActivitySummaryModal from '@/components/admin/ActivitySummaryModal';
 import { ClientesCadastro } from "@/components/ClientesCadastro";
@@ -415,6 +416,8 @@ const Admin = () => {
         return <ConversasPage />;
       case 'usuarios':
         return staffPerms.isAdmin ? <AdminUsuariosTab /> : null;
+      case 'vagas-admin':
+        return staffPerms.isAdmin ? <VagasAdminTab /> : null;
       default:
         return <TourManagementTab tours={allToursForManagement} onRefresh={fetchTours} viewMode="dashboard" />;
     }

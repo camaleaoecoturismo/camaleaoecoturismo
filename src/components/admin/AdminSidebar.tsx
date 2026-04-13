@@ -194,6 +194,7 @@ const navGroups: NavGroup[] = [
       { id: 'depoimentos', label: 'Depoimentos', icon: <Star className="h-5 w-5" /> },
       { id: 'formularios', label: 'Formulários', icon: <FileQuestion className="h-5 w-5" /> },
       { id: 'categorias', label: 'Categorias', icon: <Tag className="h-5 w-5" /> },
+      { id: 'vagas-admin', label: 'Vagas & Talentos', icon: <Briefcase className="h-5 w-5" /> },
     ],
   },
   {
@@ -338,7 +339,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         ...group,
         items: group.items
           .filter(item => {
-            if (item.id === 'usuarios') return isAdmin;
+            if (item.id === 'usuarios' || item.id === 'vagas-admin') return isAdmin;
             const ids = [item.id, ...(item.subItems?.map(s => s.id) ?? [])];
             return ids.some(id => allowedTabs.has(id));
           })

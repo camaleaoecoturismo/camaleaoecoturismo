@@ -1,0 +1,818 @@
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { ChevronRight, ChevronLeft, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+
+interface JobOpening {
+  id: string;
+  title: string;
+  type: 'guia' | 'atendimento';
+}
+
+interface VagasFormProps {
+  job: JobOpening;
+  onBack: () => void;
+}
+
+type Step = 'aviso' | 1 | 2 | 3 | 4 | 5 | 'success';
+
+// ─── Generic UI helpers ────────────────────────────────────────────────────
+
+function RadioCard({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all text-sm ${
+        selected
+          ? 'border-primary bg-primary/5 text-foreground font-medium'
+          : 'border-border bg-white text-muted-foreground hover:border-primary/40'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PillToggle({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-4 py-2 rounded-full border text-sm font-medium transition-all ${
+        selected
+          ? 'border-primary bg-primary text-primary-foreground'
+          : 'border-border bg-white text-muted-foreground hover:border-primary/50'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
+  return (
+    <Label className="text-sm font-medium text-foreground mb-1.5 block">
+      {children}
+      {required && <span className="text-destructive ml-1">*</span>}
+    </Label>
+  );
+}
+
+// ─── Form state ────────────────────────────────────────────────────────────
+
+interface FormData {
+  // Step 1
+  nome: string;
+  whatsapp: string;
+  email: string;
+  data_nascimento: string;
+  cidade: string;
+  disponibilidade_deslocamento: string;
+  // Step 2
+  como_soube: string;
+  disponibilidade_horario: string[];
+  // Step 3 — guia
+  g_cadastur: string;
+  g_cadastur_numero: string;
+  g_experiencia: string;
+  g_conhece_camaleao: string;
+  g_regioes: string[];
+  g_embarcacoes: string;
+  g_idiomas: string[];
+  g_especialidades: string[];
+  g_aptidao: string;
+  g_aptidao_restricoes: string;
+  // Step 3 — atendimento
+  a_experiencia: string;
+  a_whatsapp_business: string;
+  a_turismo: string;
+  a_ferramentas: string[];
+  a_escrita: string;
+  a_fora_horario: string;
+  a_home_office: string;
+  a_multitarefas: string;
+  // Step 4
+  motivacao: string;
+  experiencia_relevante: string;
+  // Step 5
+  curriculo_url: string;
+  observacoes: string;
+}
+
+const initialForm: FormData = {
+  nome: '', whatsapp: '', email: '', data_nascimento: '', cidade: '',
+  disponibilidade_deslocamento: '',
+  como_soube: '', disponibilidade_horario: [],
+  g_cadastur: '', g_cadastur_numero: '', g_experiencia: '', g_conhece_camaleao: '',
+  g_regioes: [], g_embarcacoes: '', g_idiomas: [], g_especialidades: [],
+  g_aptidao: '', g_aptidao_restricoes: '',
+  a_experiencia: '', a_whatsapp_business: '', a_turismo: '', a_ferramentas: [],
+  a_escrita: '', a_fora_horario: '', a_home_office: '', a_multitarefas: '',
+  motivacao: '', experiencia_relevante: '',
+  curriculo_url: '', observacoes: '',
+};
+
+function formatWhatsApp(raw: string) {
+  const digits = raw.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+// ─── Main component ────────────────────────────────────────────────────────
+
+export default function VagasForm({ job, onBack }: VagasFormProps) {
+  const [step, setStep] = useState<Step>('aviso');
+  const [form, setForm] = useState<FormData>(initialForm);
+  const [loading, setLoading] = useState(false);
+
+  const totalSteps = 5;
+  const currentStepNum = typeof step === 'number' ? step : step === 'aviso' ? 0 : 0;
+  const progress = typeof step === 'number' ? (step / totalSteps) * 100 : 0;
+
+  function set(field: keyof FormData, value: string) {
+    setForm(prev => ({ ...prev, [field]: value }));
+  }
+
+  function toggleMulti(field: keyof FormData, value: string) {
+    setForm(prev => {
+      const arr = prev[field] as string[];
+      return {
+        ...prev,
+        [field]: arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value],
+      };
+    });
+  }
+
+  // ── Validation per step ──────────────────────────────────────────────────
+
+  function validateStep(s: Step): boolean {
+    if (s === 1) {
+      if (!form.nome.trim()) { toast.error('Por favor, informe seu nome completo.'); return false; }
+      const digits = form.whatsapp.replace(/\D/g, '');
+      if (digits.length < 10) { toast.error('WhatsApp inválido. Informe com DDD.'); return false; }
+      if (!form.email.includes('@')) { toast.error('Por favor, informe um e-mail válido.'); return false; }
+      if (!form.cidade.trim()) { toast.error('Por favor, informe sua cidade.'); return false; }
+      if (!form.disponibilidade_deslocamento) { toast.error('Por favor, selecione uma opção de localização.'); return false; }
+    }
+    if (s === 2) {
+      if (!form.como_soube) { toast.error('Por favor, informe como ficou sabendo da vaga.'); return false; }
+      if (form.disponibilidade_horario.length === 0) { toast.error('Selecione ao menos uma opção de disponibilidade.'); return false; }
+    }
+    if (s === 4) {
+      if (!form.motivacao.trim()) { toast.error('Por favor, preencha o campo de motivação.'); return false; }
+    }
+    return true;
+  }
+
+  function next() {
+    if (step === 'aviso') { setStep(1); return; }
+    if (typeof step === 'number') {
+      if (!validateStep(step)) return;
+      if (step < totalSteps) setStep((step + 1) as Step);
+    }
+  }
+
+  function prev() {
+    if (step === 1) { onBack(); return; }
+    if (step === 'aviso') { onBack(); return; }
+    if (typeof step === 'number' && step > 1) setStep((step - 1) as Step);
+  }
+
+  // ── Submit ───────────────────────────────────────────────────────────────
+
+  async function handleSubmit() {
+    if (!validateStep(5)) return;
+    setLoading(true);
+
+    const respostasEspecificas = job.type === 'guia' ? {
+      cadastur: form.g_cadastur,
+      cadastur_numero: form.g_cadastur_numero,
+      experiencia: form.g_experiencia,
+      conhece_camaleao: form.g_conhece_camaleao,
+      regioes: form.g_regioes,
+      embarcacoes: form.g_embarcacoes,
+      idiomas: form.g_idiomas,
+      especialidades: form.g_especialidades,
+      aptidao: form.g_aptidao,
+      aptidao_restricoes: form.g_aptidao_restricoes,
+    } : {
+      experiencia_atendimento: form.a_experiencia,
+      whatsapp_business: form.a_whatsapp_business,
+      exp_turismo: form.a_turismo,
+      ferramentas: form.a_ferramentas,
+      escrita: form.a_escrita,
+      fora_horario: form.a_fora_horario,
+      home_office: form.a_home_office,
+      multitarefas: form.a_multitarefas,
+    };
+
+    const { error } = await supabase.from('job_applications' as any).insert({
+      job_opening_id: job.id,
+      nome: form.nome.trim(),
+      whatsapp: form.whatsapp,
+      email: form.email.trim(),
+      data_nascimento: form.data_nascimento || null,
+      cidade: form.cidade.trim(),
+      disponibilidade_deslocamento: form.disponibilidade_deslocamento,
+      como_soube: form.como_soube,
+      disponibilidade_horario: form.disponibilidade_horario,
+      respostas_especificas: respostasEspecificas,
+      experiencia_relevante: form.experiencia_relevante.trim() || null,
+      curriculo_url: form.curriculo_url.trim() || null,
+      observacoes: form.observacoes.trim() || null,
+      status: 'pendente',
+    });
+
+    setLoading(false);
+
+    if (error) {
+      toast.error('Erro ao enviar candidatura. Tente novamente.');
+      return;
+    }
+
+    setStep('success');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ─── Step renderers ──────────────────────────────────────────────────────
+
+  const DOCS_GUIA = ['CPF ou RG', 'Comprovante de residência', 'Currículo atualizado (link do Google Drive, LinkedIn, etc.)', 'CADASTUR ou certificado de guia (se tiver)', 'Certidão de antecedentes criminais'];
+  const DOCS_ATENDIMENTO = ['CPF ou RG', 'Comprovante de residência', 'Currículo atualizado (link do Google Drive, LinkedIn, etc.)'];
+
+  if (step === 'success') {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-16 px-4">
+        <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+        </div>
+        <h2 className="text-2xl font-bold text-foreground mb-3">Candidatura enviada!</h2>
+        <p className="text-muted-foreground text-base leading-relaxed max-w-md mx-auto">
+          Em breve nossa equipe entrará em contato pelo WhatsApp. Obrigado pelo interesse em fazer parte do time Camaleão 🦎
+        </p>
+        <Button onClick={onBack} variant="outline" className="mt-8">
+          Ver outras vagas
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto px-4">
+      {/* Progress bar */}
+      {typeof step === 'number' && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+            <span>Etapa {step} de {totalSteps}</span>
+            <span>{Math.round(progress)}% concluído</span>
+          </div>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Step: Aviso de documentos */}
+      {step === 'aviso' && (
+        <div>
+          <div className="flex items-start gap-4 bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-8">
+            <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-900 text-sm mb-2">Antes de começar, separe estes documentos:</p>
+              <ul className="space-y-1">
+                {(job.type === 'guia' ? DOCS_GUIA : DOCS_ATENDIMENTO).map(doc => (
+                  <li key={doc} className="text-sm text-amber-800 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                    {doc}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-amber-700 mt-3">O formulário leva aproximadamente 5–10 minutos. Tenha as informações em mãos para não precisar recomeçar.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={onBack} className="gap-2">
+              <ChevronLeft className="h-4 w-4" /> Voltar
+            </Button>
+            <Button onClick={next} className="flex-1 gap-2">
+              Entendi, vou me candidatar <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 1 — Dados Pessoais */}
+      {step === 1 && (
+        <div className="space-y-5">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-1">Dados Pessoais</h3>
+            <p className="text-sm text-muted-foreground">Informações de contato e localização</p>
+          </div>
+
+          <div>
+            <FieldLabel required>Nome completo</FieldLabel>
+            <Input value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="Seu nome completo" />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <FieldLabel required>WhatsApp com DDD</FieldLabel>
+              <Input
+                value={form.whatsapp}
+                onChange={e => set('whatsapp', formatWhatsApp(e.target.value))}
+                placeholder="(82) 99999-9999"
+                inputMode="tel"
+              />
+            </div>
+            <div>
+              <FieldLabel required>E-mail</FieldLabel>
+              <Input
+                value={form.email}
+                onChange={e => set('email', e.target.value)}
+                placeholder="seu@email.com"
+                type="email"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <FieldLabel>Data de nascimento</FieldLabel>
+              <Input
+                value={form.data_nascimento}
+                onChange={e => set('data_nascimento', e.target.value)}
+                type="date"
+              />
+            </div>
+            <div>
+              <FieldLabel required>Cidade e estado</FieldLabel>
+              <Input
+                value={form.cidade}
+                onChange={e => set('cidade', e.target.value)}
+                placeholder="Ex: Piranhas, AL"
+              />
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel required>Disponibilidade de localização</FieldLabel>
+            <div className="space-y-2 mt-1">
+              {[
+                ['moro_proximo', 'Moro em Piranhas/AL ou arredores'],
+                ['disponivel', 'Tenho disponibilidade para me mudar ou deslocar'],
+                ['nao_disponivel', 'Não tenho disponibilidade de deslocamento'],
+              ].map(([val, label]) => (
+                <RadioCard
+                  key={val}
+                  selected={form.disponibilidade_deslocamento === val}
+                  onClick={() => set('disponibilidade_deslocamento', val)}
+                >
+                  {label}
+                </RadioCard>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2 — Sobre você */}
+      {step === 2 && (
+        <div className="space-y-5">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-1">Sobre você</h3>
+            <p className="text-sm text-muted-foreground">Nos ajude a entender seu perfil</p>
+          </div>
+
+          <div>
+            <FieldLabel required>Como ficou sabendo desta vaga?</FieldLabel>
+            <div className="space-y-2 mt-1">
+              {[
+                ['instagram', 'Instagram (@camaleaoecoturismo)'],
+                ['indicacao', 'Indicação de amigo ou conhecido'],
+                ['whatsapp', 'WhatsApp'],
+                ['site', 'Site da Camaleão'],
+                ['outro', 'Outro'],
+              ].map(([val, label]) => (
+                <RadioCard key={val} selected={form.como_soube === val} onClick={() => set('como_soube', val)}>
+                  {label}
+                </RadioCard>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel required>Disponibilidade de horário</FieldLabel>
+            <p className="text-xs text-muted-foreground mb-2">Selecione todas que se aplicam</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                ['manha', 'Manhã (6h–12h)'],
+                ['tarde', 'Tarde (12h–18h)'],
+                ['noite', 'Noite (18h–22h)'],
+                ['integral', 'Integral'],
+                ['fds', 'Fins de semana'],
+              ].map(([val, label]) => (
+                <PillToggle
+                  key={val}
+                  selected={form.disponibilidade_horario.includes(val)}
+                  onClick={() => toggleMulti('disponibilidade_horario', val)}
+                >
+                  {label}
+                </PillToggle>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 3 — Específico por cargo */}
+      {step === 3 && job.type === 'guia' && (
+        <div className="space-y-5">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-1">Experiência como Guia</h3>
+            <p className="text-sm text-muted-foreground">Perguntas específicas para guias de turismo</p>
+          </div>
+
+          <div>
+            <FieldLabel>Possui CADASTUR (Cadastro de Guia de Turismo)?</FieldLabel>
+            <div className="space-y-2 mt-1">
+              {[['sim', 'Sim'], ['em_processo', 'Em processo de obtenção'], ['nao', 'Não possuo']].map(([val, label]) => (
+                <RadioCard key={val} selected={form.g_cadastur === val} onClick={() => set('g_cadastur', val)}>
+                  {label}
+                </RadioCard>
+              ))}
+            </div>
+            {form.g_cadastur === 'sim' && (
+              <div className="mt-2">
+                <FieldLabel>Número do CADASTUR</FieldLabel>
+                <Input value={form.g_cadastur_numero} onChange={e => set('g_cadastur_numero', e.target.value)} placeholder="Número de registro" />
+              </div>
+            )}
+          </div>
+
+          <div>
+            <FieldLabel>Tempo de experiência como guia de turismo</FieldLabel>
+            <div className="space-y-2 mt-1">
+              {[
+                ['nunca', 'Nunca atuei na área'],
+                ['menos1', 'Menos de 1 ano'],
+                ['1a3', '1 a 3 anos'],
+                ['mais3', 'Mais de 3 anos'],
+              ].map(([val, label]) => (
+                <RadioCard key={val} selected={form.g_experiencia === val} onClick={() => set('g_experiencia', val)}>
+                  {label}
+                </RadioCard>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Já conhece os passeios da Camaleão Ecoturismo?</FieldLabel>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              {[['sim', 'Sim'], ['nao', 'Não']].map(([val, label]) => (
+                <RadioCard key={val} selected={form.g_conhece_camaleao === val} onClick={() => set('g_conhece_camaleao', val)}>
+                  {label}
+                </RadioCard>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Regiões que você conhece bem</FieldLabel>
+            <p className="text-xs text-muted-foreground mb-2">Selecione todas que se aplicam</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                ['canions', 'Cânions do São Francisco'],
+                ['piranhas', 'Piranhas e entorno'],
+                ['chapada', 'Chapada Diamantina'],
+                ['outra', 'Outra região'],
+              ].map(([val, label]) => (
+                <PillToggle key={val} selected={form.g_regioes.includes(val)} onClick={() => toggleMulti('g_regioes', val)}>
+                  {label}
+                </PillToggle>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Você conduz embarcações (barco, lancha)?</FieldLabel>
+            <div className="space-y-2 mt-1">
+              {[
+                ['sim_habilitacao', 'Sim, com habilitação formal'],
+                ['sim_sem_habilitacao', 'Sim, sem habilitação formal'],
+                ['nao', 'Não'],
+              ].map(([val, label]) => (
+                <RadioCard key={val} selected={form.g_embarcacoes === val} onClick={() => set('g_embarcacoes', val)}>
+                  {label}
+                </RadioCard>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Idiomas além do português</FieldLabel>
+            <p className="text-xs text-muted-foreground mb-2">Selecione todos que se aplicam</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                ['en_basico', 'Inglês básico'],
+                ['en_avancado', 'Inglês intermediário/avançado'],
+                ['es', 'Espanhol'],
+                ['outro', 'Outro'],
+              ].map(([val, label]) => (
+                <PillToggle key={val} selected={form.g_idiomas.includes(val)} onClick={() => toggleMulti('g_idiomas', val)}>
+                  {label}
+                </PillToggle>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Especialidades e habilidades relevantes</FieldLabel>
+            <p className="text-xs text-muted-foreground mb-2">Selecione todas que se aplicam</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                ['trilhas', 'Trilhas e ecoturismo'],
+                ['fotografia', 'Fotografia'],
+                ['historia', 'História e cultura local'],
+                ['aventura', 'Esportes de aventura'],
+                ['grupos_grandes', 'Grupos grandes (+20 pax)'],
+                ['primeiros_socorros', 'Primeiros socorros'],
+              ].map(([val, label]) => (
+                <PillToggle key={val} selected={form.g_especialidades.includes(val)} onClick={() => toggleMulti('g_especialidades', val)}>
+                  {label}
+                </PillToggle>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Está fisicamente apto para trabalho em campo (sol, água, trilhas)?</FieldLabel>
+            <div className="space-y-2 mt-1">
+              {[
+                ['sim', 'Sim, sem restrições'],
+                ['sim_restricoes', 'Sim, com restrições (explique abaixo)'],
+                ['nao_certeza', 'Não tenho certeza'],
+              ].map(([val, label]) => (
+                <RadioCard key={val} selected={form.g_aptidao === val} onClick={() => set('g_aptidao', val)}>
+                  {label}
+                </RadioCard>
+              ))}
+            </div>
+            {form.g_aptidao === 'sim_restricoes' && (
+              <div className="mt-2">
+                <Textarea
+                  value={form.g_aptidao_restricoes}
+                  onChange={e => set('g_aptidao_restricoes', e.target.value)}
+                  placeholder="Descreva suas restrições"
+                  rows={2}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {step === 3 && job.type === 'atendimento' && (
+        <div className="space-y-5">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-1">Experiência em Atendimento</h3>
+            <p className="text-sm text-muted-foreground">Perguntas específicas para assistentes de atendimento</p>
+          </div>
+
+          <div>
+            <FieldLabel>Experiência com atendimento ao cliente</FieldLabel>
+            <div className="space-y-2 mt-1">
+              {[
+                ['sem_exp', 'Sem experiência'],
+                ['menos1', 'Menos de 1 ano'],
+                ['1a3', '1 a 3 anos'],
+                ['mais3', 'Mais de 3 anos'],
+              ].map(([val, label]) => (
+                <RadioCard key={val} selected={form.a_experiencia === val} onClick={() => set('a_experiencia', val)}>
+                  {label}
+                </RadioCard>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Já utilizou WhatsApp Business para atendimento?</FieldLabel>
+            <div className="space-y-2 mt-1">
+              {[
+                ['sim_regularmente', 'Sim, regularmente'],
+                ['sim_algumas_vezes', 'Sim, algumas vezes'],
+                ['nao', 'Não'],
+              ].map(([val, label]) => (
+                <RadioCard key={val} selected={form.a_whatsapp_business === val} onClick={() => set('a_whatsapp_business', val)}>
+                  {label}
+                </RadioCard>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Tem experiência com turismo, reservas ou hotelaria?</FieldLabel>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              {[['sim', 'Sim'], ['nao', 'Não']].map(([val, label]) => (
+                <RadioCard key={val} selected={form.a_turismo === val} onClick={() => set('a_turismo', val)}>
+                  {label}
+                </RadioCard>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Ferramentas que usa no dia a dia</FieldLabel>
+            <p className="text-xs text-muted-foreground mb-2">Selecione todas que se aplicam</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                ['planilhas', 'Google Planilhas / Excel'],
+                ['agenda', 'Google Agenda'],
+                ['redes', 'Instagram profissional'],
+                ['gestao', 'Notion / Trello'],
+                ['reservas', 'Sistema de reservas'],
+                ['nenhuma', 'Nenhuma das anteriores'],
+              ].map(([val, label]) => (
+                <PillToggle key={val} selected={form.a_ferramentas.includes(val)} onClick={() => toggleMulti('a_ferramentas', val)}>
+                  {label}
+                </PillToggle>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Como você se autoavalia na escrita e comunicação?</FieldLabel>
+            <div className="space-y-2 mt-1">
+              {[
+                ['otima', 'Ótima — escrevo sem erros, com clareza'],
+                ['boa', 'Boa — me comunico bem, cometo erros ocasionais'],
+                ['em_dev', 'Em desenvolvimento'],
+              ].map(([val, label]) => (
+                <RadioCard key={val} selected={form.a_escrita === val} onClick={() => set('a_escrita', val)}>
+                  {label}
+                </RadioCard>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Disponibilidade para responder clientes fora do horário comercial?</FieldLabel>
+            <div className="space-y-2 mt-1">
+              {[
+                ['sim', 'Sim, tenho flexibilidade'],
+                ['as_vezes', 'Às vezes, depende do dia'],
+                ['nao', 'Prefiro horário fixo'],
+              ].map(([val, label]) => (
+                <RadioCard key={val} selected={form.a_fora_horario === val} onClick={() => set('a_fora_horario', val)}>
+                  {label}
+                </RadioCard>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Já trabalhou remotamente / home office?</FieldLabel>
+            <div className="space-y-2 mt-1">
+              {[
+                ['sim_longo', 'Sim, por mais de 6 meses'],
+                ['sim_breve', 'Sim, brevemente'],
+                ['nao', 'Não'],
+              ].map(([val, label]) => (
+                <RadioCard key={val} selected={form.a_home_office === val} onClick={() => set('a_home_office', val)}>
+                  {label}
+                </RadioCard>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Você lida bem com múltiplas tarefas simultâneas?</FieldLabel>
+            <div className="space-y-2 mt-1">
+              {[
+                ['sim', 'Sim, com facilidade'],
+                ['prefiro_uma', 'Sim, mas prefiro focar em uma coisa por vez'],
+                ['dificuldade', 'Tenho dificuldade com isso'],
+              ].map(([val, label]) => (
+                <RadioCard key={val} selected={form.a_multitarefas === val} onClick={() => set('a_multitarefas', val)}>
+                  {label}
+                </RadioCard>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 4 — Motivação */}
+      {step === 4 && (
+        <div className="space-y-5">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-1">Motivação</h3>
+            <p className="text-sm text-muted-foreground">Queremos te conhecer melhor</p>
+          </div>
+
+          <div>
+            <FieldLabel required>Por que quer trabalhar na Camaleão Ecoturismo?</FieldLabel>
+            <Textarea
+              value={form.motivacao}
+              onChange={e => set('motivacao', e.target.value)}
+              placeholder="Conte o que te motivou a se candidatar, o que você valoriza no ecoturismo e no nosso trabalho..."
+              rows={5}
+            />
+          </div>
+
+          <div>
+            <FieldLabel>Experiência ou habilidade relevante para esta vaga</FieldLabel>
+            <p className="text-xs text-muted-foreground mb-1.5">Opcional — mas pode fazer a diferença</p>
+            <Textarea
+              value={form.experiencia_relevante}
+              onChange={e => set('experiencia_relevante', e.target.value)}
+              placeholder="Descreva uma experiência profissional, habilidade ou projeto que considera relevante..."
+              rows={4}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Step 5 — Documentos */}
+      {step === 5 && (
+        <div className="space-y-5">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-1">Documentos</h3>
+            <p className="text-sm text-muted-foreground">Estamos quase lá! Só mais um passo.</p>
+          </div>
+
+          <div className="bg-muted/40 rounded-xl p-4 text-sm text-muted-foreground">
+            Cole abaixo o link do seu currículo. Você pode usar o <strong>Google Drive</strong>, <strong>LinkedIn</strong>, <strong>Notion</strong> ou qualquer plataforma de sua preferência. Certifique-se de que o link está com acesso liberado para visualização.
+          </div>
+
+          <div>
+            <FieldLabel>Link do currículo</FieldLabel>
+            <Input
+              value={form.curriculo_url}
+              onChange={e => set('curriculo_url', e.target.value)}
+              placeholder="https://drive.google.com/... ou linkedin.com/in/..."
+              type="url"
+            />
+          </div>
+
+          <div>
+            <FieldLabel>Observações finais</FieldLabel>
+            <p className="text-xs text-muted-foreground mb-1.5">Opcional — alguma informação adicional que queira compartilhar</p>
+            <Textarea
+              value={form.observacoes}
+              onChange={e => set('observacoes', e.target.value)}
+              placeholder="Qualquer coisa que queira nos contar e que não teve espaço acima..."
+              rows={3}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Navigation */}
+      {step !== 'aviso' && step !== 'success' && (
+        <div className="flex gap-3 mt-8">
+          <Button variant="outline" onClick={prev} className="gap-2">
+            <ChevronLeft className="h-4 w-4" /> Voltar
+          </Button>
+          {step < 5 ? (
+            <Button onClick={next} className="flex-1 gap-2">
+              Continuar <ChevronRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button onClick={handleSubmit} disabled={loading} className="flex-1 gap-2">
+              {loading ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Enviando...</>
+              ) : (
+                <>Enviar candidatura <CheckCircle2 className="h-4 w-4" /></>
+              )}
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
