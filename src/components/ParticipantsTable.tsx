@@ -27,6 +27,8 @@ export interface Reserva {
   valor_passeio: number;
   valor_pago: number;
   valor_total_com_opcionais: number;
+  coupon_code?: string | null;
+  coupon_discount?: number | null;
   numero_participantes?: number;
   adicionais: Array<{ nome: string; valor: number }>;
   selected_optional_items?: Array<{ id: string; name: string; price: number; quantity: number }>;
@@ -1102,8 +1104,12 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
   };
 
   const calcularValorTotal = (reserva: Reserva): number => {
+    // Prefer valor_total_com_opcionais — it's written by the edge function at payment time
+    // and already includes coupon discount + optionals (server-authoritative)
+    if (reserva.valor_total_com_opcionais) return reserva.valor_total_com_opcionais;
     const valorBase = reserva.valor_passeio || 0;
-    return valorBase + calcularTotalOpcionaisReserva(reserva);
+    const discount = reserva.coupon_discount || 0;
+    return Math.max(0, valorBase - discount) + calcularTotalOpcionaisReserva(reserva);
   };
 
   // Valor pago "real" (sem juros). Fonte:

@@ -1364,6 +1364,8 @@ const TourManagement: React.FC<TourManagementProps> = ({
         valor_passeio: reserva.valor_passeio,
         valor_pago: reserva.valor_pago,
         valor_total_com_opcionais: reserva.valor_total_com_opcionais,
+        coupon_code: reserva.coupon_code || null,
+        coupon_discount: reserva.coupon_discount || null,
         numero_participantes: reserva.numero_participantes,
         adicionais: Array.isArray(reserva.adicionais) ? reserva.adicionais : [],
         selected_optional_items: Array.isArray(reserva.selected_optional_items) ? reserva.selected_optional_items : [],

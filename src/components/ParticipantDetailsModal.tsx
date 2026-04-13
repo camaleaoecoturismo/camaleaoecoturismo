@@ -16,6 +16,8 @@ interface Reserva {
   valor_passeio: number;
   valor_pago: number;
   valor_total_com_opcionais: number;
+  coupon_code?: string | null;
+  coupon_discount?: number | null;
   numero_participantes?: number;
   adicionais: Array<{ nome: string; valor: number }>;
   selected_optional_items?: Array<{ id: string; name: string; price: number; quantity: number }>;
@@ -221,7 +223,12 @@ const ParticipantDetailsModal: React.FC<ParticipantDetailsModalProps> = ({
   // Calculate totals
   const valorAdicionais = (reserva.adicionais || []).reduce((sum, add) => sum + add.valor, 0);
   const valorOpcionais = (reserva.selected_optional_items || []).reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
-  const valorTotal = (reserva.valor_passeio || 0) + valorAdicionais + valorOpcionais;
+  const couponDiscount = reserva.coupon_discount || 0;
+  // Use valor_total_com_opcionais when available — it's the server-authoritative value
+  // that already includes coupon discount. Fallback: manual calculation with discount.
+  const valorTotal = reserva.valor_total_com_opcionais
+    ? reserva.valor_total_com_opcionais
+    : Math.max(0, (reserva.valor_passeio || 0) - couponDiscount) + valorAdicionais + valorOpcionais;
   const saldo = (reserva.valor_pago || 0) - valorTotal;
 
   // Filter out standard fields from form answers
@@ -310,7 +317,16 @@ const ParticipantDetailsModal: React.FC<ParticipantDetailsModalProps> = ({
                 <span className="text-sm">Valor do Passeio</span>
                 <span className="text-sm font-medium">{formatarValor(reserva.valor_passeio || 0)}</span>
               </div>
-              
+
+              {couponDiscount > 0 && (
+                <div className="flex justify-between p-2 bg-green-50 rounded-lg">
+                  <span className="text-sm text-green-700">
+                    Desconto cupom{reserva.coupon_code ? ` (${reserva.coupon_code})` : ''}
+                  </span>
+                  <span className="text-sm font-medium text-green-700">- {formatarValor(couponDiscount)}</span>
+                </div>
+              )}
+
               {reserva.selected_optional_items && reserva.selected_optional_items.length > 0 && (
                 <div className="p-2 bg-blue-50 rounded-lg">
                   <span className="text-xs text-blue-600 font-medium">Itens Opcionais</span>
