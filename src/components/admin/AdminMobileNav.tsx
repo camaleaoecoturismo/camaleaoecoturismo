@@ -186,6 +186,11 @@ const moreMenuItems: MenuItem[] = [
     icon: <UserCog className="h-5 w-5" />,
   },
   {
+    id: 'vagas-admin',
+    label: 'Vagas & Talentos',
+    icon: <Briefcase className="h-5 w-5" />,
+  },
+  {
     id: 'analytics',
     label: 'Analytics',
     icon: <Activity className="h-5 w-5" />,
@@ -386,7 +391,7 @@ const AdminMobileNav: React.FC<AdminMobileNavProps> = ({
             ))}
 
             {/* More menu items with expandable submenus */}
-            {moreMenuItems.filter(item => item.id !== 'usuarios' || isAdmin).map((item) => (
+            {moreMenuItems.filter(item => (item.id !== 'usuarios' && item.id !== 'vagas-admin') || isAdmin).map((item) => (
               <div key={item.id}>
                 <button
                   onClick={() => handleMoreItemClick(item)}
