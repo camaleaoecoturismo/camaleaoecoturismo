@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import logoHorizontal from '@/assets/logo-horizontal.png';
 
 interface JobOpening {
   id: string;
@@ -18,7 +19,7 @@ interface VagasFormProps {
   onBack: () => void;
 }
 
-type Step = 'aviso' | 1 | 2 | 3 | 4 | 5 | 'success';
+type Step = 'aviso' | 1 | 2 | 3 | 4 | 5 | 'video' | 'success';
 
 // ─── Generic UI helpers ────────────────────────────────────────────────────
 
@@ -79,6 +80,20 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
   );
 }
 
+function DiscursiveField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <FieldLabel>{label}</FieldLabel>
+      <Textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder="Escreva aqui sua resposta..."
+        rows={3}
+      />
+    </div>
+  );
+}
+
 // ─── Form state ────────────────────────────────────────────────────────────
 
 interface FormData {
@@ -89,10 +104,11 @@ interface FormData {
   data_nascimento: string;
   cidade: string;
   disponibilidade_deslocamento: string;
+  genero: string;
   // Step 2
   como_soube: string;
   disponibilidade_horario: string[];
-  // Step 3 — guia
+  // Step 3 — guia structured
   g_cadastur: string;
   g_experiencia: string;
   g_conhece_camaleao: string;
@@ -101,15 +117,26 @@ interface FormData {
   g_especialidades: string[];
   g_aptidao: string;
   g_aptidao_restricoes: string;
-  // Step 3 — atendimento
+  // Step 3 — guia discursive
+  g_disc_calma: string;
+  g_disc_cansado: string;
+  g_disc_desobediencia: string;
+  g_disc_decisao: string;
+  g_disc_experiencia: string;
+  // Step 3 — atendimento structured
   a_experiencia: string;
-  a_whatsapp_business: string;
+  a_crm: string;
   a_turismo: string;
   a_ferramentas: string[];
   a_escrita: string;
-  a_fora_horario: string;
   a_home_office: string;
   a_multitarefas: string;
+  // Step 3 — atendimento discursive
+  a_disc_multiplas: string;
+  a_disc_impaciente: string;
+  a_disc_demandas: string;
+  a_disc_erro: string;
+  a_disc_diferencial: string;
   // Step 4
   motivacao: string;
   experiencia_relevante: string;
@@ -119,13 +146,15 @@ interface FormData {
 
 const initialForm: FormData = {
   nome: '', whatsapp: '', email: '', data_nascimento: '', cidade: '',
-  disponibilidade_deslocamento: '',
+  disponibilidade_deslocamento: '', genero: '',
   como_soube: '', disponibilidade_horario: [],
   g_cadastur: '', g_experiencia: '', g_conhece_camaleao: '',
   g_regioes: [], g_idiomas: [], g_especialidades: [],
   g_aptidao: '', g_aptidao_restricoes: '',
-  a_experiencia: '', a_whatsapp_business: '', a_turismo: '', a_ferramentas: [],
-  a_escrita: '', a_fora_horario: '', a_home_office: '', a_multitarefas: '',
+  g_disc_calma: '', g_disc_cansado: '', g_disc_desobediencia: '', g_disc_decisao: '', g_disc_experiencia: '',
+  a_experiencia: '', a_crm: '', a_turismo: '', a_ferramentas: [],
+  a_escrita: '', a_home_office: '', a_multitarefas: '',
+  a_disc_multiplas: '', a_disc_impaciente: '', a_disc_demandas: '', a_disc_erro: '', a_disc_diferencial: '',
   motivacao: '', experiencia_relevante: '',
   observacoes: '',
 };
@@ -207,8 +236,7 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
     // Upload currículo PDF if provided
     let curriculo_url: string | null = null;
     if (curriculoFile) {
-      const ext = 'pdf';
-      const fileName = `${job.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const fileName = `${job.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.pdf`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('curriculos')
         .upload(fileName, curriculoFile, { contentType: 'application/pdf', upsert: false });
@@ -224,6 +252,7 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
     }
 
     const respostasEspecificas = job.type === 'guia' ? {
+      motivacao: form.motivacao.trim() || null,
       cadastur: form.g_cadastur,
       experiencia: form.g_experiencia,
       conhece_camaleao: form.g_conhece_camaleao,
@@ -231,16 +260,26 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
       idiomas: form.g_idiomas,
       especialidades: form.g_especialidades,
       aptidao: form.g_aptidao,
-      aptidao_restricoes: form.g_aptidao_restricoes,
+      aptidao_restricoes: form.g_aptidao_restricoes || null,
+      disc_calma: form.g_disc_calma.trim() || null,
+      disc_cansado: form.g_disc_cansado.trim() || null,
+      disc_desobediencia: form.g_disc_desobediencia.trim() || null,
+      disc_decisao: form.g_disc_decisao.trim() || null,
+      disc_experiencia: form.g_disc_experiencia.trim() || null,
     } : {
+      motivacao: form.motivacao.trim() || null,
       experiencia_atendimento: form.a_experiencia,
-      whatsapp_business: form.a_whatsapp_business,
+      crm: form.a_crm,
       exp_turismo: form.a_turismo,
       ferramentas: form.a_ferramentas,
       escrita: form.a_escrita,
-      fora_horario: form.a_fora_horario,
       home_office: form.a_home_office,
       multitarefas: form.a_multitarefas,
+      disc_multiplas: form.a_disc_multiplas.trim() || null,
+      disc_impaciente: form.a_disc_impaciente.trim() || null,
+      disc_demandas: form.a_disc_demandas.trim() || null,
+      disc_erro: form.a_disc_erro.trim() || null,
+      disc_diferencial: form.a_disc_diferencial.trim() || null,
     };
 
     const { error } = await supabase.from('job_applications' as any).insert({
@@ -250,6 +289,7 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
       email: form.email.trim(),
       data_nascimento: form.data_nascimento || null,
       cidade: form.cidade.trim(),
+      genero: form.genero || null,
       disponibilidade_deslocamento: form.disponibilidade_deslocamento,
       como_soube: form.como_soube,
       disponibilidade_horario: form.disponibilidade_horario,
@@ -267,7 +307,7 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
       return;
     }
 
-    setStep('success');
+    setStep('video');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -275,15 +315,48 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
 
   const DOCS_GUIA = [
     'CPF ou RG',
-    'Comprovante de residência',
     'Currículo atualizado em PDF',
     'CADASTUR ou certificado de guia (se tiver)',
   ];
   const DOCS_ATENDIMENTO = [
     'CPF ou RG',
-    'Comprovante de residência',
     'Currículo atualizado em PDF',
   ];
+
+  // ─── Logo (shown on every step) ───────────────────────────────────────────
+
+  const Logo = () => (
+    <div className="flex justify-center mb-8">
+      <img src={logoHorizontal} alt="Camaleão Ecoturismo" className="h-8" />
+    </div>
+  );
+
+  // ─── Video step ───────────────────────────────────────────────────────────
+
+  if (step === 'video') {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8 text-center">
+        <Logo />
+        <video
+          src="/intro.mp4"
+          autoPlay
+          playsInline
+          className="w-full rounded-2xl shadow-md"
+          onEnded={() => setStep('success')}
+        />
+        <Button
+          onClick={() => setStep('success')}
+          variant="ghost"
+          size="sm"
+          className="mt-4 text-muted-foreground"
+        >
+          Continuar <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+      </div>
+    );
+  }
+
+  // ─── Success step ─────────────────────────────────────────────────────────
 
   if (step === 'success') {
     return (
@@ -293,7 +366,7 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
         </div>
         <h2 className="text-2xl font-bold text-foreground mb-3">Candidatura enviada!</h2>
         <p className="text-muted-foreground text-base leading-relaxed max-w-md mx-auto">
-          Em breve nossa equipe entrará em contato pelo WhatsApp. Obrigado pelo interesse em fazer parte do time Camaleão 🦎
+          Candidatura recebida. Nossa equipe analisará seu perfil e entrará em contato pelo e-mail em breve. Obrigado pelo interesse em fazer parte do time Camaleão.
         </p>
         <Button onClick={onBack} variant="outline" className="mt-8">
           Ver outras vagas
@@ -304,6 +377,8 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
 
   return (
     <div className="max-w-2xl mx-auto px-4">
+      <Logo />
+
       {/* Progress bar */}
       {typeof step === 'number' && (
         <div className="mb-8">
@@ -335,7 +410,7 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
                   </li>
                 ))}
               </ul>
-              <p className="text-xs text-amber-700 mt-3">O formulário leva aproximadamente 5–10 minutos. Tenha as informações em mãos para não precisar recomeçar.</p>
+              <p className="text-xs text-amber-700 mt-3">O formulário leva aproximadamente 10–15 minutos. Tenha as informações em mãos para não precisar recomeçar.</p>
             </div>
           </div>
 
@@ -404,6 +479,22 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
           </div>
 
           <div>
+            <FieldLabel>Com qual gênero você se identifica?</FieldLabel>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              {[
+                ['masculino', 'Masculino'],
+                ['feminino', 'Feminino'],
+                ['nao_binario', 'Não-binário'],
+                ['nao_informar', 'Prefiro não informar'],
+              ].map(([val, label]) => (
+                <RadioCard key={val} selected={form.genero === val} onClick={() => set('genero', val)}>
+                  {label}
+                </RadioCard>
+              ))}
+            </div>
+          </div>
+
+          <div>
             <FieldLabel required>Disponibilidade de localização</FieldLabel>
             <div className="space-y-2 mt-1">
               {[
@@ -451,7 +542,7 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
 
           <div>
             <FieldLabel required>Disponibilidade de horário</FieldLabel>
-            <p className="text-xs text-muted-foreground mb-2">Selecione todas que se aplicam</p>
+            <p className="text-xs text-muted-foreground mb-3">Pode marcar mais de uma opção</p>
             <div className="flex flex-wrap gap-2">
               {[
                 ['comercial', 'Dias úteis — manhã e tarde (seg–sex)'],
@@ -465,7 +556,7 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
                   selected={form.disponibilidade_horario.includes(val)}
                   onClick={() => toggleMulti('disponibilidade_horario', val)}
                 >
-                  {label}
+                  {form.disponibilidade_horario.includes(val) ? '✓ ' : ''}{label}
                 </PillToggle>
               ))}
             </div>
@@ -475,260 +566,321 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
 
       {/* Step 3 — Específico por cargo */}
       {step === 3 && job.type === 'guia' && (
-        <div className="space-y-5">
+        <div className="space-y-6">
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-1">Experiência como Guia</h3>
             <p className="text-sm text-muted-foreground">Perguntas específicas para guias de turismo</p>
           </div>
 
-          <div>
-            <FieldLabel>Possui CADASTUR (Cadastro de Guia de Turismo)?</FieldLabel>
-            <div className="space-y-2 mt-1">
-              {[['sim', 'Sim'], ['em_processo', 'Em processo de obtenção'], ['nao', 'Não possuo']].map(([val, label]) => (
-                <RadioCard key={val} selected={form.g_cadastur === val} onClick={() => set('g_cadastur', val)}>
-                  {label}
-                </RadioCard>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel>Tempo de experiência como guia de turismo</FieldLabel>
-            <div className="space-y-2 mt-1">
-              {[
-                ['nunca', 'Nunca atuei na área'],
-                ['menos1', 'Menos de 1 ano'],
-                ['1a3', '1 a 3 anos'],
-                ['mais3', 'Mais de 3 anos'],
-              ].map(([val, label]) => (
-                <RadioCard key={val} selected={form.g_experiencia === val} onClick={() => set('g_experiencia', val)}>
-                  {label}
-                </RadioCard>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel>Já conhece os passeios da Camaleão Ecoturismo?</FieldLabel>
-            <div className="grid grid-cols-2 gap-2 mt-1">
-              {[['sim', 'Sim'], ['nao', 'Não']].map(([val, label]) => (
-                <RadioCard key={val} selected={form.g_conhece_camaleao === val} onClick={() => set('g_conhece_camaleao', val)}>
-                  {label}
-                </RadioCard>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel>Regiões que você conhece bem</FieldLabel>
-            <p className="text-xs text-muted-foreground mb-2">Selecione todas que se aplicam</p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                ['canions', 'Cânions do São Francisco'],
-                ['piranhas', 'Piranhas e entorno'],
-                ['chapada', 'Chapada Diamantina'],
-                ['zona_da_mata', 'Zona da Mata'],
-                ['litoral_sul', 'Litoral Sul'],
-                ['litoral_norte', 'Litoral Norte'],
-                ['agreste', 'Agreste'],
-                ['outra', 'Outra região'],
-              ].map(([val, label]) => (
-                <PillToggle key={val} selected={form.g_regioes.includes(val)} onClick={() => toggleMulti('g_regioes', val)}>
-                  {label}
-                </PillToggle>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel>Idiomas além do português</FieldLabel>
-            <p className="text-xs text-muted-foreground mb-2">Selecione todos que se aplicam</p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                ['en_basico', 'Inglês básico'],
-                ['en_avancado', 'Inglês intermediário/avançado'],
-                ['es', 'Espanhol'],
-                ['outro', 'Outro'],
-              ].map(([val, label]) => (
-                <PillToggle key={val} selected={form.g_idiomas.includes(val)} onClick={() => toggleMulti('g_idiomas', val)}>
-                  {label}
-                </PillToggle>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel>Especialidades e habilidades relevantes</FieldLabel>
-            <p className="text-xs text-muted-foreground mb-2">Selecione todas que se aplicam</p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                ['trilhas', 'Trilhas e ecoturismo'],
-                ['fotografia', 'Fotografia'],
-                ['historia', 'História e cultura local'],
-                ['aventura', 'Esportes de aventura'],
-                ['grupos_grandes', 'Grupos grandes (+20 pax)'],
-                ['primeiros_socorros', 'Primeiros socorros'],
-              ].map(([val, label]) => (
-                <PillToggle key={val} selected={form.g_especialidades.includes(val)} onClick={() => toggleMulti('g_especialidades', val)}>
-                  {label}
-                </PillToggle>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel>Está fisicamente apto para trabalho em campo (sol, água, trilhas)?</FieldLabel>
-            <div className="space-y-2 mt-1">
-              {[
-                ['sim', 'Sim, sem restrições'],
-                ['sim_restricoes', 'Sim, com restrições (explique abaixo)'],
-                ['nao_certeza', 'Não tenho certeza'],
-              ].map(([val, label]) => (
-                <RadioCard key={val} selected={form.g_aptidao === val} onClick={() => set('g_aptidao', val)}>
-                  {label}
-                </RadioCard>
-              ))}
-            </div>
-            {form.g_aptidao === 'sim_restricoes' && (
-              <div className="mt-2">
-                <Textarea
-                  value={form.g_aptidao_restricoes}
-                  onChange={e => set('g_aptidao_restricoes', e.target.value)}
-                  placeholder="Descreva suas restrições"
-                  rows={2}
-                />
+          {/* Structured questions */}
+          <div className="space-y-5">
+            <div>
+              <FieldLabel>Possui CADASTUR (Cadastro de Guia de Turismo)?</FieldLabel>
+              <div className="space-y-2 mt-1">
+                {[['sim', 'Sim'], ['em_processo', 'Em processo de obtenção'], ['nao', 'Não possuo']].map(([val, label]) => (
+                  <RadioCard key={val} selected={form.g_cadastur === val} onClick={() => set('g_cadastur', val)}>
+                    {label}
+                  </RadioCard>
+                ))}
               </div>
-            )}
+            </div>
+
+            <div>
+              <FieldLabel>Tempo de experiência como guia de turismo</FieldLabel>
+              <div className="space-y-2 mt-1">
+                {[
+                  ['nunca', 'Nunca atuei na área'],
+                  ['menos1', 'Menos de 1 ano'],
+                  ['1a3', '1 a 3 anos'],
+                  ['mais3', 'Mais de 3 anos'],
+                ].map(([val, label]) => (
+                  <RadioCard key={val} selected={form.g_experiencia === val} onClick={() => set('g_experiencia', val)}>
+                    {label}
+                  </RadioCard>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel>Já conhece os passeios da Camaleão Ecoturismo?</FieldLabel>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                {[['sim', 'Sim'], ['nao', 'Não']].map(([val, label]) => (
+                  <RadioCard key={val} selected={form.g_conhece_camaleao === val} onClick={() => set('g_conhece_camaleao', val)}>
+                    {label}
+                  </RadioCard>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel>Regiões que você conhece bem</FieldLabel>
+              <p className="text-xs text-muted-foreground mb-2">Pode marcar mais de uma opção</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  ['canions', 'Cânions do São Francisco'],
+                  ['piranhas', 'Piranhas e entorno'],
+                  ['chapada', 'Chapada Diamantina'],
+                  ['zona_da_mata', 'Zona da Mata'],
+                  ['litoral_sul', 'Litoral Sul'],
+                  ['litoral_norte', 'Litoral Norte'],
+                  ['agreste', 'Agreste'],
+                  ['outra', 'Outra região'],
+                ].map(([val, label]) => (
+                  <PillToggle key={val} selected={form.g_regioes.includes(val)} onClick={() => toggleMulti('g_regioes', val)}>
+                    {form.g_regioes.includes(val) ? '✓ ' : ''}{label}
+                  </PillToggle>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel>Idiomas além do português</FieldLabel>
+              <p className="text-xs text-muted-foreground mb-2">Pode marcar mais de uma opção</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  ['en_basico', 'Inglês básico'],
+                  ['en_avancado', 'Inglês intermediário/avançado'],
+                  ['es', 'Espanhol'],
+                  ['outro', 'Outro'],
+                ].map(([val, label]) => (
+                  <PillToggle key={val} selected={form.g_idiomas.includes(val)} onClick={() => toggleMulti('g_idiomas', val)}>
+                    {form.g_idiomas.includes(val) ? '✓ ' : ''}{label}
+                  </PillToggle>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel>Especialidades e habilidades relevantes</FieldLabel>
+              <p className="text-xs text-muted-foreground mb-2">Pode marcar mais de uma opção</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  ['trilhas', 'Trilhas e ecoturismo'],
+                  ['fotografia', 'Fotografia'],
+                  ['historia', 'História e cultura local'],
+                  ['aventura', 'Esportes de aventura'],
+                  ['grupos_grandes', 'Grupos grandes (+20 pax)'],
+                  ['primeiros_socorros', 'Primeiros socorros'],
+                ].map(([val, label]) => (
+                  <PillToggle key={val} selected={form.g_especialidades.includes(val)} onClick={() => toggleMulti('g_especialidades', val)}>
+                    {form.g_especialidades.includes(val) ? '✓ ' : ''}{label}
+                  </PillToggle>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel>Está fisicamente apto para trabalho em campo (sol, água, trilhas)?</FieldLabel>
+              <div className="space-y-2 mt-1">
+                {[
+                  ['sim', 'Sim, sem restrições'],
+                  ['sim_restricoes', 'Sim, com restrições (explique abaixo)'],
+                  ['nao_certeza', 'Não tenho certeza'],
+                ].map(([val, label]) => (
+                  <RadioCard key={val} selected={form.g_aptidao === val} onClick={() => set('g_aptidao', val)}>
+                    {label}
+                  </RadioCard>
+                ))}
+              </div>
+              {form.g_aptidao === 'sim_restricoes' && (
+                <div className="mt-2">
+                  <Textarea
+                    value={form.g_aptidao_restricoes}
+                    onChange={e => set('g_aptidao_restricoes', e.target.value)}
+                    placeholder="Descreva suas restrições"
+                    rows={2}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-border pt-4">
+            <p className="text-sm font-medium text-foreground mb-1">Perguntas abertas</p>
+            <p className="text-xs text-muted-foreground mb-4">Não existe resposta certa ou errada. Seja honesto e escreva com suas próprias palavras.</p>
+          </div>
+
+          {/* Discursive questions */}
+          <div className="space-y-5">
+            <DiscursiveField
+              label="Conte uma situação em que você precisou manter a calma enquanto outras pessoas estavam inseguras ou com medo. O que você fez?"
+              value={form.g_disc_calma}
+              onChange={v => set('g_disc_calma', v)}
+            />
+            <DiscursiveField
+              label="O que você faz quando está cansado, mas ainda precisa continuar responsável por outras pessoas?"
+              value={form.g_disc_cansado}
+              onChange={v => set('g_disc_cansado', v)}
+            />
+            <DiscursiveField
+              label="Como você reage quando alguém do grupo não segue orientações durante uma atividade?"
+              value={form.g_disc_desobediencia}
+              onChange={v => set('g_disc_desobediencia', v)}
+            />
+            <DiscursiveField
+              label="Descreva um momento em que você precisou tomar uma decisão rápida em um ambiente fora do seu controle."
+              value={form.g_disc_decisao}
+              onChange={v => set('g_disc_decisao', v)}
+            />
+            <DiscursiveField
+              label="O que, para você, faz uma experiência na natureza realmente valer a pena para quem participa?"
+              value={form.g_disc_experiencia}
+              onChange={v => set('g_disc_experiencia', v)}
+            />
           </div>
         </div>
       )}
 
       {step === 3 && job.type === 'atendimento' && (
-        <div className="space-y-5">
+        <div className="space-y-6">
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-1">Experiência em Atendimento</h3>
             <p className="text-sm text-muted-foreground">Perguntas específicas para assistentes de atendimento</p>
           </div>
 
-          <div>
-            <FieldLabel>Experiência com atendimento ao cliente</FieldLabel>
-            <div className="space-y-2 mt-1">
-              {[
-                ['sem_exp', 'Sem experiência'],
-                ['menos1', 'Menos de 1 ano'],
-                ['1a3', '1 a 3 anos'],
-                ['mais3', 'Mais de 3 anos'],
-              ].map(([val, label]) => (
-                <RadioCard key={val} selected={form.a_experiencia === val} onClick={() => set('a_experiencia', val)}>
-                  {label}
-                </RadioCard>
-              ))}
+          {/* Structured questions */}
+          <div className="space-y-5">
+            <div>
+              <FieldLabel>Experiência com atendimento ao cliente</FieldLabel>
+              <div className="space-y-2 mt-1">
+                {[
+                  ['sem_exp', 'Sem experiência'],
+                  ['menos1', 'Menos de 1 ano'],
+                  ['1a3', '1 a 3 anos'],
+                  ['mais3', 'Mais de 3 anos'],
+                ].map(([val, label]) => (
+                  <RadioCard key={val} selected={form.a_experiencia === val} onClick={() => set('a_experiencia', val)}>
+                    {label}
+                  </RadioCard>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel>Já utilizou algum CRM ou sistema de gestão de atendimento?</FieldLabel>
+              <div className="space-y-2 mt-1">
+                {[
+                  ['sim_regularmente', 'Sim, regularmente'],
+                  ['sim_algumas_vezes', 'Sim, algumas vezes'],
+                  ['nao', 'Não'],
+                ].map(([val, label]) => (
+                  <RadioCard key={val} selected={form.a_crm === val} onClick={() => set('a_crm', val)}>
+                    {label}
+                  </RadioCard>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel>Tem experiência com turismo, reservas ou hotelaria?</FieldLabel>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                {[['sim', 'Sim'], ['nao', 'Não']].map(([val, label]) => (
+                  <RadioCard key={val} selected={form.a_turismo === val} onClick={() => set('a_turismo', val)}>
+                    {label}
+                  </RadioCard>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel>Ferramentas que usa no dia a dia</FieldLabel>
+              <p className="text-xs text-muted-foreground mb-2">Pode marcar mais de uma opção</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  ['planilhas', 'Google Planilhas / Excel'],
+                  ['agenda', 'Google Agenda'],
+                  ['redes', 'Instagram profissional'],
+                  ['gestao', 'Notion / Trello'],
+                  ['reservas', 'Sistema de reservas'],
+                  ['nenhuma', 'Nenhuma das anteriores'],
+                ].map(([val, label]) => (
+                  <PillToggle key={val} selected={form.a_ferramentas.includes(val)} onClick={() => toggleMulti('a_ferramentas', val)}>
+                    {form.a_ferramentas.includes(val) ? '✓ ' : ''}{label}
+                  </PillToggle>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel>Como você se autoavalia na escrita e comunicação?</FieldLabel>
+              <div className="space-y-2 mt-1">
+                {[
+                  ['otima', 'Ótima — escrevo sem erros, com clareza'],
+                  ['boa', 'Boa — me comunico bem, cometo erros ocasionais'],
+                  ['em_dev', 'Em desenvolvimento'],
+                ].map(([val, label]) => (
+                  <RadioCard key={val} selected={form.a_escrita === val} onClick={() => set('a_escrita', val)}>
+                    {label}
+                  </RadioCard>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel>Já trabalhou remotamente / home office?</FieldLabel>
+              <div className="space-y-2 mt-1">
+                {[
+                  ['sim_longo', 'Sim, por mais de 6 meses'],
+                  ['sim_breve', 'Sim, brevemente'],
+                  ['nao', 'Não'],
+                ].map(([val, label]) => (
+                  <RadioCard key={val} selected={form.a_home_office === val} onClick={() => set('a_home_office', val)}>
+                    {label}
+                  </RadioCard>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel>Você lida bem com múltiplas tarefas simultâneas?</FieldLabel>
+              <div className="space-y-2 mt-1">
+                {[
+                  ['sim', 'Sim, com facilidade'],
+                  ['prefiro_uma', 'Sim, mas prefiro focar em uma coisa por vez'],
+                  ['dificuldade', 'Tenho dificuldade com isso'],
+                ].map(([val, label]) => (
+                  <RadioCard key={val} selected={form.a_multitarefas === val} onClick={() => set('a_multitarefas', val)}>
+                    {label}
+                  </RadioCard>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div>
-            <FieldLabel>Já utilizou WhatsApp Business para atendimento?</FieldLabel>
-            <div className="space-y-2 mt-1">
-              {[
-                ['sim_regularmente', 'Sim, regularmente'],
-                ['sim_algumas_vezes', 'Sim, algumas vezes'],
-                ['nao', 'Não'],
-              ].map(([val, label]) => (
-                <RadioCard key={val} selected={form.a_whatsapp_business === val} onClick={() => set('a_whatsapp_business', val)}>
-                  {label}
-                </RadioCard>
-              ))}
-            </div>
+          {/* Divider */}
+          <div className="border-t border-border pt-4">
+            <p className="text-sm font-medium text-foreground mb-1">Perguntas abertas</p>
+            <p className="text-xs text-muted-foreground mb-4">Não existe resposta certa ou errada. Seja honesto e escreva com suas próprias palavras.</p>
           </div>
 
-          <div>
-            <FieldLabel>Tem experiência com turismo, reservas ou hotelaria?</FieldLabel>
-            <div className="grid grid-cols-2 gap-2 mt-1">
-              {[['sim', 'Sim'], ['nao', 'Não']].map(([val, label]) => (
-                <RadioCard key={val} selected={form.a_turismo === val} onClick={() => set('a_turismo', val)}>
-                  {label}
-                </RadioCard>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel>Ferramentas que usa no dia a dia</FieldLabel>
-            <p className="text-xs text-muted-foreground mb-2">Selecione todas que se aplicam</p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                ['planilhas', 'Google Planilhas / Excel'],
-                ['agenda', 'Google Agenda'],
-                ['redes', 'Instagram profissional'],
-                ['gestao', 'Notion / Trello'],
-                ['reservas', 'Sistema de reservas'],
-                ['nenhuma', 'Nenhuma das anteriores'],
-              ].map(([val, label]) => (
-                <PillToggle key={val} selected={form.a_ferramentas.includes(val)} onClick={() => toggleMulti('a_ferramentas', val)}>
-                  {label}
-                </PillToggle>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel>Como você se autoavalia na escrita e comunicação?</FieldLabel>
-            <div className="space-y-2 mt-1">
-              {[
-                ['otima', 'Ótima — escrevo sem erros, com clareza'],
-                ['boa', 'Boa — me comunico bem, cometo erros ocasionais'],
-                ['em_dev', 'Em desenvolvimento'],
-              ].map(([val, label]) => (
-                <RadioCard key={val} selected={form.a_escrita === val} onClick={() => set('a_escrita', val)}>
-                  {label}
-                </RadioCard>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel>Disponibilidade para responder clientes fora do horário comercial?</FieldLabel>
-            <div className="space-y-2 mt-1">
-              {[
-                ['sim', 'Sim, tenho flexibilidade'],
-                ['as_vezes', 'Às vezes, depende do dia'],
-                ['nao', 'Prefiro horário fixo'],
-              ].map(([val, label]) => (
-                <RadioCard key={val} selected={form.a_fora_horario === val} onClick={() => set('a_fora_horario', val)}>
-                  {label}
-                </RadioCard>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel>Já trabalhou remotamente / home office?</FieldLabel>
-            <div className="space-y-2 mt-1">
-              {[
-                ['sim_longo', 'Sim, por mais de 6 meses'],
-                ['sim_breve', 'Sim, brevemente'],
-                ['nao', 'Não'],
-              ].map(([val, label]) => (
-                <RadioCard key={val} selected={form.a_home_office === val} onClick={() => set('a_home_office', val)}>
-                  {label}
-                </RadioCard>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel>Você lida bem com múltiplas tarefas simultâneas?</FieldLabel>
-            <div className="space-y-2 mt-1">
-              {[
-                ['sim', 'Sim, com facilidade'],
-                ['prefiro_uma', 'Sim, mas prefiro focar em uma coisa por vez'],
-                ['dificuldade', 'Tenho dificuldade com isso'],
-              ].map(([val, label]) => (
-                <RadioCard key={val} selected={form.a_multitarefas === val} onClick={() => set('a_multitarefas', val)}>
-                  {label}
-                </RadioCard>
-              ))}
-            </div>
+          {/* Discursive questions */}
+          <div className="space-y-5">
+            <DiscursiveField
+              label="Quando um cliente faz várias perguntas ao mesmo tempo, como você organiza sua resposta?"
+              value={form.a_disc_multiplas}
+              onChange={v => set('a_disc_multiplas', v)}
+            />
+            <DiscursiveField
+              label="Conte uma situação em que você precisou lidar com alguém impaciente ou exigente. Como conduziu?"
+              value={form.a_disc_impaciente}
+              onChange={v => set('a_disc_impaciente', v)}
+            />
+            <DiscursiveField
+              label="Como você se organiza quando tem várias demandas ao mesmo tempo e todas parecem urgentes?"
+              value={form.a_disc_demandas}
+              onChange={v => set('a_disc_demandas', v)}
+            />
+            <DiscursiveField
+              label="O que você faz quando percebe que cometeu um erro em algo que já foi passado para o cliente?"
+              value={form.a_disc_erro}
+              onChange={v => set('a_disc_erro', v)}
+            />
+            <DiscursiveField
+              label="Na sua opinião, o que diferencia um atendimento comum de um atendimento bem feito?"
+              value={form.a_disc_diferencial}
+              onChange={v => set('a_disc_diferencial', v)}
+            />
           </div>
         </div>
       )}
@@ -834,7 +986,7 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
       )}
 
       {/* Navigation */}
-      {step !== 'aviso' && step !== 'success' && (
+      {step !== 'aviso' && step !== 'success' && step !== 'video' && (
         <div className="flex gap-3 mt-8">
           <Button variant="outline" onClick={prev} className="gap-2">
             <ChevronLeft className="h-4 w-4" /> Voltar

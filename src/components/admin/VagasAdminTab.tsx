@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import {
   Briefcase, Plus, Pencil, Power, PowerOff, ChevronRight,
   Loader2, X, Check, Users, CalendarDays, Eye,
+  Phone, Mail, MapPin, FileText, ExternalLink, MessageCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -218,13 +219,123 @@ function JobFormModal({
   );
 }
 
-// ─── Application detail sheet ───────────────────────────────────────────────
+// ─── Label translation maps ─────────────────────────────────────────────────
 
-function formatField(key: string, value: unknown): string {
+const DESLOCAMENTO_LABELS: Record<string, string> = {
+  moro_proximo: 'Moro em Maceió/AL ou arredores',
+  disponivel: 'Disponível para se mudar ou deslocar',
+  nao_disponivel: 'Sem disponibilidade de deslocamento',
+};
+
+const COMO_SOUBE_LABELS: Record<string, string> = {
+  instagram: 'Instagram (@camaleaoecoturismo)',
+  indicacao: 'Indicação de amigo/conhecido',
+  whatsapp: 'WhatsApp',
+  site: 'Site da Camaleão',
+  outro: 'Outro',
+};
+
+const HORARIO_LABELS: Record<string, string> = {
+  comercial: 'Dias úteis — manhã e tarde',
+  tarde_noite: 'Dias úteis — tarde e noite',
+  sabados: 'Sábados',
+  domingos: 'Domingos',
+  feriados: 'Feriados',
+  // legacy values
+  manha: 'Manhã', tarde: 'Tarde', noite: 'Noite', integral: 'Integral', fds: 'Fins de semana',
+};
+
+const GUIA_FIELD_LABELS: Record<string, string> = {
+  cadastur: 'CADASTUR',
+  experiencia: 'Experiência como guia',
+  conhece_camaleao: 'Conhece os passeios da Camaleão',
+  regioes: 'Regiões conhecidas',
+  idiomas: 'Idiomas',
+  especialidades: 'Especialidades',
+  aptidao: 'Aptidão física',
+  aptidao_restricoes: 'Restrições físicas',
+};
+
+const GUIA_VALUE_LABELS: Record<string, Record<string, string>> = {
+  cadastur: { sim: 'Sim', em_processo: 'Em processo', nao: 'Não possui' },
+  experiencia: { nunca: 'Nunca atuei', menos1: 'Menos de 1 ano', '1a3': '1 a 3 anos', mais3: 'Mais de 3 anos' },
+  conhece_camaleao: { sim: 'Sim', nao: 'Não' },
+  aptidao: { sim: 'Sem restrições', sim_restricoes: 'Com restrições', nao_certeza: 'Não tenho certeza' },
+};
+
+const ARRAY_ITEM_LABELS: Record<string, Record<string, string>> = {
+  regioes: {
+    canions: 'Cânions do São Francisco', piranhas: 'Piranhas e entorno', chapada: 'Chapada Diamantina',
+    zona_da_mata: 'Zona da Mata', litoral_sul: 'Litoral Sul', litoral_norte: 'Litoral Norte',
+    agreste: 'Agreste', outra: 'Outra região',
+  },
+  idiomas: {
+    en_basico: 'Inglês básico', en_avancado: 'Inglês intermediário/avançado', es: 'Espanhol', outro: 'Outro',
+  },
+  especialidades: {
+    trilhas: 'Trilhas e ecoturismo', fotografia: 'Fotografia', historia: 'História e cultura local',
+    aventura: 'Esportes de aventura', grupos_grandes: 'Grupos grandes (+20 pax)', primeiros_socorros: 'Primeiros socorros',
+  },
+  ferramentas: {
+    planilhas: 'Google Planilhas/Excel', agenda: 'Google Agenda', redes: 'Instagram profissional',
+    gestao: 'Notion/Trello', reservas: 'Sistema de reservas', nenhuma: 'Nenhuma',
+  },
+};
+
+const ATEND_FIELD_LABELS: Record<string, string> = {
+  experiencia_atendimento: 'Experiência em atendimento',
+  crm: 'CRM / sistema de atendimento',
+  exp_turismo: 'Experiência em turismo/reservas',
+  ferramentas: 'Ferramentas utilizadas',
+  escrita: 'Escrita e comunicação',
+  home_office: 'Experiência em home office',
+  multitarefas: 'Múltiplas tarefas simultâneas',
+};
+
+const ATEND_VALUE_LABELS: Record<string, Record<string, string>> = {
+  experiencia_atendimento: { sem_exp: 'Sem experiência', menos1: 'Menos de 1 ano', '1a3': '1 a 3 anos', mais3: 'Mais de 3 anos' },
+  crm: { sim_regularmente: 'Sim, regularmente', sim_algumas_vezes: 'Sim, algumas vezes', nao: 'Não' },
+  exp_turismo: { sim: 'Sim', nao: 'Não' },
+  escrita: { otima: 'Ótima', boa: 'Boa', em_dev: 'Em desenvolvimento' },
+  home_office: { sim_longo: 'Sim, mais de 6 meses', sim_breve: 'Sim, brevemente', nao: 'Não' },
+  multitarefas: { sim: 'Sim, com facilidade', prefiro_uma: 'Prefere uma por vez', dificuldade: 'Com dificuldade' },
+};
+
+const GUIA_DISC_LABELS: Record<string, string> = {
+  disc_calma: 'Manter a calma — situação relatada',
+  disc_cansado: 'Quando cansado mas responsável',
+  disc_desobediencia: 'Quando alguém não segue orientações',
+  disc_decisao: 'Decisão rápida em ambiente incerto',
+  disc_experiencia: 'O que faz uma experiência valer a pena',
+};
+
+const ATEND_DISC_LABELS: Record<string, string> = {
+  disc_multiplas: 'Várias perguntas ao mesmo tempo',
+  disc_impaciente: 'Cliente impaciente ou exigente',
+  disc_demandas: 'Múltiplas demandas urgentes',
+  disc_erro: 'Quando percebe um erro cometido',
+  disc_diferencial: 'Diferencial de um bom atendimento',
+};
+
+const GENERO_LABELS: Record<string, string> = {
+  masculino: 'Masculino',
+  feminino: 'Feminino',
+  nao_binario: 'Não-binário',
+  nao_informar: 'Prefere não informar',
+};
+
+function translateSpecValue(fieldKey: string, value: unknown, fieldLabels: Record<string, Record<string, string>>): string {
   if (value === null || value === undefined || value === '') return '—';
-  if (Array.isArray(value)) return value.join(', ') || '—';
-  return String(value);
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '—';
+    const map = ARRAY_ITEM_LABELS[fieldKey];
+    return value.map(v => map?.[v] ?? v).join(', ');
+  }
+  const map = fieldLabels[fieldKey];
+  return map?.[String(value)] ?? String(value);
 }
+
+// ─── Application detail sheet ───────────────────────────────────────────────
 
 function ApplicationSheet({
   app,
@@ -261,22 +372,69 @@ function ApplicationSheet({
   }
 
   const spec = app.respostas_especificas as Record<string, unknown> | null;
+  const isGuia = spec != null && ('cadastur' in spec || 'regioes' in spec);
+  const fieldLabels = isGuia ? GUIA_FIELD_LABELS : ATEND_FIELD_LABELS;
+  const valueMaps = isGuia ? GUIA_VALUE_LABELS : ATEND_VALUE_LABELS;
+  const discLabels = isGuia ? GUIA_DISC_LABELS : ATEND_DISC_LABELS;
+
+  // Specific answer fields (excluding motivacao and disc_* which are shown separately)
+  const specificKeys = isGuia
+    ? ['cadastur', 'experiencia', 'conhece_camaleao', 'regioes', 'idiomas', 'especialidades', 'aptidao', 'aptidao_restricoes']
+    : ['experiencia_atendimento', 'crm', 'exp_turismo', 'ferramentas', 'escrita', 'home_office', 'multitarefas'];
+
+  const discKeys = Object.keys(discLabels);
+
+  const whatsappDigits = app.whatsapp.replace(/\D/g, '');
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
-        <SheetHeader className="mb-6">
-          <SheetTitle>Candidatura — {app.nome}</SheetTitle>
-          <p className="text-sm text-muted-foreground">{jobTitle} · {new Date(app.created_at).toLocaleDateString('pt-BR')}</p>
+        <SheetHeader className="mb-4">
+          <SheetTitle className="text-xl">{app.nome}</SheetTitle>
+          <div className="flex items-center gap-2 flex-wrap">
+            <StatusBadge status={status} />
+            <span className="text-xs text-muted-foreground">{jobTitle}</span>
+            <span className="text-xs text-muted-foreground">·</span>
+            <span className="text-xs text-muted-foreground">{new Date(app.created_at).toLocaleDateString('pt-BR')}</span>
+          </div>
         </SheetHeader>
 
-        <div className="space-y-6 pb-8">
-          {/* Status */}
+        <div className="space-y-5 pb-8">
+
+          {/* Quick contact actions */}
+          <div className="flex gap-2">
+            <a
+              href={`https://wa.me/55${whatsappDigits}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm text-foreground hover:bg-muted/50 transition-colors flex-1 justify-center font-medium"
+            >
+              <MessageCircle className="h-4 w-4 text-emerald-600" />
+              WhatsApp
+            </a>
+            <a
+              href={`mailto:${app.email}`}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm text-foreground hover:bg-muted/50 transition-colors flex-1 justify-center font-medium"
+            >
+              <Mail className="h-4 w-4 text-blue-500" />
+              E-mail
+            </a>
+            {app.curriculo_url && (
+              <a
+                href={app.curriculo_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm text-foreground hover:bg-muted/50 transition-colors flex-1 justify-center font-medium"
+              >
+                <FileText className="h-4 w-4 text-rose-500" />
+                Currículo
+              </a>
+            )}
+          </div>
+
+          {/* Status + notas */}
           <div className="bg-muted/40 rounded-xl p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Status da candidatura</Label>
-              <StatusBadge status={status} />
-            </div>
+            <Label className="text-sm font-medium">Status da candidatura</Label>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -299,55 +457,88 @@ function ApplicationSheet({
 
           {/* Dados pessoais */}
           <Section title="Dados Pessoais">
-            <Row label="Nome" value={app.nome} />
             <Row label="WhatsApp" value={app.whatsapp} />
             <Row label="E-mail" value={app.email} />
-            <Row label="Data de nascimento" value={app.data_nascimento ?? '—'} />
+            {app.data_nascimento && <Row label="Nascimento" value={new Date(app.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR')} />}
             <Row label="Cidade" value={app.cidade} />
-            <Row label="Disponibilidade de deslocamento" value={app.disponibilidade_deslocamento ?? '—'} />
+            {(app as any).genero && <Row label="Gênero" value={GENERO_LABELS[(app as any).genero] ?? (app as any).genero} />}
+            <Row label="Localização" value={DESLOCAMENTO_LABELS[app.disponibilidade_deslocamento ?? ''] ?? app.disponibilidade_deslocamento ?? '—'} />
           </Section>
 
           {/* Sobre */}
           <Section title="Sobre você">
-            <Row label="Como soube da vaga" value={app.como_soube ?? '—'} />
-            <Row label="Disponibilidade de horário" value={formatField('', app.disponibilidade_horario)} />
+            <Row label="Como soube da vaga" value={COMO_SOUBE_LABELS[app.como_soube ?? ''] ?? app.como_soube ?? '—'} />
+            <Row
+              label="Disponibilidade"
+              value={
+                app.disponibilidade_horario?.length
+                  ? app.disponibilidade_horario.map(h => HORARIO_LABELS[h] ?? h).join(', ')
+                  : '—'
+              }
+            />
           </Section>
 
           {/* Respostas específicas */}
-          {spec && Object.keys(spec).length > 0 && (
-            <Section title="Respostas específicas">
-              {Object.entries(spec).map(([key, val]) => (
-                <Row key={key} label={key.replace(/_/g, ' ')} value={formatField(key, val)} />
-              ))}
+          {spec && specificKeys.some(k => spec[k] != null && spec[k] !== '' && !(Array.isArray(spec[k]) && (spec[k] as unknown[]).length === 0)) && (
+            <Section title={isGuia ? 'Experiência como Guia' : 'Experiência em Atendimento'}>
+              {specificKeys.map(key => {
+                const val = spec[key];
+                if (val === null || val === undefined || val === '') return null;
+                if (Array.isArray(val) && val.length === 0) return null;
+                // aptidao_restricoes is free text — show as a paragraph
+                if (key === 'aptidao_restricoes') {
+                  return (
+                    <div key={key}>
+                      <p className="text-xs text-muted-foreground mb-0.5">{fieldLabels[key] ?? key}</p>
+                      <p className="text-sm text-foreground">{String(val)}</p>
+                    </div>
+                  );
+                }
+                return (
+                  <Row
+                    key={key}
+                    label={fieldLabels[key] ?? key.replace(/_/g, ' ')}
+                    value={translateSpecValue(key, val, valueMaps)}
+                  />
+                );
+              })}
+            </Section>
+          )}
+
+          {/* Perguntas abertas (discursivas) */}
+          {spec && discKeys.some(k => spec[k]) && (
+            <Section title="Perguntas abertas">
+              {discKeys.map(key => {
+                const val = spec[key];
+                if (!val) return null;
+                return (
+                  <div key={key} className="py-1">
+                    <p className="text-xs text-muted-foreground mb-1">{discLabels[key]}</p>
+                    <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{String(val)}</p>
+                  </div>
+                );
+              })}
             </Section>
           )}
 
           {/* Motivação */}
-          {app.experiencia_relevante && (
-            <Section title="Motivação">
-              <div className="text-sm text-foreground whitespace-pre-wrap">{app.experiencia_relevante}</div>
+          {spec?.motivacao && (
+            <Section title="Por que quer trabalhar na Camaleão">
+              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{String(spec.motivacao)}</p>
             </Section>
           )}
 
-          {/* Documentos */}
-          <Section title="Documentos">
-            {app.curriculo_url ? (
-              <a
-                href={app.curriculo_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-primary underline underline-offset-2 break-all"
-              >
-                {app.curriculo_url}
-              </a>
-            ) : (
-              <span className="text-sm text-muted-foreground">Não informado</span>
-            )}
-          </Section>
+          {/* Experiência relevante */}
+          {app.experiencia_relevante && (
+            <Section title="Experiência relevante">
+              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{app.experiencia_relevante}</p>
+            </Section>
+          )}
 
+          {/* Observações */}
           {app.observacoes && (
             <Section title="Observações da candidatura">
-              <p className="text-sm text-foreground whitespace-pre-wrap">{app.observacoes}</p>
+              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{app.observacoes}</p>
             </Section>
           )}
         </div>
@@ -360,16 +551,16 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <div>
       <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{title}</h4>
-      <div className="space-y-1.5 bg-muted/30 rounded-xl p-3">{children}</div>
+      <div className="space-y-2 rounded-xl border border-border px-4 py-3">{children}</div>
     </div>
   );
 }
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-4 text-sm">
-      <span className="text-muted-foreground capitalize shrink-0">{label}</span>
-      <span className="text-foreground text-right break-words max-w-[65%]">{value || '—'}</span>
+    <div className="flex justify-between gap-4 text-sm py-0.5">
+      <span className="text-muted-foreground shrink-0">{label}</span>
+      <span className="text-foreground text-right break-words max-w-[60%]">{value || '—'}</span>
     </div>
   );
 }
