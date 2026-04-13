@@ -17,7 +17,7 @@ const corsHeaders = {
 };
 
 const INFINITEPAY_HANDLE = 'camaleaoecoturismo';
-const REDIRECT_URL = 'https://agenda.camaleaoecoturismo.com/pagamento/sucesso';
+const REDIRECT_URL = 'https://www.camaleaoecoturismo.com.br/pagamento/sucesso';
 const WEBHOOK_URL = 'https://guwplwuwriixgvkjlutg.supabase.co/functions/v1/infinitepay-webhook';
 
 serve(async (req) => {

@@ -55,6 +55,7 @@ export function HeroBanner({ location = "hero" }: { location?: string }) {
   const [slides, setSlides] = useState<HeroBannerSlide[]>([]);
   const [current, setCurrent] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [imgErrors, setImgErrors] = useState<Set<number>>(new Set());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
 
@@ -83,6 +84,11 @@ export function HeroBanner({ location = "hero" }: { location?: string }) {
           }
         }
         setLoaded(true);
+        // Preload the first slide image so it's ready before it becomes active
+        if (data && data.length > 0 && data[0].image_url && !data[0].video_url) {
+          const preload = new window.Image();
+          preload.src = data[0].image_url;
+        }
       })
       .catch(() => { clearTimeout(timeout); setLoaded(true); });
     return () => clearTimeout(timeout);
@@ -174,13 +180,14 @@ export function HeroBanner({ location = "hero" }: { location?: string }) {
               playsInline
               className="absolute inset-0 w-full h-full object-cover"
             />
-          ) : slide.image_url ? (
+          ) : slide.image_url && !imgErrors.has(idx) ? (
             <img
-              key={`${slide.id}-${idx === current ? 'active' : 'idle'}`}
               src={slide.image_url}
               alt={slide.title || "Banner"}
               className={`absolute inset-0 w-full h-full object-cover origin-center ${idx === current ? [`ken-burns-1`, `ken-burns-2`, `ken-burns-3`][idx % 3] : ''}`}
               loading={idx === 0 ? "eager" : "lazy"}
+              fetchPriority={idx === 0 ? "high" : "auto"}
+              onError={() => setImgErrors(prev => new Set(prev).add(idx))}
             />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-[#820AD1] to-[#1a0533]" />

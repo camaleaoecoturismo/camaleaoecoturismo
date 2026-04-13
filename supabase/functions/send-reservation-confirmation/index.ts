@@ -708,7 +708,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     // Cancellation policy link
-    const politicaCancelamentoLink = 'https://agenda.camaleaoecoturismo.com/cancelamento';
+    const politicaCancelamentoLink = 'https://www.camaleaoecoturismo.com.br/politicas';
     
     const templateData: Record<string, string> = {
       // New template format variables (used in admin templates)

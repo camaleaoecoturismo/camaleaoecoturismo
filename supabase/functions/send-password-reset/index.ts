@@ -19,7 +19,6 @@ const ALLOWED_ORIGINS = new Set([
   "https://camaleaoecoturismo.com.br",
   "https://www.camaleaoecoturismo.com.br",
   "https://camaleaoecoturismo.vercel.app",
-  "https://agenda.camaleaoecoturismo.com",
 ]);
 
 const resolveRedirectUrl = (redirectUrl?: string) => {
