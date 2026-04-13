@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ChevronRight, ChevronLeft, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CheckCircle2, AlertCircle, Loader2, Upload, FileText, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -94,11 +94,9 @@ interface FormData {
   disponibilidade_horario: string[];
   // Step 3 — guia
   g_cadastur: string;
-  g_cadastur_numero: string;
   g_experiencia: string;
   g_conhece_camaleao: string;
   g_regioes: string[];
-  g_embarcacoes: string;
   g_idiomas: string[];
   g_especialidades: string[];
   g_aptidao: string;
@@ -116,7 +114,6 @@ interface FormData {
   motivacao: string;
   experiencia_relevante: string;
   // Step 5
-  curriculo_url: string;
   observacoes: string;
 }
 
@@ -124,13 +121,13 @@ const initialForm: FormData = {
   nome: '', whatsapp: '', email: '', data_nascimento: '', cidade: '',
   disponibilidade_deslocamento: '',
   como_soube: '', disponibilidade_horario: [],
-  g_cadastur: '', g_cadastur_numero: '', g_experiencia: '', g_conhece_camaleao: '',
-  g_regioes: [], g_embarcacoes: '', g_idiomas: [], g_especialidades: [],
+  g_cadastur: '', g_experiencia: '', g_conhece_camaleao: '',
+  g_regioes: [], g_idiomas: [], g_especialidades: [],
   g_aptidao: '', g_aptidao_restricoes: '',
   a_experiencia: '', a_whatsapp_business: '', a_turismo: '', a_ferramentas: [],
   a_escrita: '', a_fora_horario: '', a_home_office: '', a_multitarefas: '',
   motivacao: '', experiencia_relevante: '',
-  curriculo_url: '', observacoes: '',
+  observacoes: '',
 };
 
 function formatWhatsApp(raw: string) {
@@ -145,10 +142,11 @@ function formatWhatsApp(raw: string) {
 export default function VagasForm({ job, onBack }: VagasFormProps) {
   const [step, setStep] = useState<Step>('aviso');
   const [form, setForm] = useState<FormData>(initialForm);
+  const [curriculoFile, setCurriculoFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const totalSteps = 5;
-  const currentStepNum = typeof step === 'number' ? step : step === 'aviso' ? 0 : 0;
   const progress = typeof step === 'number' ? (step / totalSteps) * 100 : 0;
 
   function set(field: keyof FormData, value: string) {
@@ -206,13 +204,30 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
     if (!validateStep(5)) return;
     setLoading(true);
 
+    // Upload currículo PDF if provided
+    let curriculo_url: string | null = null;
+    if (curriculoFile) {
+      const ext = 'pdf';
+      const fileName = `${job.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('curriculos')
+        .upload(fileName, curriculoFile, { contentType: 'application/pdf', upsert: false });
+
+      if (uploadError) {
+        toast.error('Erro ao enviar o currículo. Verifique o arquivo e tente novamente.');
+        setLoading(false);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage.from('curriculos').getPublicUrl(uploadData.path);
+      curriculo_url = urlData.publicUrl;
+    }
+
     const respostasEspecificas = job.type === 'guia' ? {
       cadastur: form.g_cadastur,
-      cadastur_numero: form.g_cadastur_numero,
       experiencia: form.g_experiencia,
       conhece_camaleao: form.g_conhece_camaleao,
       regioes: form.g_regioes,
-      embarcacoes: form.g_embarcacoes,
       idiomas: form.g_idiomas,
       especialidades: form.g_especialidades,
       aptidao: form.g_aptidao,
@@ -240,7 +255,7 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
       disponibilidade_horario: form.disponibilidade_horario,
       respostas_especificas: respostasEspecificas,
       experiencia_relevante: form.experiencia_relevante.trim() || null,
-      curriculo_url: form.curriculo_url.trim() || null,
+      curriculo_url,
       observacoes: form.observacoes.trim() || null,
       status: 'pendente',
     });
@@ -258,8 +273,17 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
 
   // ─── Step renderers ──────────────────────────────────────────────────────
 
-  const DOCS_GUIA = ['CPF ou RG', 'Comprovante de residência', 'Currículo atualizado (link do Google Drive, LinkedIn, etc.)', 'CADASTUR ou certificado de guia (se tiver)', 'Certidão de antecedentes criminais'];
-  const DOCS_ATENDIMENTO = ['CPF ou RG', 'Comprovante de residência', 'Currículo atualizado (link do Google Drive, LinkedIn, etc.)'];
+  const DOCS_GUIA = [
+    'CPF ou RG',
+    'Comprovante de residência',
+    'Currículo atualizado em PDF',
+    'CADASTUR ou certificado de guia (se tiver)',
+  ];
+  const DOCS_ATENDIMENTO = [
+    'CPF ou RG',
+    'Comprovante de residência',
+    'Currículo atualizado em PDF',
+  ];
 
   if (step === 'success') {
     return (
@@ -374,7 +398,7 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
               <Input
                 value={form.cidade}
                 onChange={e => set('cidade', e.target.value)}
-                placeholder="Ex: Piranhas, AL"
+                placeholder="Ex: Maceió, AL"
               />
             </div>
           </div>
@@ -383,7 +407,7 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
             <FieldLabel required>Disponibilidade de localização</FieldLabel>
             <div className="space-y-2 mt-1">
               {[
-                ['moro_proximo', 'Moro em Piranhas/AL ou arredores'],
+                ['moro_proximo', 'Moro em Maceió/AL ou arredores'],
                 ['disponivel', 'Tenho disponibilidade para me mudar ou deslocar'],
                 ['nao_disponivel', 'Não tenho disponibilidade de deslocamento'],
               ].map(([val, label]) => (
@@ -430,11 +454,11 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
             <p className="text-xs text-muted-foreground mb-2">Selecione todas que se aplicam</p>
             <div className="flex flex-wrap gap-2">
               {[
-                ['manha', 'Manhã (6h–12h)'],
-                ['tarde', 'Tarde (12h–18h)'],
-                ['noite', 'Noite (18h–22h)'],
-                ['integral', 'Integral'],
-                ['fds', 'Fins de semana'],
+                ['comercial', 'Dias úteis — manhã e tarde (seg–sex)'],
+                ['tarde_noite', 'Dias úteis — tarde e noite (seg–sex)'],
+                ['sabados', 'Sábados'],
+                ['domingos', 'Domingos'],
+                ['feriados', 'Feriados'],
               ].map(([val, label]) => (
                 <PillToggle
                   key={val}
@@ -466,12 +490,6 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
                 </RadioCard>
               ))}
             </div>
-            {form.g_cadastur === 'sim' && (
-              <div className="mt-2">
-                <FieldLabel>Número do CADASTUR</FieldLabel>
-                <Input value={form.g_cadastur_numero} onChange={e => set('g_cadastur_numero', e.target.value)} placeholder="Número de registro" />
-              </div>
-            )}
           </div>
 
           <div>
@@ -509,26 +527,15 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
                 ['canions', 'Cânions do São Francisco'],
                 ['piranhas', 'Piranhas e entorno'],
                 ['chapada', 'Chapada Diamantina'],
+                ['zona_da_mata', 'Zona da Mata'],
+                ['litoral_sul', 'Litoral Sul'],
+                ['litoral_norte', 'Litoral Norte'],
+                ['agreste', 'Agreste'],
                 ['outra', 'Outra região'],
               ].map(([val, label]) => (
                 <PillToggle key={val} selected={form.g_regioes.includes(val)} onClick={() => toggleMulti('g_regioes', val)}>
                   {label}
                 </PillToggle>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <FieldLabel>Você conduz embarcações (barco, lancha)?</FieldLabel>
-            <div className="space-y-2 mt-1">
-              {[
-                ['sim_habilitacao', 'Sim, com habilitação formal'],
-                ['sim_sem_habilitacao', 'Sim, sem habilitação formal'],
-                ['nao', 'Não'],
-              ].map(([val, label]) => (
-                <RadioCard key={val} selected={form.g_embarcacoes === val} onClick={() => set('g_embarcacoes', val)}>
-                  {label}
-                </RadioCard>
               ))}
             </div>
           </div>
@@ -765,17 +772,51 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
             <p className="text-sm text-muted-foreground">Estamos quase lá! Só mais um passo.</p>
           </div>
 
-          <div className="bg-muted/40 rounded-xl p-4 text-sm text-muted-foreground">
-            Cole abaixo o link do seu currículo. Você pode usar o <strong>Google Drive</strong>, <strong>LinkedIn</strong>, <strong>Notion</strong> ou qualquer plataforma de sua preferência. Certifique-se de que o link está com acesso liberado para visualização.
-          </div>
-
           <div>
-            <FieldLabel>Link do currículo</FieldLabel>
-            <Input
-              value={form.curriculo_url}
-              onChange={e => set('curriculo_url', e.target.value)}
-              placeholder="https://drive.google.com/... ou linkedin.com/in/..."
-              type="url"
+            <FieldLabel>Currículo em PDF</FieldLabel>
+            <p className="text-xs text-muted-foreground mb-2">Recomendado — apenas arquivos .pdf são aceitos</p>
+
+            {curriculoFile ? (
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-primary bg-primary/5">
+                <FileText className="h-5 w-5 text-primary shrink-0" />
+                <span className="text-sm text-foreground font-medium flex-1 truncate">{curriculoFile.name}</span>
+                <button
+                  type="button"
+                  onClick={() => { setCurriculoFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full flex flex-col items-center gap-2 px-4 py-6 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/20 transition-colors"
+              >
+                <Upload className="h-6 w-6 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Clique para selecionar o PDF</span>
+              </button>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,application/pdf"
+              className="hidden"
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+                  toast.error('Por favor, selecione um arquivo PDF.');
+                  return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                  toast.error('O arquivo deve ter no máximo 10 MB.');
+                  return;
+                }
+                setCurriculoFile(file);
+              }}
             />
           </div>
 
