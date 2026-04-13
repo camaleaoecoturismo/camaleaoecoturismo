@@ -390,7 +390,7 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
 
   return (
     <div className="max-w-2xl mx-auto px-4">
-      <Logo />
+      <FormLogo />
 
       {/* Progress bar */}
       {typeof step === 'number' && (
