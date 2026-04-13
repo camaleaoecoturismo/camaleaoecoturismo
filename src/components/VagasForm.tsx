@@ -8,6 +8,26 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import logoHorizontal from '@/assets/logo-horizontal.png';
 
+// ─── Constants (outside component to avoid recreating on every render) ─────
+
+const DOCS_GUIA = [
+  'CPF ou RG',
+  'Currículo atualizado em PDF',
+  'CADASTUR ou certificado de guia (se tiver)',
+];
+const DOCS_ATENDIMENTO = [
+  'CPF ou RG',
+  'Currículo atualizado em PDF',
+];
+
+function FormLogo() {
+  return (
+    <div className="flex justify-center mb-8">
+      <img src={logoHorizontal} alt="Camaleão Ecoturismo" className="h-8" />
+    </div>
+  );
+}
+
 interface JobOpening {
   id: string;
   title: string;
@@ -213,18 +233,22 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
     return true;
   }
 
+  function scrollTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   function next() {
-    if (step === 'aviso') { setStep(1); return; }
+    if (step === 'aviso') { setStep(1); scrollTop(); return; }
     if (typeof step === 'number') {
       if (!validateStep(step)) return;
-      if (step < totalSteps) setStep((step + 1) as Step);
+      if (step < totalSteps) { setStep((step + 1) as Step); scrollTop(); }
     }
   }
 
   function prev() {
     if (step === 1) { onBack(); return; }
     if (step === 'aviso') { onBack(); return; }
-    if (typeof step === 'number' && step > 1) setStep((step - 1) as Step);
+    if (typeof step === 'number' && step > 1) { setStep((step - 1) as Step); scrollTop(); }
   }
 
   // ── Submit ───────────────────────────────────────────────────────────────
@@ -311,38 +335,27 @@ export default function VagasForm({ job, onBack }: VagasFormProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // ─── Step renderers ──────────────────────────────────────────────────────
-
-  const DOCS_GUIA = [
-    'CPF ou RG',
-    'Currículo atualizado em PDF',
-    'CADASTUR ou certificado de guia (se tiver)',
-  ];
-  const DOCS_ATENDIMENTO = [
-    'CPF ou RG',
-    'Currículo atualizado em PDF',
-  ];
-
-  // ─── Logo (shown on every step) ───────────────────────────────────────────
-
-  const Logo = () => (
-    <div className="flex justify-center mb-8">
-      <img src={logoHorizontal} alt="Camaleão Ecoturismo" className="h-8" />
-    </div>
-  );
-
   // ─── Video step ───────────────────────────────────────────────────────────
 
   if (step === 'video') {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8 text-center">
-        <Logo />
+        <FormLogo />
+        <p className="text-sm text-muted-foreground mb-4">Enquanto isso, conheça um pouco mais sobre o nosso trabalho.</p>
         <video
           src="/intro.mp4"
           autoPlay
+          muted
           playsInline
           className="w-full rounded-2xl shadow-md"
           onEnded={() => setStep('success')}
+          ref={el => {
+            if (el) {
+              // Fallback: if video can't play or takes too long, advance after 15s
+              const timer = setTimeout(() => setStep('success'), 15000);
+              el.addEventListener('ended', () => clearTimeout(timer), { once: true });
+            }
+          }}
         />
         <Button
           onClick={() => setStep('success')}
