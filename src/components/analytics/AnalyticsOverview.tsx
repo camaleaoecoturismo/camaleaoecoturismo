@@ -66,12 +66,13 @@ const AnalyticsOverview: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Build base query
+      // Sessions query — count: 'exact' returns the true server-side total regardless of limit
       let sessionsQuery = supabase
         .from('analytics_sessions')
-        .select('*')
+        .select('user_id_anon, first_visit_at, pages_per_session, session_duration_seconds, converted, device_type', { count: 'exact' })
         .gte('first_visit_at', filters.startDate.toISOString())
-        .lte('first_visit_at', filters.endDate.toISOString());
+        .lte('first_visit_at', filters.endDate.toISOString())
+        .limit(50000);
 
       if (filters.deviceType !== 'all') {
         sessionsQuery = sessionsQuery.eq('device_type', filters.deviceType);
@@ -80,16 +81,17 @@ const AnalyticsOverview: React.FC = () => {
         sessionsQuery = sessionsQuery.eq('utm_campaign', filters.campaign);
       }
 
-      const { data: sessions, error: sessionsError } = await sessionsQuery;
+      const { data: sessions, count: sessionsCount, error: sessionsError } = await sessionsQuery;
 
       if (sessionsError) throw sessionsError;
 
-      // Fetch pageviews directly by date with join (avoids .in() with thousands of IDs)
+      // Pageviews query — same approach
       let pageviewsQuery = supabase
         .from('analytics_pageviews')
-        .select('*, analytics_sessions!inner(device_type, utm_campaign, user_id_anon)')
+        .select('viewed_at, page_path, analytics_sessions!inner(device_type, utm_campaign, user_id_anon)', { count: 'exact' })
         .gte('viewed_at', filters.startDate.toISOString())
-        .lte('viewed_at', filters.endDate.toISOString());
+        .lte('viewed_at', filters.endDate.toISOString())
+        .limit(50000);
 
       if (filters.deviceType !== 'all') {
         pageviewsQuery = pageviewsQuery.eq('analytics_sessions.device_type', filters.deviceType);
@@ -101,12 +103,12 @@ const AnalyticsOverview: React.FC = () => {
         pageviewsQuery = pageviewsQuery.eq('page_path', filters.pagePath);
       }
 
-      const { data: pageviews } = await pageviewsQuery;
+      const { data: pageviews, count: pageviewsCount } = await pageviewsQuery;
 
-      // Calculate metrics
-      const totalSessions = sessions?.length || 0;
+      // Calculate metrics — use server-side counts for totals, rows for derived metrics
+      const totalSessions = sessionsCount ?? sessions?.length ?? 0;
       const uniqueVisitors = new Set(sessions?.map(s => s.user_id_anon).filter(Boolean)).size;
-      const totalPageviews = pageviews?.length || 0;
+      const totalPageviews = pageviewsCount ?? pageviews?.length ?? 0;
       
       const singlePageSessions = sessions?.filter(s => s.pages_per_session === 1).length || 0;
       const bounceRate = totalSessions > 0 ? (singlePageSessions / totalSessions) * 100 : 0;
