@@ -90,10 +90,15 @@ serve(async (req) => {
     const couponCode = overrideCouponCode !== undefined ? overrideCouponCode : (reserva.coupon_code || null);
     
     // Add main tour as single item with total price
+    // Apply coupon discount directly to the tour item to avoid negative-price items (rejected by InfinitePay)
+    const tourPriceAfterDiscount = Math.max(0, tourPrice - couponDiscount);
+    const tourDescription = couponCode
+      ? `${reserva.tours?.name || 'Passeio'} (${reserva.numero_participantes || 1} participante${(reserva.numero_participantes || 1) > 1 ? 's' : ''}) - Cupom ${couponCode}`
+      : `${reserva.tours?.name || 'Passeio'} (${reserva.numero_participantes || 1} participante${(reserva.numero_participantes || 1) > 1 ? 's' : ''})`;
     items.push({
       quantity: 1,
-      price: Math.round(tourPrice * 100), // Convert to centavos
-      description: `${reserva.tours?.name || 'Passeio'} (${reserva.numero_participantes || 1} participante${(reserva.numero_participantes || 1) > 1 ? 's' : ''})`
+      price: Math.round(tourPriceAfterDiscount * 100), // Convert to centavos, discount already applied
+      description: tourDescription
     });
 
     console.log('Tour price from reservation:', tourPrice, 'valor_passeio:', reserva.valor_passeio);
@@ -149,24 +154,12 @@ serve(async (req) => {
     }
 
     // Calculate total from items (server-side validation)
-    const itemsTotalCentavos = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    
-    // Apply coupon discount
-    const discountCentavos = Math.round(couponDiscount * 100);
-    const totalCentavos = Math.max(0, itemsTotalCentavos - discountCentavos);
+    // Discount is already baked into the tour item price, so the sum is the final total
+    const totalCentavos = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const totalReais = totalCentavos / 100;
 
     console.log('Items for InfinitePay:', JSON.stringify(items));
-    console.log('Items total (centavos):', itemsTotalCentavos, 'Discount (centavos):', discountCentavos, 'Final total (centavos):', totalCentavos);
-    
-    // If there's a discount, add it as a negative item for transparency in InfinitePay
-    if (discountCentavos > 0 && couponCode) {
-      items.push({
-        quantity: 1,
-        price: -discountCentavos, // Negative price for discount
-        description: `Desconto cupom ${couponCode}`
-      });
-    }
+    console.log('Final total (centavos):', totalCentavos, 'Coupon discount applied:', couponDiscount);
 
     // Generate order_nsu - use the reserva ID
     const orderNsu = reserva_id;
