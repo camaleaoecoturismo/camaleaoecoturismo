@@ -42,6 +42,12 @@ import {
   Instagram,
   BookOpen,
   MapPin,
+  Globe,
+  Film,
+  Headphones,
+  GitBranch,
+  Shield,
+  ShoppingBag,
 } from 'lucide-react';
 import {
   Sheet,
@@ -85,6 +91,7 @@ const menuItems: MenuItem[] = [
       { id: 'gestao-participantes', label: 'Participantes', icon: <Users className="h-4 w-4" /> },
       { id: 'gestao-pagamentos', label: 'Pagamentos', icon: <CreditCard className="h-4 w-4" /> },
       { id: 'gestao-movimentacao', label: 'Movimentação', icon: <ArrowLeftRight className="h-4 w-4" /> },
+      { id: 'gestao-atendimento', label: 'Msg. Atendimento', icon: <MessageSquare className="h-4 w-4" /> },
     ]
   },
   {
@@ -96,6 +103,8 @@ const menuItems: MenuItem[] = [
       { id: 'financeiro-passeio', label: 'Por Passeio', icon: <Calculator className="h-4 w-4" /> },
       { id: 'financeiro-mensal', label: 'Mensal', icon: <CalendarDays className="h-4 w-4" /> },
       { id: 'financeiro-balanco', label: 'Balanço', icon: <BarChart3 className="h-4 w-4" /> },
+      { id: 'financeiro-competencia', label: 'Por Evento', icon: <TrendingUp className="h-4 w-4" /> },
+      { id: 'financeiro-historico', label: 'Histórico', icon: <ClipboardList className="h-4 w-4" /> },
       { id: 'financeiro-comparacao', label: 'Comparação', icon: <ArrowLeftRight className="h-4 w-4" /> },
       { id: 'financeiro-grafica', label: 'Análise Gráfica', icon: <BarChart3 className="h-4 w-4" /> },
       { id: 'financeiro-dashboard', label: 'Dashboard', icon: <TrendingUp className="h-4 w-4" /> },
@@ -114,6 +123,9 @@ const menuItems: MenuItem[] = [
     subItems: [
       { id: 'clientes-reservas', label: 'Reservas', icon: <ClipboardList className="h-4 w-4" /> },
       { id: 'clientes-lista', label: 'Lista', icon: <Users className="h-4 w-4" /> },
+      { id: 'clientes-interessados', label: 'Interessados', icon: <Star className="h-4 w-4" /> },
+      { id: 'clientes-atendimento', label: 'Atendimento', icon: <Headphones className="h-4 w-4" /> },
+      { id: 'clientes-creditos', label: 'Créditos', icon: <CreditCard className="h-4 w-4" /> },
       { id: 'clientes-cadastro', label: 'Cadastro', icon: <UserPlus className="h-4 w-4" /> },
       { id: 'clientes-planilha', label: 'Planilha', icon: <FileSpreadsheet className="h-4 w-4" /> },
       { id: 'clientes-analytics', label: 'Análise', icon: <BarChart3 className="h-4 w-4" /> },
@@ -137,6 +149,8 @@ const moreMenuItems: MenuItem[] = [
       { id: 'func-tickets', label: 'Tickets', icon: <QrCode className="h-4 w-4" /> },
       { id: 'func-transporte', label: 'Transporte', icon: <Bus className="h-4 w-4" /> },
       { id: 'func-pagina-sucesso', label: 'Pág. Sucesso', icon: <CreditCard className="h-4 w-4" /> },
+      { id: 'func-processos', label: 'Processos', icon: <GitBranch className="h-4 w-4" /> },
+      { id: 'func-seguro-roca', label: 'Seguro Roca', icon: <Shield className="h-4 w-4" /> },
     ]
   },
   {
@@ -144,10 +158,11 @@ const moreMenuItems: MenuItem[] = [
     label: 'Fidelidade',
     icon: <Crown className="h-5 w-5" />,
     subItems: [
+      { id: 'fidelidade-clientes', label: 'Clientes', icon: <Users className="h-4 w-4" /> },
       { id: 'fidelidade-niveis', label: 'Níveis', icon: <Trophy className="h-4 w-4" /> },
       { id: 'fidelidade-selos', label: 'Selos', icon: <Award className="h-4 w-4" /> },
       { id: 'fidelidade-pontos', label: 'Pontos', icon: <Star className="h-4 w-4" /> },
-      { id: 'fidelidade-recompensas', label: 'Recompensas', icon: <Gift className="h-4 w-4" /> },
+      { id: 'fidelidade-mensagens', label: 'Mensagens', icon: <MessageSquare className="h-4 w-4" /> },
     ]
   },
   {
@@ -158,6 +173,11 @@ const moreMenuItems: MenuItem[] = [
       { id: 'jornada', label: 'Jornada', icon: <MapPin className="h-4 w-4" /> },
       { id: 'conteudo-calendario', label: 'Social', icon: <Instagram className="h-4 w-4" /> },
       { id: 'paginas-institucionais', label: 'Blog & FAQ', icon: <BookOpen className="h-4 w-4" /> },
+      { id: 'paginas', label: 'Páginas', icon: <Globe className="h-4 w-4" /> },
+      { id: 'home-sections', label: 'Seções do Início', icon: <LayoutDashboard className="h-4 w-4" /> },
+      { id: 'stories', label: 'Stories (Home)', icon: <Instagram className="h-4 w-4" /> },
+      { id: 'tour-moments', label: 'Momentos', icon: <Film className="h-4 w-4" /> },
+      { id: 'depoimentos', label: 'Depoimentos', icon: <Star className="h-4 w-4" /> },
     ]
   },
   {
@@ -179,6 +199,21 @@ const moreMenuItems: MenuItem[] = [
     id: 'guias',
     label: 'Guias',
     icon: <Users className="h-5 w-5" />,
+  },
+  {
+    id: 'loja',
+    label: 'Loja',
+    icon: <ShoppingBag className="h-5 w-5" />,
+  },
+  {
+    id: 'mapa-processos',
+    label: 'Processos',
+    icon: <GitBranch className="h-5 w-5" />,
+  },
+  {
+    id: 'exportar',
+    label: 'Exportar',
+    icon: <FileSpreadsheet className="h-5 w-5" />,
   },
   {
     id: 'usuarios',
