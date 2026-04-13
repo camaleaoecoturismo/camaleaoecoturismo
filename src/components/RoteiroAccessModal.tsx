@@ -103,17 +103,14 @@ export function RoteiroAccessModal({
   const pdfViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(pdfRawUrl)}&embedded=true`;
 
   const saveLead = (fullWhatsapp: string) => {
-    supabase.from("interessados").select("id").eq("whatsapp", fullWhatsapp).eq("passeio_id", tourId).maybeSingle().then(({ data: existing }) => {
-      if (!existing) {
-        supabase.from("interessados").insert({
-          nome: nome.trim(),
-          whatsapp: fullWhatsapp,
-          passeio_id: tourId,
-          origem: "roteiro",
-          aceite_novidades: consentimento
-        });
-      }
-    });
+    // Upsert: insere novo ou ignora silenciosamente se já existe (unique: whatsapp + passeio_id)
+    supabase.from("interessados").upsert({
+      nome: nome.trim(),
+      whatsapp: fullWhatsapp,
+      passeio_id: tourId,
+      origem: "roteiro",
+      aceite_novidades: consentimento
+    }, { onConflict: 'whatsapp,passeio_id', ignoreDuplicates: true });
   };
 
   const handleQuickAccess = () => {
