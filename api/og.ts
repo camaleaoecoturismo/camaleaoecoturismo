@@ -20,6 +20,21 @@ async function fetchSupabase(path: string) {
   return Array.isArray(data) ? data[0] : data;
 }
 
+async function fetchTourCoverImage(tourId: string): Promise<string | null> {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/tour_gallery_images?tour_id=eq.${encodeURIComponent(tourId)}&select=image_url&order=created_at.asc&limit=1`,
+    {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+    }
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  return Array.isArray(data) && data[0]?.image_url ? data[0].image_url : null;
+}
+
 function esc(str: string | null | undefined): string {
   if (!str) return "";
   return str
@@ -91,8 +106,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // ── Passeio ──────────────────────────────────────────────────────────────
   if (type === "passeio" && slug) {
+    // Don't filter by is_active — inactive tours should still have correct OG previews
     const tour = await fetchSupabase(
-      `tours?select=name,about,image_url,slug&slug=eq.${encodeURIComponent(slug)}&is_active=eq.true&limit=1`
+      `tours?select=id,name,about,image_url,slug&slug=eq.${encodeURIComponent(slug)}&limit=1`
     );
 
     if (tour) {
@@ -103,7 +119,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .slice(0, 160)
           .trim() ||
         `Reserve seu lugar no passeio ${tour.name} com a Camaleão Ecoturismo.`;
-      const image = tour.image_url || DEFAULT_IMAGE;
+
+      // Prefer image_url from the tour, fallback to first gallery image, then default
+      let image = tour.image_url as string | null;
+      if (!image && tour.id) {
+        image = await fetchTourCoverImage(tour.id);
+      }
+      image = image || DEFAULT_IMAGE;
+
       const url = `${BASE_URL}/passeio/${slug}`;
 
       res.setHeader("Content-Type", "text/html; charset=utf-8");
