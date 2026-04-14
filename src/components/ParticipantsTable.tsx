@@ -2185,7 +2185,7 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
           <input
             type="number"
             step="0.01"
-            className="font-medium w-24 bg-transparent border-b border-transparent hover:border-muted-foreground focus:border-primary focus:outline-none text-right"
+            className="font-medium w-24 bg-transparent border-b border-transparent hover:border-muted-foreground focus:border-primary focus:outline-none text-right text-sm"
             value={tempInputValues[vtKey] ?? vtCurrent.toFixed(2)}
             onChange={e => setTempInputValues(prev => ({ ...prev, [vtKey]: e.target.value }))}
             onBlur={e => handleInputBlur(reserva.id, 'valor_total_com_opcionais', e.target.value)}
