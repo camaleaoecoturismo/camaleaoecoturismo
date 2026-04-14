@@ -1329,14 +1329,17 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
         const currentItems = reserva.selected_optional_items || [];
         const updatedItems = [...currentItems, customItem];
         
+        const itemPrice = parseFloat(newOptional.valor) || 0;
+        const newTotal = (reserva.valor_total_com_opcionais || reserva.valor_passeio || 0) + itemPrice;
+
         const { error } = await supabase
           .from('reservas')
-          .update({ selected_optional_items: updatedItems as any })
+          .update({ selected_optional_items: updatedItems as any, valor_total_com_opcionais: newTotal })
           .eq('id', addOptionalModal.reservaId);
 
         if (error) throw error;
         onRefreshReservas?.();
-        
+
         toast({ title: "Item adicionado" });
         setAddOptionalModal({ open: false, reservaId: '' });
         setNewOptional({ id: '', nome: '', valor: '' });
@@ -1357,24 +1360,29 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
         // Always add to reservas.selected_optional_items (unified approach)
         const currentItems = reserva.selected_optional_items || [];
         const existingItem = currentItems.find(o => o.id === selectedItem.id);
-        
+
         let updatedItems;
+        let addedPrice: number;
         if (existingItem) {
-          updatedItems = currentItems.map(o => 
+          updatedItems = currentItems.map(o =>
             o.id === selectedItem.id ? { ...o, quantity: (o.quantity || 1) + 1 } : o
           );
+          addedPrice = selectedItem.price;
         } else {
-          updatedItems = [...currentItems, { 
-            id: selectedItem.id, 
-            name: selectedItem.name, 
+          updatedItems = [...currentItems, {
+            id: selectedItem.id,
+            name: selectedItem.name,
             price: selectedItem.price,
             quantity: 1
           }];
+          addedPrice = selectedItem.price;
         }
+
+        const newTotal = (reserva.valor_total_com_opcionais || reserva.valor_passeio || 0) + addedPrice;
 
         const { error } = await supabase
           .from('reservas')
-          .update({ selected_optional_items: updatedItems as any })
+          .update({ selected_optional_items: updatedItems as any, valor_total_com_opcionais: newTotal })
           .eq('id', addOptionalModal.reservaId);
 
         if (error) throw error;
