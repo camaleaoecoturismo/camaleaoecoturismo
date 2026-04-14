@@ -55,7 +55,6 @@ export function HeroBanner({ location = "hero" }: { location?: string }) {
   const [slides, setSlides] = useState<HeroBannerSlide[]>([]);
   const [current, setCurrent] = useState(0);
   const [loaded, setLoaded] = useState(false);
-  const [imgErrors, setImgErrors] = useState<Set<number>>(new Set());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
 
@@ -180,14 +179,14 @@ export function HeroBanner({ location = "hero" }: { location?: string }) {
               playsInline
               className="absolute inset-0 w-full h-full object-cover"
             />
-          ) : slide.image_url && !imgErrors.has(idx) ? (
+          ) : slide.image_url ? (
             <img
               src={slide.image_url}
               alt={slide.title || "Banner"}
               className={`absolute inset-0 w-full h-full object-cover origin-center ${idx === current ? [`ken-burns-1`, `ken-burns-2`, `ken-burns-3`][idx % 3] : ''}`}
               loading={idx === 0 ? "eager" : "lazy"}
               fetchPriority={idx === 0 ? "high" : "auto"}
-              onError={() => setImgErrors(prev => new Set(prev).add(idx))}
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/hero.jpg'; }}
             />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-[#820AD1] to-[#1a0533]" />
