@@ -2175,11 +2175,25 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
           </div>
         );
 
-      case 'valor_total':
+      case 'valor_total': {
         // Mostrar valores financeiros apenas no titular para evitar divergência por participante
         if (isStaffMember) return <span className="text-muted-foreground">-</span>;
         if (!isTitular) return financialDash;
-        return <span className="font-medium">{formatarValor(calcularValorTotal(reserva))}</span>;
+        const vtKey = `${reserva.id}_valor_total_com_opcionais`;
+        const vtCurrent = calcularValorTotal(reserva);
+        return (
+          <input
+            type="number"
+            step="0.01"
+            className="font-medium w-24 bg-transparent border-b border-transparent hover:border-muted-foreground focus:border-primary focus:outline-none text-right"
+            value={tempInputValues[vtKey] ?? vtCurrent.toFixed(2)}
+            onChange={e => setTempInputValues(prev => ({ ...prev, [vtKey]: e.target.value }))}
+            onBlur={e => handleInputBlur(reserva.id, 'valor_total_com_opcionais', e.target.value)}
+            onFocus={e => { setTempInputValues(prev => ({ ...prev, [vtKey]: vtCurrent.toFixed(2) })); e.target.select(); }}
+            title="Clique para editar o valor total"
+          />
+        );
+      }
 
       case 'valor_pago':
         // Mostrar valores financeiros apenas no titular para evitar divergência por participante

@@ -122,41 +122,13 @@ serve(async (req) => {
       });
     }
 
-    // Convert paid_amount from centavos to reais (for logging purposes)
+    // Use the actual amount charged by the gateway as valor_pago.
+    // valor_total_com_opcionais stays as the expected total (for saldo calculation).
+    // Coupons reduce the gateway amount below valor_total_com_opcionais — that is correct.
     const paidAmountFromGateway = (paid_amount || amount || 0) / 100;
-    
-    // IMPORTANT: Use valor_total_com_opcionais from the reservation as the authoritative valor_pago
-    // BUT cross-check: if gateway amount is higher, it means optionals weren't saved to reservation
-    let valorPagoFinal = reserva.valor_total_com_opcionais || paidAmountFromGateway;
-    
-    // If gateway charged more than what reservation shows, check the creation log
-    if (paidAmountFromGateway > valorPagoFinal) {
-      console.log(`WARNING: Gateway amount (${paidAmountFromGateway}) > valor_total_com_opcionais (${valorPagoFinal}). Checking payment creation log...`);
-      
-      const { data: creationLog } = await supabase
-        .from('payment_logs')
-        .select('amount')
-        .eq('reserva_id', reservaId)
-        .eq('event_type', 'infinitepay_link_created')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-      
-      if (creationLog?.amount && creationLog.amount > valorPagoFinal) {
-        console.log(`Using amount from link creation log: ${creationLog.amount}`);
-        valorPagoFinal = creationLog.amount;
-        
-        // Fix valor_total_com_opcionais
-        await supabase.from('reservas').update({ 
-          valor_total_com_opcionais: creationLog.amount 
-        }).eq('id', reservaId);
-      } else {
-        // Use gateway amount as it's the actual amount charged
-        valorPagoFinal = paidAmountFromGateway;
-      }
-    }
-    
-    console.log(`valor_pago calculation: valor_total_com_opcionais=${reserva.valor_total_com_opcionais}, gateway=${paidAmountFromGateway}, final=${valorPagoFinal}`);
+    const valorPagoFinal = paidAmountFromGateway;
+
+    console.log(`valor_pago: gateway=${paidAmountFromGateway}, valor_total_com_opcionais=${reserva.valor_total_com_opcionais}`);
 
     // Update reservation with payment confirmation
     const { error: updateError } = await supabase
