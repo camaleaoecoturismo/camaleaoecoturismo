@@ -15,6 +15,7 @@ import AddStaffMemberModal from '@/components/AddStaffMemberModal';
 import ColumnConfigDropdown, { ColumnConfig } from '@/components/ColumnConfigDropdown';
 import TourSeatMapManager from '@/components/transport/TourSeatMapManager';
 import EditOptionalsModal from '@/components/EditOptionalsModal';
+import ValorTotalModal from '@/components/ValorTotalModal';
 import ParticipantsFilteredExport from '@/components/ParticipantsFilteredExport';
 import ParticipantAnalysis from '@/components/ParticipantAnalysis';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -293,8 +294,10 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
   const [targetTourId, setTargetTourId] = useState<string>('');
   const [bulkLoading, setBulkLoading] = useState(false);
 
-  const [addOptionalModal, setAddOptionalModal] = useState<{ 
-    open: boolean; 
+  const [valorTotalModalReservaId, setValorTotalModalReservaId] = useState<string | null>(null);
+
+  const [addOptionalModal, setAddOptionalModal] = useState<{
+    open: boolean;
     reservaId: string;
   }>({ open: false, reservaId: '' });
   const [newOptional, setNewOptional] = useState({ id: '', nome: '', valor: '' });
@@ -2187,19 +2190,15 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
         // Mostrar valores financeiros apenas no titular para evitar divergência por participante
         if (isStaffMember) return <span className="text-muted-foreground">-</span>;
         if (!isTitular) return financialDash;
-        const vtKey = `${reserva.id}_valor_total_com_opcionais`;
         const vtCurrent = calcularValorTotal(reserva);
         return (
-          <input
-            type="number"
-            step="0.01"
-            className="font-medium w-24 bg-transparent border-b border-transparent hover:border-muted-foreground focus:border-primary focus:outline-none text-right text-sm"
-            value={tempInputValues[vtKey] ?? vtCurrent.toFixed(2)}
-            onChange={e => setTempInputValues(prev => ({ ...prev, [vtKey]: e.target.value }))}
-            onBlur={e => handleInputBlur(reserva.id, 'valor_total_com_opcionais', e.target.value)}
-            onFocus={e => { setTempInputValues(prev => ({ ...prev, [vtKey]: vtCurrent.toFixed(2) })); e.target.select(); }}
-            title="Clique para editar o valor total"
-          />
+          <button
+            onClick={() => setValorTotalModalReservaId(reserva.id)}
+            className="font-medium text-sm hover:underline text-right"
+            title="Ver detalhes do valor total"
+          >
+            {formatarValor(vtCurrent)}
+          </button>
         );
       }
 
@@ -3369,6 +3368,17 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Valor Total Modal (breakdown + edição manual) */}
+      <ValorTotalModal
+        open={!!valorTotalModalReservaId}
+        reserva={valorTotalModalReservaId ? (reservas.find(r => r.id === valorTotalModalReservaId) || null) : null}
+        onClose={() => setValorTotalModalReservaId(null)}
+        onSaveManualTotal={async (reservaId, valor) => {
+          await onEditReserva(reservaId, { valor_total_com_opcionais: valor });
+        }}
+        formatarValor={formatarValor}
+      />
 
       {/* Edit Optionals Modal */}
       <EditOptionalsModal
