@@ -117,6 +117,11 @@ const EditOptionalsModal: React.FC<EditOptionalsModalProps> = ({
     try {
       const optionalsJson = prepareOptionalsForSave(optionals);
 
+      // Delta between old and new optionals — used to adjust valor_total_com_opcionais
+      const oldTotal = currentOptionals.reduce((sum, o) => sum + (o.price * (o.quantity || 1)), 0);
+      const newTotal = optionals.reduce((sum, o) => sum + (o.price * (o.quantity || 1)), 0);
+      const delta = newTotal - oldTotal;
+
       if (participantId) {
         // Save to reservation_participants.selected_optionals (per-participant approach)
         const { error } = await supabase
@@ -129,13 +134,30 @@ const EditOptionalsModal: React.FC<EditOptionalsModalProps> = ({
         // Legacy: save to reservas.selected_optional_items
         const { error } = await supabase
           .from('reservas')
-          .update({ 
+          .update({
             selected_optional_items: optionalsJson as any,
             adicionais: [] // Clear legacy field
           })
           .eq('id', reservaId);
 
         if (error) throw error;
+      }
+
+      // Update reserva's valor_total_com_opcionais by the delta so valor total column reflects optionals
+      if (delta !== 0) {
+        const { data: reservaRow } = await supabase
+          .from('reservas')
+          .select('valor_total_com_opcionais, valor_passeio')
+          .eq('id', reservaId)
+          .single();
+
+        const base = reservaRow?.valor_total_com_opcionais ?? reservaRow?.valor_passeio ?? 0;
+        const updatedTotal = Math.max(0, base + delta);
+
+        await supabase
+          .from('reservas')
+          .update({ valor_total_com_opcionais: updatedTotal })
+          .eq('id', reservaId);
       }
 
       toast({ title: "Opcionais salvos!" });
