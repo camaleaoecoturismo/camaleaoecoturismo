@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Package, Tag } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Package, Tag, Pencil, Plus, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Reserva } from '@/components/ParticipantsTable';
 import { mergeAllOptionals, OptionalItem } from '@/lib/optionals';
@@ -11,20 +13,30 @@ interface ValorTotalModalProps {
   reserva: Reserva | null;
   onClose: () => void;
   formatarValor: (value: number) => string;
+  onSaveDesconto?: (reservaId: string, couponCode: string | null, couponDiscount: number) => Promise<void> | void;
 }
 
 const ValorTotalModal: React.FC<ValorTotalModalProps> = ({
-  open, reserva, onClose, formatarValor
+  open, reserva, onClose, formatarValor, onSaveDesconto
 }) => {
   const [pricingOptionName, setPricingOptionName] = useState<string | null>(null);
   const [participantOptionals, setParticipantOptionals] = useState<OptionalItem[]>([]);
+
+  const [editingDesconto, setEditingDesconto] = useState(false);
+  const [descontoInput, setDescontoInput] = useState('');
+  const [cupomInput, setCupomInput] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open || !reserva?.id) {
       setPricingOptionName(null);
       setParticipantOptionals([]);
+      setEditingDesconto(false);
       return;
     }
+
+    setDescontoInput((reserva.coupon_discount || 0).toFixed(2));
+    setCupomInput(reserva.coupon_code || '');
 
     let cancelled = false;
     supabase
@@ -53,7 +65,7 @@ const ValorTotalModal: React.FC<ValorTotalModalProps> = ({
       });
 
     return () => { cancelled = true; };
-  }, [open, reserva?.id]);
+  }, [open, reserva?.id, reserva?.coupon_discount, reserva?.coupon_code]);
 
   if (!reserva) return null;
 
@@ -70,6 +82,30 @@ const ValorTotalModal: React.FC<ValorTotalModalProps> = ({
   const opcionaisTotal = opcionais.reduce((s, o) => s + o.price * o.quantity, 0);
   const baseComDesconto = Math.max(0, valorBase - couponDiscount);
   const total = baseComDesconto + opcionaisTotal;
+
+  const handleSaveDesconto = async () => {
+    if (!onSaveDesconto) return;
+    const valor = parseFloat(descontoInput) || 0;
+    const code = cupomInput.trim() || null;
+    setSaving(true);
+    try {
+      await onSaveDesconto(reserva.id, code, valor);
+      setEditingDesconto(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRemoveDesconto = async () => {
+    if (!onSaveDesconto) return;
+    setSaving(true);
+    try {
+      await onSaveDesconto(reserva.id, null, 0);
+      setEditingDesconto(false);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -91,19 +127,71 @@ const ValorTotalModal: React.FC<ValorTotalModalProps> = ({
             <span className="font-medium">{formatarValor(valorBase)}</span>
           </div>
 
-          {/* Cupom */}
-          {couponDiscount > 0 && (
-            <div className="flex justify-between items-center p-2 bg-emerald-50 rounded">
-              <span className="flex items-center gap-1.5 text-emerald-700">
+          {/* Cupom — visualização ou edição */}
+          {editingDesconto ? (
+            <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200 space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs text-emerald-700">Código do cupom</Label>
+                  <Input
+                    value={cupomInput}
+                    onChange={e => setCupomInput(e.target.value)}
+                    placeholder="(opcional)"
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-emerald-700">Desconto (R$)</Label>
+                  <Input
+                    type="number" step="0.01" min="0"
+                    value={descontoInput}
+                    onChange={e => setDescontoInput(e.target.value)}
+                    placeholder="0,00"
+                    className="h-8 text-sm"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                {couponDiscount > 0 && (
+                  <Button size="sm" variant="ghost" onClick={handleRemoveDesconto} disabled={saving}>
+                    Remover
+                  </Button>
+                )}
+                <Button size="sm" variant="outline" onClick={() => setEditingDesconto(false)} disabled={saving}>
+                  Cancelar
+                </Button>
+                <Button size="sm" onClick={handleSaveDesconto} disabled={saving}>
+                  {saving ? 'Salvando...' : 'Salvar'}
+                </Button>
+              </div>
+            </div>
+          ) : couponDiscount > 0 ? (
+            <div className="flex justify-between items-center p-2 bg-emerald-50 rounded gap-2">
+              <span className="flex items-center gap-1.5 text-emerald-700 flex-1">
                 <Tag className="h-3.5 w-3.5" />
                 Cupom {reserva.coupon_code ? `(${reserva.coupon_code})` : ''}
               </span>
               <span className="font-medium text-emerald-700">- {formatarValor(couponDiscount)}</span>
+              {onSaveDesconto && (
+                <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-emerald-700" onClick={() => setEditingDesconto(true)}>
+                  <Pencil className="h-3 w-3" />
+                </Button>
+              )}
             </div>
-          )}
+          ) : onSaveDesconto ? (
+            <Button
+              variant="ghost" size="sm"
+              className="w-full justify-start text-muted-foreground h-8 gap-1"
+              onClick={() => setEditingDesconto(true)}
+            >
+              <Plus className="h-3 w-3" />
+              Adicionar desconto / cupom
+            </Button>
+          ) : null}
 
           {/* Subtotal (base com desconto) */}
-          {couponDiscount > 0 && (
+          {couponDiscount > 0 && !editingDesconto && (
             <div className="flex justify-between items-center px-2 text-xs text-muted-foreground">
               <span>Subtotal do passeio</span>
               <span>{formatarValor(baseComDesconto)}</span>

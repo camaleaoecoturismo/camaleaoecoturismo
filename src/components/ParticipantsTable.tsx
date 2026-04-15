@@ -3362,12 +3362,18 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Valor Total Modal (breakdown read-only) */}
+      {/* Valor Total Modal (breakdown + edição de desconto) */}
       <ValorTotalModal
         open={!!valorTotalModalReservaId}
         reserva={valorTotalModalReservaId ? (reservas.find(r => r.id === valorTotalModalReservaId) || null) : null}
         onClose={() => setValorTotalModalReservaId(null)}
         formatarValor={formatarValor}
+        onSaveDesconto={async (reservaId, couponCode, couponDiscount) => {
+          await onEditReserva(reservaId, {
+            coupon_code: couponCode,
+            coupon_discount: couponDiscount,
+          });
+        }}
       />
 
       {/* Edit Optionals Modal */}
