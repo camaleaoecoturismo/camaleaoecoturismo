@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, GripVertical, Save, Folder, Trash2, Plus, Palette } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export interface ColumnConfig {
   id: string;
@@ -155,23 +157,83 @@ const ColumnConfigDropdown: React.FC<ColumnConfigDropdownProps> = ({
   onUpdateColumnStyle,
   storageKey = PRESETS_STORAGE_KEY
 }) => {
+  const { toast } = useToast();
   const visibleCount = columns.filter(c => c.visible).length;
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
   const [editingColorColumn, setEditingColorColumn] = useState<string | null>(null);
-  
-  // Load custom presets from localStorage
-  const [customPresets, setCustomPresets] = useState<ColumnPreset[]>(() => {
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return [];
+
+  // Presets persistidos no Supabase (por usuário). Mapeamos row.id → ColumnPreset.id
+  // prefixado com 'custom_' para preservar o comportamento do UI de "preset customizado".
+  const [customPresets, setCustomPresets] = useState<ColumnPreset[]>([]);
+
+  // Carrega presets do Supabase ao montar; se houver presets antigos em localStorage,
+  // migra para o banco uma única vez e depois limpa a chave local.
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const { data, error } = await supabase
+        .from('column_presets')
+        .select('id, name, columns')
+        .eq('user_id', session.user.id)
+        .eq('storage_key', storageKey)
+        .order('created_at', { ascending: true });
+
+      if (cancelled) return;
+      if (error) {
+        console.error('Erro ao carregar presets:', error);
+        return;
       }
-    }
-    return [];
-  });
+
+      const remote: ColumnPreset[] = (data || []).map(row => ({
+        id: `custom_${row.id}`,
+        name: row.name,
+        columns: row.columns as ColumnConfig[],
+      }));
+
+      // Migração: se ainda existe localStorage com presets e não há nada no banco, sobe
+      const legacyRaw = localStorage.getItem(storageKey);
+      if (legacyRaw && remote.length === 0) {
+        try {
+          const legacy: ColumnPreset[] = JSON.parse(legacyRaw);
+          if (Array.isArray(legacy) && legacy.length > 0) {
+            const { data: inserted, error: insertErr } = await supabase
+              .from('column_presets')
+              .insert(legacy.map(p => ({
+                user_id: session.user.id,
+                storage_key: storageKey,
+                name: p.name,
+                columns: p.columns as any,
+              })))
+              .select('id, name, columns');
+
+            if (!insertErr && inserted) {
+              localStorage.removeItem(storageKey);
+              const migrated: ColumnPreset[] = inserted.map(row => ({
+                id: `custom_${row.id}`,
+                name: row.name,
+                columns: row.columns as ColumnConfig[],
+              }));
+              if (!cancelled) setCustomPresets(migrated);
+              toast({ title: `${migrated.length} preset(s) migrado(s) para a conta` });
+              return;
+            }
+          }
+        } catch {
+          // ignora localStorage corrompido
+        }
+      }
+
+      if (!cancelled) setCustomPresets(remote);
+    };
+
+    load();
+    return () => { cancelled = true; };
+  }, [storageKey, toast]);
 
   const allPresets = [...DEFAULT_PRESETS, ...customPresets];
 
@@ -200,26 +262,58 @@ const ColumnConfigDropdown: React.FC<ColumnConfigDropdownProps> = ({
     onApplyPreset(preset.columns);
   };
 
-  const handleSavePreset = () => {
+  const handleSavePreset = async () => {
     if (!newPresetName.trim()) return;
 
-    const newPreset: ColumnPreset = {
-      id: `custom_${Date.now()}`,
-      name: newPresetName.trim(),
-      columns: columns.map(c => ({ ...c }))
-    };
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      toast({ title: 'Faça login para salvar presets', variant: 'destructive' });
+      return;
+    }
 
-    const updatedPresets = [...customPresets, newPreset];
-    setCustomPresets(updatedPresets);
-    localStorage.setItem(storageKey, JSON.stringify(updatedPresets));
+    const { data, error } = await supabase
+      .from('column_presets')
+      .insert({
+        user_id: session.user.id,
+        storage_key: storageKey,
+        name: newPresetName.trim(),
+        columns: columns.map(c => ({ ...c })) as any,
+      })
+      .select('id, name, columns')
+      .single();
+
+    if (error || !data) {
+      console.error('Erro ao salvar preset:', error);
+      toast({ title: 'Erro ao salvar preset', variant: 'destructive' });
+      return;
+    }
+
+    setCustomPresets(prev => [...prev, {
+      id: `custom_${data.id}`,
+      name: data.name,
+      columns: data.columns as ColumnConfig[],
+    }]);
     setNewPresetName('');
     setShowSaveInput(false);
+    toast({ title: 'Preset salvo' });
   };
 
-  const handleDeletePreset = (presetId: string) => {
-    const updatedPresets = customPresets.filter(p => p.id !== presetId);
-    setCustomPresets(updatedPresets);
-    localStorage.setItem(storageKey, JSON.stringify(updatedPresets));
+  const handleDeletePreset = async (presetId: string) => {
+    // presetId vem com prefixo 'custom_' — a row real é o sufixo UUID
+    const rowId = presetId.startsWith('custom_') ? presetId.slice('custom_'.length) : presetId;
+
+    const { error } = await supabase
+      .from('column_presets')
+      .delete()
+      .eq('id', rowId);
+
+    if (error) {
+      console.error('Erro ao remover preset:', error);
+      toast({ title: 'Erro ao remover preset', variant: 'destructive' });
+      return;
+    }
+
+    setCustomPresets(prev => prev.filter(p => p.id !== presetId));
   };
 
   const sortedColumns = [...columns].sort((a, b) => a.order - b.order);

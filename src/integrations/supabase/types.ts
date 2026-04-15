@@ -1427,6 +1427,36 @@ export type Database = {
           },
         ]
       }
+      column_presets: {
+        Row: {
+          id: string
+          user_id: string
+          storage_key: string
+          name: string
+          columns: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          storage_key: string
+          name: string
+          columns: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          storage_key?: string
+          name?: string
+          columns?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       coupons: {
         Row: {
           ativo: boolean
