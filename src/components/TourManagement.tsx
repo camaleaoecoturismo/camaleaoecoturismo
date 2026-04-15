@@ -28,6 +28,7 @@ import CancelTourModal from '@/components/CancelTourModal';
 import { RoomDistributionManager } from '@/components/accommodation';
 import { TourRocaPanel } from '@/components/roca';
 import { BoardingExportTemplateModal } from '@/components/BoardingExportTemplateModal';
+import PaymentOriginModal from '@/components/PaymentOriginModal';
 import * as XLSX from 'xlsx';
 
 interface Pagamento {
@@ -1371,9 +1372,19 @@ const TourManagement: React.FC<TourManagementProps> = ({
         selected_optional_items: Array.isArray(reserva.selected_optional_items) ? reserva.selected_optional_items : [],
         payment_status: reserva.payment_status,
         payment_method: reserva.payment_method,
+        capture_method: reserva.capture_method,
         mp_status: reserva.mp_status,
         installments: reserva.installments,
         card_fee_amount: reserva.card_fee_amount,
+        receipt_url: reserva.receipt_url,
+        infinitepay_invoice_slug: reserva.infinitepay_invoice_slug,
+        infinitepay_transaction_nsu: reserva.infinitepay_transaction_nsu,
+        data_confirmacao: reserva.data_confirmacao,
+        data_cancelamento: reserva.data_cancelamento,
+        motivo_cancelamento: reserva.motivo_cancelamento,
+        refund_amount: reserva.refund_amount,
+        refund_date: reserva.refund_date,
+        refund_reason: reserva.refund_reason,
         status: reserva.status,
         problema_saude: reserva.problema_saude,
         descricao_problema_saude: reserva.descricao_problema_saude,
@@ -2171,124 +2182,20 @@ const TourManagement: React.FC<TourManagementProps> = ({
       />
 
       {/* Modal de Gerenciamento de Pagamentos */}
-      <Dialog open={!!showPaymentModal} onOpenChange={() => setShowPaymentModal(null)}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Gerenciar Pagamentos</DialogTitle>
-          </DialogHeader>
-          
-          {showPaymentModal && <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h4 className="font-medium">Parcelas de Pagamento</h4>
-                <Button onClick={() => adicionarPagamento(showPaymentModal)} className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Nova Parcela
-                </Button>
-              </div>
-
-              {/* Lista de Pagamentos */}
-              <div className="space-y-3">
-                {(pagamentos[showPaymentModal] || []).map((pagamento, index) => <div key={pagamento.id} className="grid grid-cols-5 gap-3 items-center p-3 border rounded-lg bg-muted/30">
-                    <div>
-                      <label className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Parcela</label>
-                      <div className="text-sm font-semibold mt-0.5">{index + 1}</div>
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Valor</label>
-                      <Input type="number" step="0.01" value={pagamento.valor} onChange={e => atualizarPagamento(showPaymentModal, pagamento.id, 'valor', parseFloat(e.target.value) || 0)} placeholder="R$ 0,00" className="mt-0.5" />
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Data</label>
-                      <Input type="date" value={pagamento.data} onChange={e => atualizarPagamento(showPaymentModal, pagamento.id, 'data', e.target.value)} className="mt-0.5" />
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Forma</label>
-                      <Select value={pagamento.forma} onValueChange={value => atualizarPagamento(showPaymentModal, pagamento.id, 'forma', value)}>
-                        <SelectTrigger className="mt-0.5">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pix">PIX</SelectItem>
-                          <SelectItem value="cartao">Cartão</SelectItem>
-                          <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                          <SelectItem value="transferencia">Transferência</SelectItem>
-                          <SelectItem value="cheque">Cheque</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex justify-end">
-                      <Button variant="destructive" size="sm" onClick={() => removerPagamento(showPaymentModal, pagamento.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>)}
-
-                {/* Resumo dos Pagamentos */}
-                <div className="border-t pt-4 space-y-2">
-                  {(() => {
-                    const reservaAtual = filteredReservas.find(r => r.id === showPaymentModal)!;
-                    const valorTotal = calcularValorTotal(reservaAtual);
-                    const valorPagoLiquido = calcularValorPagoBruto(reservaAtual);
-                    const saldo = valorTotal - valorPagoLiquido;
-                    const totalParcelasComTaxas = calcularTotalPago(showPaymentModal!);
-                    const temTaxas = Math.abs(totalParcelasComTaxas - valorPagoLiquido) > 0.01 && totalParcelasComTaxas > 0;
-                    return (
-                      <>
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                            <span className="text-xs text-emerald-700 font-medium uppercase tracking-wide">Total Pago</span>
-                            <div className="text-base font-bold text-emerald-800 mt-0.5">
-                              {formatarValor(valorPagoLiquido)}
-                            </div>
-                            <div className="text-xs text-emerald-600">
-                              {(pagamentos[showPaymentModal!] || []).length} parcela(s)
-                            </div>
-                          </div>
-
-                          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                            <span className="text-xs text-blue-700 font-medium uppercase tracking-wide">Valor Total</span>
-                            <div className="text-base font-bold text-blue-800 mt-0.5">
-                              {formatarValor(valorTotal)}
-                            </div>
-                          </div>
-
-                          <div className={`p-3 rounded-lg border ${saldo <= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-                            <span className={`text-xs font-medium uppercase tracking-wide ${saldo <= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                              {saldo <= 0 ? 'Quitado' : 'Saldo Restante'}
-                            </span>
-                            <div className={`text-base font-bold mt-0.5 ${saldo <= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
-                              {saldo <= 0 ? 'R$ 0,00' : formatarValor(saldo)}
-                            </div>
-                          </div>
-                        </div>
-
-                        {temTaxas && (
-                          <p className="text-xs text-muted-foreground text-right">
-                            Cobrado ao cliente (com taxas): {formatarValor(totalParcelasComTaxas)}
-                          </p>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* Botões de Ação */}
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => setShowPaymentModal(null)}>
-                  Cancelar
-                </Button>
-                <Button onClick={() => salvarPagamentos(showPaymentModal)}>
-                  Salvar Pagamentos
-                </Button>
-              </div>
-            </div>}
-        </DialogContent>
-      </Dialog>
+      <PaymentOriginModal
+        open={!!showPaymentModal}
+        reserva={showPaymentModal ? (reservas.find(r => r.id === showPaymentModal) || null) : null}
+        pagamentos={showPaymentModal ? (pagamentos[showPaymentModal] || []) : []}
+        onClose={() => setShowPaymentModal(null)}
+        onAddPagamento={() => { if (showPaymentModal) adicionarPagamento(showPaymentModal); }}
+        onUpdatePagamento={(id, campo, v) => { if (showPaymentModal) atualizarPagamento(showPaymentModal, id, campo, v); }}
+        onRemovePagamento={(id) => { if (showPaymentModal) removerPagamento(showPaymentModal, id); }}
+        onSave={() => { if (showPaymentModal) salvarPagamentos(showPaymentModal); }}
+        formatarValor={formatarValor}
+        calcularValorTotal={calcularValorTotal}
+        calcularValorPagoBruto={calcularValorPagoBruto}
+        calcularTotalPago={() => showPaymentModal ? calcularTotalPago(showPaymentModal) : 0}
+      />
 
       {/* Modal de Adicionar Participante */}
       <Dialog open={showAddParticipantModal} onOpenChange={setShowAddParticipantModal}>
