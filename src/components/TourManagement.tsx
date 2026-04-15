@@ -1491,16 +1491,17 @@ const TourManagement: React.FC<TourManagementProps> = ({
   };
   const calcularValorTotal = (reserva: Reserva) => {
     const valorBase = reserva.valor_passeio || 0;
-    
+    const couponDiscount = reserva.coupon_discount || 0;
+
     // Legacy format: adicionais (manual additions)
     const valorAdicionais = (reserva.adicionais || []).reduce((sum, add) => sum + Number(add.valor || 0), 0);
-    
+
     // Check if participants have specific optionals assigned
     const participants = participantsMap[reserva.id] || [];
     const hasParticipantOptionals = participants.some(
       (p) => !p.is_staff && Array.isArray(p.selected_optionals) && p.selected_optionals.length > 0
     );
-    
+
     // Calculate optionals from participants
     const totalFromParticipants = participants
       .filter((p) => !p.is_staff)
@@ -1513,18 +1514,18 @@ const TourManagement: React.FC<TourManagementProps> = ({
           return s + price * qty;
         }, 0);
       }, 0);
-    
+
     // Calculate optionals from reservation level (legacy)
     const totalFromReserva = (reserva.selected_optional_items || []).reduce((sum, opt) => {
       const price = Number((opt as any)?.price ?? (opt as any)?.valor ?? 0);
       const qty = Number((opt as any)?.quantity ?? (opt as any)?.quantidade ?? 1) || 1;
       return sum + price * qty;
     }, 0);
-    
+
     // Use participant optionals if they exist, otherwise use reservation optionals
     const opcionaisTotal = hasParticipantOptionals ? totalFromParticipants : totalFromReserva;
-    
-    return valorBase + valorAdicionais + opcionaisTotal;
+
+    return Math.max(0, valorBase - couponDiscount) + valorAdicionais + opcionaisTotal;
   };
 
   const isCardPaymentMethod = (method?: string | null) => {

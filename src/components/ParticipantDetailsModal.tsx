@@ -224,11 +224,9 @@ const ParticipantDetailsModal: React.FC<ParticipantDetailsModalProps> = ({
   const valorAdicionais = (reserva.adicionais || []).reduce((sum, add) => sum + add.valor, 0);
   const valorOpcionais = (reserva.selected_optional_items || []).reduce((sum, item) => sum + (item.price * (item.quantity || 1)), 0);
   const couponDiscount = reserva.coupon_discount || 0;
-  // Use valor_total_com_opcionais when available — it's the server-authoritative value
-  // that already includes coupon discount. Fallback: manual calculation with discount.
-  const valorTotal = reserva.valor_total_com_opcionais
-    ? reserva.valor_total_com_opcionais
-    : Math.max(0, (reserva.valor_passeio || 0) - couponDiscount) + valorAdicionais + valorOpcionais;
+  // Sempre calcular dinamicamente: valor_total_com_opcionais é snapshot do pagamento
+  // (não muda quando admin adiciona opcionais depois) — usar só em valor_pago.
+  const valorTotal = Math.max(0, (reserva.valor_passeio || 0) - couponDiscount) + valorAdicionais + valorOpcionais;
   const saldo = (reserva.valor_pago || 0) - valorTotal;
 
   // Filter out standard fields from form answers
