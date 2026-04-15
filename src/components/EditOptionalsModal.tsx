@@ -70,16 +70,19 @@ const EditOptionalsModal: React.FC<EditOptionalsModalProps> = ({
   };
 
   const handleAdd = () => {
+    const addedAt = new Date().toISOString();
+
     if (useCustom) {
       if (!newOptional.nome || !newOptional.valor) {
         toast({ title: "Preencha nome e valor", variant: "destructive" });
         return;
       }
-      const customItem: OptionalItem = {
+      const customItem: OptionalItem & { added_at?: string } = {
         id: `custom_${Date.now()}`,
         name: newOptional.nome,
         price: parseFloat(newOptional.valor) || 0,
-        quantity: 1
+        quantity: 1,
+        added_at: addedAt,
       };
       setOptionals(prev => [...prev, customItem]);
     } else {
@@ -93,20 +96,23 @@ const EditOptionalsModal: React.FC<EditOptionalsModalProps> = ({
       // Check if already exists
       const existingIndex = optionals.findIndex(o => o.id === selectedItem.id);
       if (existingIndex >= 0) {
-        // Increment quantity
-        setOptionals(prev => prev.map((item, i) => 
-          i === existingIndex ? { ...item, quantity: item.quantity + 1 } : item
+        // Increment quantity — refresh added_at so the increment counts as post-payment
+        setOptionals(prev => prev.map((item, i) =>
+          i === existingIndex
+            ? { ...item, quantity: item.quantity + 1, added_at: addedAt } as OptionalItem & { added_at?: string }
+            : item
         ));
       } else {
         setOptionals(prev => [...prev, {
           id: selectedItem.id,
           name: selectedItem.name,
           price: selectedItem.price,
-          quantity: 1
-        }]);
+          quantity: 1,
+          added_at: addedAt,
+        } as OptionalItem & { added_at?: string }]);
       }
     }
-    
+
     setNewOptional({ id: '', nome: '', valor: '' });
     setShowAddForm(false);
     setUseCustom(false);
