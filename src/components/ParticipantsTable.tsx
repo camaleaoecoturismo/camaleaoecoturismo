@@ -32,7 +32,7 @@ export interface Reserva {
   coupon_discount?: number | null;
   numero_participantes?: number;
   adicionais: Array<{ nome: string; valor: number }>;
-  selected_optional_items?: Array<{ id: string; name: string; price: number; quantity: number; added_at?: string }>;
+  selected_optional_items?: Array<{ id: string; name: string; price: number; quantity: number }>;
   payment_status: string;
   payment_method?: string;
   capture_method?: string;
@@ -1107,54 +1107,11 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
   };
 
   const calcularValorTotal = (reserva: Reserva): number => {
-    // Prefer valor_total_com_opcionais — it's written by the edge function at payment time
-    // and already includes coupon discount + optionals (server-authoritative)
-    if (reserva.valor_total_com_opcionais) return reserva.valor_total_com_opcionais;
+    // Sempre calcular dinamicamente: opcionais vivos + base - cupom.
+    // valor_total_com_opcionais NÃO é usado aqui — é snapshot do pagamento (usado só em valor_pago).
     const valorBase = reserva.valor_passeio || 0;
     const discount = reserva.coupon_discount || 0;
     return Math.max(0, valorBase - discount) + calcularTotalOpcionaisReserva(reserva);
-  };
-
-  /**
-   * Soma dos opcionais adicionados DEPOIS do pagamento (tag added_at > data_pagamento).
-   * Usado para não inflar o Valor Pago quando admin adiciona opcionais a uma reserva já paga.
-   */
-  const getPostPaymentOpcionaisTotal = (reserva: Reserva): number => {
-    if (!reserva.data_pagamento) return 0;
-    const paidAt = new Date(reserva.data_pagamento).getTime();
-    if (isNaN(paidAt)) return 0;
-
-    let total = 0;
-
-    // Opcionais por participante (reservation_participants.selected_optionals)
-    const participants = additionalParticipants[reserva.id] || [];
-    participants
-      .filter((p) => !p.is_staff)
-      .forEach((p) => {
-        const opts = Array.isArray(p.selected_optionals) ? (p.selected_optionals as any[]) : [];
-        opts.forEach((opt) => {
-          if (!opt?.added_at) return;
-          const addedAt = new Date(opt.added_at).getTime();
-          if (!isNaN(addedAt) && addedAt > paidAt) {
-            const price = Number(opt?.price ?? opt?.valor ?? 0);
-            const qty = Number(opt?.quantity ?? opt?.quantidade ?? 1) || 1;
-            total += price * qty;
-          }
-        });
-      });
-
-    // Opcionais no nível da reserva (selected_optional_items)
-    (reserva.selected_optional_items || []).forEach((opt: any) => {
-      if (!opt?.added_at) return;
-      const addedAt = new Date(opt.added_at).getTime();
-      if (!isNaN(addedAt) && addedAt > paidAt) {
-        const price = Number(opt?.price ?? opt?.valor ?? 0);
-        const qty = Number(opt?.quantity ?? opt?.quantidade ?? 1) || 1;
-        total += price * qty;
-      }
-    });
-
-    return total;
   };
 
   // Valor pago "real" (sem juros). Fonte:
@@ -1180,13 +1137,9 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
 
     // Fallback: quando não existem parcelas salvas e a taxa não está registrada,
     // o valor_pago pode estar vindo com juros do cartão. Usamos valor_total_com_opcionais
-    // como proxy do valor base pago, MAS subtraímos opcionais adicionados após o pagamento
-    // (tag added_at) para não inflar o Valor Pago quando admin adiciona opcionais depois.
+    // (snapshot gravado no momento do pagamento — não muda quando admin adiciona opcionais).
     const valorSalvoNoPagamento = reserva.valor_total_com_opcionais || reserva.valor_passeio || 0;
-    if (valorSalvoNoPagamento > 0) {
-      const postPayment = getPostPaymentOpcionaisTotal(reserva);
-      return Math.max(0, valorSalvoNoPagamento - postPayment);
-    }
+    if (valorSalvoNoPagamento > 0) return valorSalvoNoPagamento;
 
     // Último fallback: não temos como inferir o valor base.
     return raw;
@@ -1371,20 +1324,16 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
         name: newOptional.nome,
         price: parseFloat(newOptional.valor) || 0,
         quantity: 1,
-        added_at: new Date().toISOString(),
       };
 
       try {
         // Always add to reservas.selected_optional_items (unified approach)
         const currentItems = reserva.selected_optional_items || [];
         const updatedItems = [...currentItems, customItem];
-        
-        const itemPrice = parseFloat(newOptional.valor) || 0;
-        const newTotal = (reserva.valor_total_com_opcionais || reserva.valor_passeio || 0) + itemPrice;
 
         const { error } = await supabase
           .from('reservas')
-          .update({ selected_optional_items: updatedItems as any, valor_total_com_opcionais: newTotal })
+          .update({ selected_optional_items: updatedItems as any })
           .eq('id', addOptionalModal.reservaId);
 
         if (error) throw error;
@@ -1410,33 +1359,26 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
         // Always add to reservas.selected_optional_items (unified approach)
         const currentItems = reserva.selected_optional_items || [];
         const existingItem = currentItems.find(o => o.id === selectedItem.id);
-        const addedAt = new Date().toISOString();
 
         let updatedItems;
-        let addedPrice: number;
         if (existingItem) {
           updatedItems = currentItems.map(o =>
             o.id === selectedItem.id
-              ? { ...o, quantity: (o.quantity || 1) + 1, added_at: addedAt }
+              ? { ...o, quantity: (o.quantity || 1) + 1 }
               : o
           );
-          addedPrice = selectedItem.price;
         } else {
           updatedItems = [...currentItems, {
             id: selectedItem.id,
             name: selectedItem.name,
             price: selectedItem.price,
             quantity: 1,
-            added_at: addedAt,
           }];
-          addedPrice = selectedItem.price;
         }
-
-        const newTotal = (reserva.valor_total_com_opcionais || reserva.valor_passeio || 0) + addedPrice;
 
         const { error } = await supabase
           .from('reservas')
-          .update({ selected_optional_items: updatedItems as any, valor_total_com_opcionais: newTotal })
+          .update({ selected_optional_items: updatedItems as any })
           .eq('id', addOptionalModal.reservaId);
 
         if (error) throw error;
@@ -3420,14 +3362,11 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Valor Total Modal (breakdown + edição manual) */}
+      {/* Valor Total Modal (breakdown read-only) */}
       <ValorTotalModal
         open={!!valorTotalModalReservaId}
         reserva={valorTotalModalReservaId ? (reservas.find(r => r.id === valorTotalModalReservaId) || null) : null}
         onClose={() => setValorTotalModalReservaId(null)}
-        onSaveManualTotal={async (reservaId, valor) => {
-          await onEditReserva(reservaId, { valor_total_com_opcionais: valor });
-        }}
         formatarValor={formatarValor}
       />
 

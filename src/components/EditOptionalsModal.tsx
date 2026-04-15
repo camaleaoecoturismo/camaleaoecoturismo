@@ -70,19 +70,16 @@ const EditOptionalsModal: React.FC<EditOptionalsModalProps> = ({
   };
 
   const handleAdd = () => {
-    const addedAt = new Date().toISOString();
-
     if (useCustom) {
       if (!newOptional.nome || !newOptional.valor) {
         toast({ title: "Preencha nome e valor", variant: "destructive" });
         return;
       }
-      const customItem: OptionalItem & { added_at?: string } = {
+      const customItem: OptionalItem = {
         id: `custom_${Date.now()}`,
         name: newOptional.nome,
         price: parseFloat(newOptional.valor) || 0,
         quantity: 1,
-        added_at: addedAt,
       };
       setOptionals(prev => [...prev, customItem]);
     } else {
@@ -93,14 +90,10 @@ const EditOptionalsModal: React.FC<EditOptionalsModalProps> = ({
       const selectedItem = tourOptionalItems.find(item => item.id === newOptional.id);
       if (!selectedItem) return;
 
-      // Check if already exists
       const existingIndex = optionals.findIndex(o => o.id === selectedItem.id);
       if (existingIndex >= 0) {
-        // Increment quantity — refresh added_at so the increment counts as post-payment
         setOptionals(prev => prev.map((item, i) =>
-          i === existingIndex
-            ? { ...item, quantity: item.quantity + 1, added_at: addedAt } as OptionalItem & { added_at?: string }
-            : item
+          i === existingIndex ? { ...item, quantity: item.quantity + 1 } : item
         ));
       } else {
         setOptionals(prev => [...prev, {
@@ -108,8 +101,7 @@ const EditOptionalsModal: React.FC<EditOptionalsModalProps> = ({
           name: selectedItem.name,
           price: selectedItem.price,
           quantity: 1,
-          added_at: addedAt,
-        } as OptionalItem & { added_at?: string }]);
+        }]);
       }
     }
 
@@ -123,21 +115,13 @@ const EditOptionalsModal: React.FC<EditOptionalsModalProps> = ({
     try {
       const optionalsJson = prepareOptionalsForSave(optionals);
 
-      // Delta between old and new optionals — used to adjust valor_total_com_opcionais
-      const oldTotal = currentOptionals.reduce((sum, o) => sum + (o.price * (o.quantity || 1)), 0);
-      const newTotal = optionals.reduce((sum, o) => sum + (o.price * (o.quantity || 1)), 0);
-      const delta = newTotal - oldTotal;
-
       if (participantId) {
-        // Save to reservation_participants.selected_optionals (per-participant approach)
         const { error } = await supabase
           .from('reservation_participants')
           .update({ selected_optionals: optionalsJson as any })
           .eq('id', participantId);
-
         if (error) throw error;
       } else {
-        // Legacy: save to reservas.selected_optional_items
         const { error } = await supabase
           .from('reservas')
           .update({
@@ -145,25 +129,7 @@ const EditOptionalsModal: React.FC<EditOptionalsModalProps> = ({
             adicionais: [] // Clear legacy field
           })
           .eq('id', reservaId);
-
         if (error) throw error;
-      }
-
-      // Update reserva's valor_total_com_opcionais by the delta so valor total column reflects optionals
-      if (delta !== 0) {
-        const { data: reservaRow } = await supabase
-          .from('reservas')
-          .select('valor_total_com_opcionais, valor_passeio')
-          .eq('id', reservaId)
-          .single();
-
-        const base = reservaRow?.valor_total_com_opcionais ?? reservaRow?.valor_passeio ?? 0;
-        const updatedTotal = Math.max(0, base + delta);
-
-        await supabase
-          .from('reservas')
-          .update({ valor_total_com_opcionais: updatedTotal })
-          .eq('id', reservaId);
       }
 
       toast({ title: "Opcionais salvos!" });

@@ -9,13 +9,6 @@ export interface OptionalItem {
   name: string;
   price: number;
   quantity: number;
-  /**
-   * ISO timestamp set when an admin adds an optional after the reservation exists.
-   * Used to distinguish optionals that were part of the original payment from
-   * those added later — so valor_pago display doesn't inflate with post-payment adds.
-   * Absent on items created during the customer checkout flow.
-   */
-  added_at?: string;
 }
 
 export interface LegacyAdicional {
@@ -47,8 +40,7 @@ export function normalizeOptionalItems(items: any[] | null | undefined): Optiona
     id: item.id || `item_${Date.now()}_${Math.random()}`,
     name: item.name || '',
     price: item.price || 0,
-    quantity: item.quantity || 1,
-    ...(item.added_at ? { added_at: item.added_at } : {}),
+    quantity: item.quantity || 1
   }));
 }
 
@@ -106,14 +98,10 @@ export function formatOptionalsForDisplay(optionals: OptionalItem[]): { displayI
  * Returns a clean JSON-safe array
  */
 export function prepareOptionalsForSave(optionals: OptionalItem[]): any[] {
-  return optionals.map(o => {
-    const base: any = {
-      id: o.id,
-      name: o.name,
-      price: o.price,
-      quantity: o.quantity,
-    };
-    if (o.added_at) base.added_at = o.added_at;
-    return base;
-  });
+  return optionals.map(o => ({
+    id: o.id,
+    name: o.name,
+    price: o.price,
+    quantity: o.quantity
+  }));
 }
