@@ -147,7 +147,7 @@ const FinanceiroHistorico: React.FC<FinanceiroHistoricoProps> = ({
           return sum + valorBase + adicionaisTotal + optionalsTotal;
         }, 0);
         const clientes = tourReservations.reduce((sum, r) => sum + (r.numero_participantes || 1), 0);
-        const gastos = tourCosts.reduce((sum, c) => sum + (c.valor_pago || 0), 0);
+        const gastos = tourCosts.reduce((sum, c) => sum + (c.quantity * c.unit_value), 0);
         const lucro = faturamento - gastos;
         
         const fatPorCliente = clientes > 0 ? faturamento / clientes : 0;
