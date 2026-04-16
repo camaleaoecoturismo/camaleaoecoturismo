@@ -679,8 +679,17 @@ const TourManagement: React.FC<TourManagementProps> = ({
         // If no parcelas in DB but has valor_pago, create one entry as legacy data
         const reserva = reservas.find(r => r.id === reservaId);
         if (reserva?.valor_pago && reserva.valor_pago > 0) {
-          // valor_pago já é o valor base (sem juros) — o webhook salva valor_total_com_opcionais aqui
-          const valorParcela = reserva.valor_pago;
+          // valor_pago pode estar BRUTO (com juros/taxa do cartão).
+          // Para a parcela, usamos o valor LÍQUIDO: subtraímos a taxa se existir,
+          // senão usamos valor_total_com_opcionais como proxy do valor base.
+          const cardFee = Number(reserva.card_fee_amount || 0);
+          let valorParcela = reserva.valor_pago;
+          if (cardFee > 0) {
+            valorParcela = Math.max(0, valorParcela - cardFee);
+          } else if (reserva.valor_total_com_opcionais && reserva.valor_total_com_opcionais < valorParcela) {
+            // Sem taxa registrada mas valor_total_com_opcionais < valor_pago → indica juros
+            valorParcela = reserva.valor_total_com_opcionais;
+          }
 
           // Determinar forma de pagamento: capture_method tem precedência sobre payment_method
           const formaLegacy = (() => {
@@ -833,8 +842,14 @@ const TourManagement: React.FC<TourManagementProps> = ({
           updateData.data_pagamento = new Date().toISOString();
         }
         // Set payment_method based on first parcela
+        // CHECK constraint aceita: 'pix', 'cartao', 'pix_parcelado'
+        // Parcelas manuais podem ter formas extras (dinheiro, transferencia, cheque)
+        // que não estão no CHECK — nesse caso, não atualizar payment_method
         if (firstParcela?.forma) {
-          updateData.payment_method = firstParcela.forma === 'cartao' ? 'credit_card' : firstParcela.forma;
+          const allowed = ['pix', 'cartao', 'pix_parcelado'];
+          if (allowed.includes(firstParcela.forma)) {
+            updateData.payment_method = firstParcela.forma;
+          }
         }
       }
       

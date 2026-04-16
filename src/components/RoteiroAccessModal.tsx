@@ -102,15 +102,20 @@ export function RoteiroAccessModal({
   };
   const pdfViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(pdfRawUrl)}&embedded=true`;
 
-  const saveLead = (fullWhatsapp: string) => {
-    // Upsert: insere novo ou ignora silenciosamente se já existe (unique: whatsapp + passeio_id)
-    supabase.from("interessados").upsert({
+  const saveLead = async (fullWhatsapp: string) => {
+    // INSERT simples — upsert falha para anon porque PostgREST exige SELECT policy.
+    // Duplicatas (whatsapp + passeio_id) geram erro 23505 que é ignorado intencionalmente.
+    const { error } = await supabase.from("interessados").insert({
       nome: nome.trim(),
       whatsapp: fullWhatsapp,
       passeio_id: tourId,
       origem: "roteiro",
       aceite_novidades: consentimento
-    }, { onConflict: 'whatsapp,passeio_id', ignoreDuplicates: true });
+    });
+
+    if (error && error.code !== '23505') {
+      console.error('Erro ao salvar interessado:', error);
+    }
   };
 
   const handleQuickAccess = () => {
