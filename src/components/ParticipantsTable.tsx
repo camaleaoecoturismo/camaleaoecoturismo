@@ -1618,17 +1618,10 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
   }, [allParticipantRows, nameSearch]);
   
   // Separate pending payment rows from confirmed/paid rows
-  const pendingPaymentRows = participantRows.filter(row => {
-    if (row.type === 'staff' || row.isStaff) return false;
-    const paymentStatus = row.reserva.payment_status;
-    return paymentStatus !== 'pago' && paymentStatus !== 'approved';
-  });
-  
-  const confirmedPaymentRows = participantRows.filter(row => {
-    if (row.type === 'staff' || row.isStaff) return true;
-    const paymentStatus = row.reserva.payment_status;
-    return paymentStatus === 'pago' || paymentStatus === 'approved';
-  });
+  // Todos os participantes confirmados ficam na tabela principal.
+  // Quem tiver saldo pendente mostra saldo negativo normalmente — sem seção separada.
+  const pendingPaymentRows: typeof participantRows = [];
+  const confirmedPaymentRows = participantRows;
 
   // Selection helpers that depend on participantRows
   const selectAll = () => {
