@@ -3146,7 +3146,10 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
         participant={editingParticipant.participant}
         reservaId={editingParticipant.reservaId}
         participantIndex={editingParticipant.participantIndex}
-        onSaved={fetchAdditionalParticipants}
+        onSaved={() => {
+          fetchAdditionalParticipants();
+          onRefreshReservas?.();
+        }}
         boardingPoints={boardingPoints}
         tourId={tourId}
       />
