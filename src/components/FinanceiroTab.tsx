@@ -1067,14 +1067,21 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
       const rawPago = r.valor_pago || 0;
       valorRecebidoTotal += rawPago;
 
-      // Calcular valor pago base (sem taxa de cartão)
+      // Calcular valor pago base (sem taxa de cartão) — mesma ordem de fontes que
+      // getValorPagoSemJuros em ParticipantsTable, para que os totais batam com a planilha:
+      // 1) soma de reserva_parcelas (quando existe) 2) valor_pago − card_fee (cartão)
+      // 3) fallback para valor_total_com_opcionais (snapshot) só em último caso.
       let pagoBase = rawPago;
-      if (isCardPaymentMethod(r.payment_method) && rawPago > 0) {
+      const parcelasDaReserva = parcelasMap.get(r.id) || [];
+      const parcelasSum = parcelasDaReserva.reduce((s, p) => s + Number(p.valor || 0), 0);
+      if (parcelasSum > 0) {
+        pagoBase = parcelasSum;
+      } else if (isCardPaymentMethod(r.payment_method) && rawPago > 0) {
         const cardFee = r.card_fee_amount || 0;
         if (cardFee > 0) {
           pagoBase = Math.max(0, rawPago - cardFee);
         } else {
-          pagoBase = valorTotalReserva;
+          pagoBase = r.valor_total_com_opcionais || r.valor_passeio || rawPago;
         }
       }
 
@@ -2678,10 +2685,14 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
         const rawPago = r.valor_pago || 0;
         const valorTotal = calcValorTotalReserva(r, allParticipants);
         if (rawPago === 0) return isCancelled ? sum : sum + valorTotal;
+        // Mesma ordem de fontes do detalhe e da planilha: parcelas → valor_pago − fee → snapshot.
+        const parcelasSum = (parcelasMap.get(r.id) || []).reduce((s, p) => s + Number(p.valor || 0), 0);
         let pagoBase = rawPago;
-        if (isCardPaymentMethod(r.payment_method)) {
+        if (parcelasSum > 0) {
+          pagoBase = parcelasSum;
+        } else if (isCardPaymentMethod(r.payment_method)) {
           const fee = r.card_fee_amount || 0;
-          pagoBase = fee > 0 ? Math.max(0, rawPago - fee) : valorTotal;
+          pagoBase = fee > 0 ? Math.max(0, rawPago - fee) : (r.valor_total_com_opcionais || valorTotal);
         }
         return sum + pagoBase;
       }, 0);
