@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -9,16 +9,22 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { HISTORICO_2025_DATA, HISTORICO_2025_TOTALS } from '@/data/historico2025';
 import HistoricoChartsModal from './charts/HistoricoChartsModal';
+import { supabase } from "@/integrations/supabase/client";
 
 interface Reservation {
   id: string;
   tour_id: string;
   status: string;
+  payment_status?: string | null;
+  payment_method?: string | null;
   valor_pago: number | null;
   valor_passeio: number | null;
+  valor_total_com_opcionais?: number | null;
   capture_method?: string | null;
   numero_participantes?: number | null;
   card_fee_amount?: number | null;
+  coupon_discount?: number | null;
+  refund_amount?: number | null;
   adicionais?: any[] | null;
   selected_optional_items?: any[] | null;
 }
@@ -52,9 +58,58 @@ const FinanceiroHistorico: React.FC<FinanceiroHistoricoProps> = ({
   selectedYear
 }) => {
   const [showChartsModal, setShowChartsModal] = useState(false);
-  
+  const [reservaTotalPago, setReservaTotalPago] = useState<Record<string, number>>({});
+
+  // Soma parcelas por reserva — usada para calcular o valor realmente recebido
+  // em passeios que já aconteceram (mesma lógica de getValorPagoSemJuros).
+  useEffect(() => {
+    const ids = reservations.map(r => r.id);
+    if (ids.length === 0) {
+      setReservaTotalPago({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('reserva_parcelas')
+        .select('reserva_id, valor')
+        .in('reserva_id', ids);
+      if (cancelled) return;
+      const map: Record<string, number> = {};
+      (data || []).forEach((p: { reserva_id: string; valor: number }) => {
+        map[p.reserva_id] = (map[p.reserva_id] || 0) + Number(p.valor || 0);
+      });
+      setReservaTotalPago(map);
+    })();
+    return () => { cancelled = true; };
+  }, [reservations]);
+
   // Helper to check if reservation is confirmed
   const isConfirmed = (status: string) => status === 'confirmada' || status === 'confirmado';
+
+  // Valor efetivamente recebido pela reserva (líquido de taxa de cartão, menos reembolso parcial).
+  // Preferimos a soma de reserva_parcelas quando existir; fallback usa valor_pago − card_fee.
+  const isCardMethod = (method?: string | null) => {
+    const m = (method || '').toLowerCase();
+    return m.includes('cartao') || m.includes('cartão') || m.includes('card') || m === 'credit_card';
+  };
+  const getValorRecebidoLiquido = (r: Reservation): number => {
+    const parcelasSum = reservaTotalPago[r.id];
+    let base = 0;
+    if (typeof parcelasSum === 'number' && parcelasSum > 0) {
+      base = parcelasSum;
+    } else {
+      const raw = r.valor_pago || 0;
+      if (isCardMethod(r.payment_method) && raw > 0) {
+        const fee = Number(r.card_fee_amount || 0);
+        base = fee > 0 ? Math.max(0, raw - fee) : (r.valor_total_com_opcionais || r.valor_passeio || raw);
+      } else {
+        base = raw;
+      }
+    }
+    const refund = Number(r.refund_amount || 0);
+    return Math.max(0, base - refund);
+  };
   // Filter tours by selected year and sort by date
   const yearTours = useMemo(() => {
     return tours
@@ -118,35 +173,59 @@ const FinanceiroHistorico: React.FC<FinanceiroHistoricoProps> = ({
     }
 
     // Cálculo dinâmico para outros anos
+    // Passeios cuja data já passou → faturamento realizado (caixa líquido recebido).
+    // Passeios futuros/hoje → faturamento projetado (valor dos passeios + opcionais contratados).
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
     let globalIndex = 0;
     return toursByMonth.map(monthGroup => {
       const toursWithData = monthGroup.tours.map(tour => {
         globalIndex++;
-        const tourReservations = filteredReservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status));
+        const tourDate = new Date(tour.start_date);
+        tourDate.setHours(0, 0, 0, 0);
+        const isPast = tourDate < hoje;
+
         const tourCosts = allTourCosts.filter(c => c.tour_id === tour.id);
-        
-        // Calculate revenue: valor_passeio already represents total reservation value (not per person)
-        // Add optional items (adicionais and selected_optional_items)
-        const faturamento = tourReservations.reduce((sum, r) => {
-          const valorBase = r.valor_passeio || 0;
-          
-          // Legacy format: adicionais
-          let adicionaisTotal = 0;
-          if (r.adicionais && Array.isArray(r.adicionais)) {
-            adicionaisTotal = (r.adicionais as any[]).reduce((addSum, add) => addSum + (add?.valor || 0), 0);
-          }
-          
-          // New format: selected_optional_items
-          let optionalsTotal = 0;
-          if (r.selected_optional_items && Array.isArray(r.selected_optional_items)) {
-            optionalsTotal = (r.selected_optional_items as any[]).reduce((optSum, opt) => {
-              return optSum + ((opt?.price || 0) * (opt?.quantity || 1));
-            }, 0);
-          }
-          
-          return sum + valorBase + adicionaisTotal + optionalsTotal;
-        }, 0);
-        const clientes = tourReservations.reduce((sum, r) => sum + (r.numero_participantes || 1), 0);
+
+        let faturamento = 0;
+        let clientes = 0;
+
+        if (isPast) {
+          // Realizado: exclui cancelado/reembolsado total/transferido; para reembolso parcial,
+          // getValorRecebidoLiquido já deduz refund_amount.
+          const realizadas = filteredReservations.filter(r => {
+            if (r.tour_id !== tour.id) return false;
+            if (!isConfirmed(r.status)) return false;
+            if (r.status === 'transferido') return false;
+            if (r.payment_status === 'reembolsado') return false;
+            return true;
+          });
+          faturamento = realizadas.reduce((sum, r) => sum + getValorRecebidoLiquido(r), 0);
+          clientes = realizadas.reduce((sum, r) => sum + (r.numero_participantes || 1), 0);
+        } else {
+          // Projetado: valor dos passeios + opcionais, menos cupom.
+          const tourReservations = filteredReservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status));
+          faturamento = tourReservations.reduce((sum, r) => {
+            const valorBase = r.valor_passeio || 0;
+            const cupom = Number(r.coupon_discount || 0);
+
+            let adicionaisTotal = 0;
+            if (r.adicionais && Array.isArray(r.adicionais)) {
+              adicionaisTotal = (r.adicionais as any[]).reduce((addSum, add) => addSum + (add?.valor || 0), 0);
+            }
+
+            let optionalsTotal = 0;
+            if (r.selected_optional_items && Array.isArray(r.selected_optional_items)) {
+              optionalsTotal = (r.selected_optional_items as any[]).reduce((optSum, opt) => {
+                return optSum + ((opt?.price || 0) * (opt?.quantity || 1));
+              }, 0);
+            }
+
+            return sum + Math.max(0, valorBase - cupom) + adicionaisTotal + optionalsTotal;
+          }, 0);
+          clientes = tourReservations.reduce((sum, r) => sum + (r.numero_participantes || 1), 0);
+        }
+
         const gastos = tourCosts.reduce((sum, c) => sum + (c.quantity * c.unit_value), 0);
         const lucro = faturamento - gastos;
         
@@ -164,16 +243,17 @@ const FinanceiroHistorico: React.FC<FinanceiroHistoricoProps> = ({
           clientes,
           fatPorCliente,
           gastosPorCliente,
-          lucroPorCliente
+          lucroPorCliente,
+          isPast
         };
       });
-      
+
       return {
         month: monthGroup.month,
         tours: toursWithData
       };
     });
-  }, [toursByMonth, filteredReservations, allTourCosts, selectedYear]);
+  }, [toursByMonth, filteredReservations, allTourCosts, selectedYear, reservaTotalPago]);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -319,8 +399,14 @@ const FinanceiroHistorico: React.FC<FinanceiroHistoricoProps> = ({
                         <TableCell className="text-center py-1.5 px-1">
                           {tourItem.date}
                         </TableCell>
-                        <TableCell className="text-right font-medium text-primary py-1.5 px-2">
+                        <TableCell
+                          className="text-right font-medium text-primary py-1.5 px-2"
+                          title={tourItem.isPast === false ? 'Projetado — passeio ainda não realizado' : (tourItem.isPast ? 'Realizado — caixa líquido recebido' : undefined)}
+                        >
                           {formatCurrency(tourItem.faturamento)}
+                          {tourItem.isPast === false && (
+                            <span className="ml-1 text-[10px] font-normal text-muted-foreground">proj.</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-right font-medium text-destructive py-1.5 px-2">
                           {formatCurrency(tourItem.gastos)}

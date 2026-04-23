@@ -110,6 +110,7 @@ interface Reservation {
   numero_participantes: number | null;
   refund_amount?: number | null;
   card_fee_amount?: number | null;
+  coupon_discount?: number | null;
   // Legacy + novo formato de opcionais
   adicionais?: any[] | null;
   selected_optional_items?: any[] | null;
@@ -700,7 +701,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
         error
       } = await supabase
         .from('reservas')
-        .select('id, tour_id, status, payment_status, valor_pago, valor_passeio, valor_total_com_opcionais, data_pagamento, payment_method, cliente_id, capture_method, numero_participantes, refund_amount, card_fee_amount, adicionais, selected_optional_items');
+        .select('id, tour_id, status, payment_status, valor_pago, valor_passeio, valor_total_com_opcionais, data_pagamento, payment_method, cliente_id, capture_method, numero_participantes, refund_amount, card_fee_amount, coupon_discount, adicionais, selected_optional_items');
       if (error) throw error;
       setReservations((data || []) as Reservation[]);
     } catch (error) {
