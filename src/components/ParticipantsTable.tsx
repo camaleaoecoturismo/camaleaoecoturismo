@@ -1106,11 +1106,22 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
     return valorAdicionais + opcionaisTotal;
   };
 
+  // Quando coupon_discount == 0 mas o snapshot valor_total_com_opcionais é menor que
+  // valor_passeio, significa que na hora do pagamento um desconto foi aplicado
+  // (ex.: cupom no checkout) e não ficou registrado em coupon_discount.
+  // Inferir o delta evita exigir re-digitação manual no "Valor Total".
+  const getCouponDiscountEfetivo = (reserva: Reserva): number => {
+    const explicit = Number(reserva.coupon_discount || 0);
+    if (explicit > 0) return explicit;
+    const snapshot = Number(reserva.valor_total_com_opcionais || 0);
+    const base = Number(reserva.valor_passeio || 0);
+    if (snapshot > 0 && base > 0 && snapshot < base) return base - snapshot;
+    return 0;
+  };
+
   const calcularValorTotal = (reserva: Reserva): number => {
-    // Sempre calcular dinamicamente: opcionais vivos + base - cupom.
-    // valor_total_com_opcionais NÃO é usado aqui — é snapshot do pagamento (usado só em valor_pago).
     const valorBase = reserva.valor_passeio || 0;
-    const discount = reserva.coupon_discount || 0;
+    const discount = getCouponDiscountEfetivo(reserva);
     return Math.max(0, valorBase - discount) + calcularTotalOpcionaisReserva(reserva);
   };
 

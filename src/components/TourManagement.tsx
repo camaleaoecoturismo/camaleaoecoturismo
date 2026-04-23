@@ -1518,9 +1518,20 @@ const TourManagement: React.FC<TourManagementProps> = ({
       description: "A reserva foi cancelada"
     });
   };
+  // Se coupon_discount == 0 mas valor_total_com_opcionais < valor_passeio, o desconto
+  // foi aplicado no pagamento mas não gravado em coupon_discount — inferimos pelo snapshot.
+  const getCouponDiscountEfetivo = (reserva: Reserva): number => {
+    const explicit = Number(reserva.coupon_discount || 0);
+    if (explicit > 0) return explicit;
+    const snapshot = Number(reserva.valor_total_com_opcionais || 0);
+    const base = Number(reserva.valor_passeio || 0);
+    if (snapshot > 0 && base > 0 && snapshot < base) return base - snapshot;
+    return 0;
+  };
+
   const calcularValorTotal = (reserva: Reserva) => {
     const valorBase = reserva.valor_passeio || 0;
-    const couponDiscount = reserva.coupon_discount || 0;
+    const couponDiscount = getCouponDiscountEfetivo(reserva);
 
     // Legacy format: adicionais (manual additions)
     const valorAdicionais = (reserva.adicionais || []).reduce((sum, add) => sum + Number(add.valor || 0), 0);

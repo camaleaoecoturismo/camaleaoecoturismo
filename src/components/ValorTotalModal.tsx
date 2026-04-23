@@ -78,7 +78,16 @@ const ValorTotalModal: React.FC<ValorTotalModalProps> = ({
     : reservaOpcionais;
 
   const valorBase = reserva.valor_passeio || 0;
-  const couponDiscount = reserva.coupon_discount || 0;
+  const explicitDiscount = reserva.coupon_discount || 0;
+  // Se não há cupom explícito mas o snapshot do pagamento (valor_total_com_opcionais)
+  // é menor que valor_passeio, inferimos que houve desconto aplicado no checkout
+  // e exibimos o delta como "desconto detectado".
+  const snapshotTotal = Number(reserva.valor_total_com_opcionais || 0);
+  const inferredDiscount = (explicitDiscount === 0 && snapshotTotal > 0 && snapshotTotal < valorBase)
+    ? valorBase - snapshotTotal
+    : 0;
+  const couponDiscount = explicitDiscount || inferredDiscount;
+  const isInferred = explicitDiscount === 0 && inferredDiscount > 0;
   const opcionaisTotal = opcionais.reduce((s, o) => s + o.price * o.quantity, 0);
   const baseComDesconto = Math.max(0, valorBase - couponDiscount);
   const total = baseComDesconto + opcionaisTotal;
@@ -170,11 +179,13 @@ const ValorTotalModal: React.FC<ValorTotalModalProps> = ({
             <div className="flex justify-between items-center p-2 bg-emerald-50 rounded gap-2">
               <span className="flex items-center gap-1.5 text-emerald-700 flex-1">
                 <Tag className="h-3.5 w-3.5" />
-                Cupom {reserva.coupon_code ? `(${reserva.coupon_code})` : ''}
+                {isInferred
+                  ? 'Desconto aplicado no pagamento'
+                  : `Cupom ${reserva.coupon_code ? `(${reserva.coupon_code})` : ''}`}
               </span>
               <span className="font-medium text-emerald-700">- {formatarValor(couponDiscount)}</span>
               {onSaveDesconto && (
-                <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-emerald-700" onClick={() => setEditingDesconto(true)}>
+                <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-emerald-700" onClick={() => setEditingDesconto(true)} title={isInferred ? 'Registrar código do cupom' : 'Editar desconto'}>
                   <Pencil className="h-3 w-3" />
                 </Button>
               )}
