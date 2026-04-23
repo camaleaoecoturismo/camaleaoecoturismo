@@ -55,6 +55,7 @@ const TourManagement: React.FC<TourManagementProps> = ({
 }) => {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [filteredReservas, setFilteredReservas] = useState<Reserva[]>([]);
+  const [reservaTotalPago, setReservaTotalPago] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -1440,9 +1441,22 @@ const TourManagement: React.FC<TourManagementProps> = ({
         });
         setParticipantsMap(grouped);
         setStaffCount(staffTotal);
+
+        // Soma parcelas por reserva — usada em calcularValorPagoBruto
+        // para manter o cabeçalho "Em Aberto" alinhado ao SALDO das linhas.
+        const { data: parcelasData } = await supabase
+          .from('reserva_parcelas')
+          .select('reserva_id, valor')
+          .in('reserva_id', reservaIds);
+        const totalPagoMap: Record<string, number> = {};
+        (parcelasData || []).forEach((p: { reserva_id: string; valor: number }) => {
+          totalPagoMap[p.reserva_id] = (totalPagoMap[p.reserva_id] || 0) + Number(p.valor || 0);
+        });
+        setReservaTotalPago(totalPagoMap);
       } else {
         setParticipantsMap({});
         setStaffCount(0);
+        setReservaTotalPago({});
       }
     } catch (error: any) {
       console.error('Erro detalhado:', error);
@@ -1548,8 +1562,13 @@ const TourManagement: React.FC<TourManagementProps> = ({
     return m === 'credit_card' || m === 'cartao' || m === 'card';
   };
 
-  // Valor pago SEM juros/taxa do cartão (mostra apenas o valor bruto do passeio)
+  // Valor pago SEM juros/taxa do cartão (mostra apenas o valor bruto do passeio).
+  // Mesma lógica de getValorPagoSemJuros em ParticipantsTable para que o cabeçalho
+  // "Em Aberto" bata com o SALDO somado das linhas.
   const calcularValorPagoBruto = (reserva: Reserva) => {
+    const parcelasSum = reservaTotalPago[reserva.id];
+    if (typeof parcelasSum === 'number' && parcelasSum > 0) return parcelasSum;
+
     const valorPago = reserva.valor_pago || 0;
     if (!isCardPaymentMethod(reserva.payment_method) || valorPago <= 0) return valorPago;
 
