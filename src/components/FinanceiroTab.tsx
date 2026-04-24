@@ -1036,13 +1036,11 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   // since tourCosts and tourParticipants are loaded specifically for that tour
   const calculateTourFinancials = (tourId: string) => {
     const tourReservations = reservations.filter(r => r.tour_id === tourId && isConfirmed(r.status));
-    // Also include cancelled reservations that had actual payment — their revenue is real even if refunded later
-    const cancelledWithPayment = reservations.filter(r =>
-      r.tour_id === tourId &&
-      (r.status === 'cancelada' || r.status === 'cancelado') &&
-      (r.valor_pago || 0) > 0
-    );
-    const allRevenueReservations = [...tourReservations, ...cancelledWithPayment];
+    // Nota: antes incluíamos canceladas-com-pagamento aqui ("revenue is real even if refunded later"),
+    // mas isso divergia do "Valor Pago" da planilha de participantes (que só considera confirmadas)
+    // e confundia na aba Por Passeio. Visões de caixa agregadas (mensal/balanço) continuam com sua
+    // lógica própria; aqui alinhamos com a planilha.
+    const allRevenueReservations = tourReservations;
     // Use tourCosts directly since it's already filtered by selectedTourId in fetchTourCosts
     const tourCostsFiltered = tourCosts;
     const numClientes = tourReservations.reduce((sum, r) => sum + (r.numero_participantes || 1), 0) || 1;
@@ -2670,21 +2668,16 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     // Uses same calculation logic as calculateTourFinancials for consistency
     const TourCard = ({ tour }: { tour: Tour }) => {
       const tourReservations = reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status));
-      const cancelledWithPayment = reservations.filter(r =>
-        r.tour_id === tour.id &&
-        (r.status === 'cancelada' || r.status === 'cancelado') &&
-        (r.valor_pago || 0) > 0
-      );
-      const allRevenueRes = [...tourReservations, ...cancelledWithPayment];
+      // Alinhado com calculateTourFinancials e com a planilha de participantes:
+      // canceladas não entram no faturamento da aba Por Passeio.
+      const allRevenueRes = tourReservations;
       const clientes = tourReservations.reduce((sum, r) => sum + (r.numero_participantes || 1), 0);
       const numClientesForCalc = clientes || 1;
 
-      // Faturamento: confirmed + cancelled-with-payment (same as calculateTourFinancials)
       const faturamento = allRevenueRes.reduce((sum, r) => {
-        const isCancelled = r.status === 'cancelada' || r.status === 'cancelado';
         const rawPago = r.valor_pago || 0;
         const valorTotal = calcValorTotalReserva(r, allParticipants);
-        if (rawPago === 0) return isCancelled ? sum : sum + valorTotal;
+        if (rawPago === 0) return sum + valorTotal;
         // Mesma ordem de fontes do detalhe e da planilha: parcelas → valor_pago − fee → snapshot.
         const parcelasSum = (parcelasMap.get(r.id) || []).reduce((s, p) => s + Number(p.valor || 0), 0);
         let pagoBase = rawPago;
