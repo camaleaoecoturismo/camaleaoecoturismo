@@ -1129,11 +1129,18 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
   };
 
   // Valor pago "real" (sem juros). Fonte:
-  // 1) Se existir parcela em reserva_parcelas: soma das parcelas (assumimos que já é o valor base)
+  // 1) Se existir parcela em reserva_parcelas: soma das parcelas (subtraindo fee se ainda bruto)
   // 2) Senão: usa reservas.valor_pago e, se for cartão, subtrai card_fee_amount
   const getValorPagoSemJuros = (reserva: Reserva): number => {
     const parcelasSumRaw = reservaTotalPago[reserva.id];
-    if (typeof parcelasSumRaw === 'number' && parcelasSumRaw > 0) return parcelasSumRaw;
+    if (typeof parcelasSumRaw === 'number' && parcelasSumRaw > 0) {
+      // Se as parcelas ainda contêm a taxa (legacy: parcelasSum ≈ valor_pago bruto),
+      // subtrair para devolver o valor líquido. Mesma heurística usada em carregarParcelas.
+      const cardFee = Number(reserva.card_fee_amount || 0);
+      const valorPagoBruto = Number(reserva.valor_pago || 0);
+      const parcelasContemTaxa = cardFee > 0 && Math.abs(parcelasSumRaw - valorPagoBruto) < 1;
+      return parcelasContemTaxa ? Math.max(0, parcelasSumRaw - cardFee) : parcelasSumRaw;
+    }
 
     const raw = reserva.valor_pago || 0;
     const method = (reserva.payment_method || '').toLowerCase();

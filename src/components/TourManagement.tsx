@@ -1583,7 +1583,14 @@ const TourManagement: React.FC<TourManagementProps> = ({
   // "Em Aberto" bata com o SALDO somado das linhas.
   const calcularValorPagoBruto = (reserva: Reserva) => {
     const parcelasSum = reservaTotalPago[reserva.id];
-    if (typeof parcelasSum === 'number' && parcelasSum > 0) return parcelasSum;
+    if (typeof parcelasSum === 'number' && parcelasSum > 0) {
+      // Mesma heurística de carregarParcelas: se a soma das parcelas ainda contém a taxa
+      // de cartão (parcelasSum ≈ valor_pago bruto), subtrair para exibir o valor líquido.
+      const cardFee = Number(reserva.card_fee_amount || 0);
+      const valorPagoBruto = Number(reserva.valor_pago || 0);
+      const parcelasContemTaxa = cardFee > 0 && Math.abs(parcelasSum - valorPagoBruto) < 1;
+      return parcelasContemTaxa ? Math.max(0, parcelasSum - cardFee) : parcelasSum;
+    }
 
     const valorPago = reserva.valor_pago || 0;
     if (!isCardPaymentMethod(reserva.payment_method) || valorPago <= 0) return valorPago;
