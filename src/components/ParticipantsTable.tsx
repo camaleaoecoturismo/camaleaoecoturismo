@@ -1106,16 +1106,19 @@ const ParticipantsTable: React.FC<ParticipantsTableProps> = ({
     return valorAdicionais + opcionaisTotal;
   };
 
-  // Quando coupon_discount == 0 mas o snapshot valor_total_com_opcionais é menor que
-  // valor_passeio, significa que na hora do pagamento um desconto foi aplicado
-  // (ex.: cupom no checkout) e não ficou registrado em coupon_discount.
-  // Inferir o delta evita exigir re-digitação manual no "Valor Total".
+  // Detecta desconto "não registrado" em coupon_discount por dois sinais:
+  // 1) snapshot do checkout (valor_total_com_opcionais) < valor_passeio — cupom aplicado no gateway;
+  // 2) pagamento confirmado com valor_pago < valor_passeio — gateway não aceita parcial,
+  //    então valor_pago menor que o pacote normalmente significa desconto acordado.
   const getCouponDiscountEfetivo = (reserva: Reserva): number => {
     const explicit = Number(reserva.coupon_discount || 0);
     if (explicit > 0) return explicit;
-    const snapshot = Number(reserva.valor_total_com_opcionais || 0);
     const base = Number(reserva.valor_passeio || 0);
-    if (snapshot > 0 && base > 0 && snapshot < base) return base - snapshot;
+    if (base <= 0) return 0;
+    const snapshot = Number(reserva.valor_total_com_opcionais || 0);
+    if (snapshot > 0 && snapshot < base) return base - snapshot;
+    const pago = Number(reserva.valor_pago || 0);
+    if (reserva.payment_status === 'pago' && pago > 0 && pago < base) return base - pago;
     return 0;
   };
 

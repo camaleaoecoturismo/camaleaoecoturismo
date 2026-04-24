@@ -1518,14 +1518,19 @@ const TourManagement: React.FC<TourManagementProps> = ({
       description: "A reserva foi cancelada"
     });
   };
-  // Se coupon_discount == 0 mas valor_total_com_opcionais < valor_passeio, o desconto
-  // foi aplicado no pagamento mas não gravado em coupon_discount — inferimos pelo snapshot.
+  // Detecta desconto que não foi gravado em coupon_discount:
+  // 1) snapshot (valor_total_com_opcionais) < valor_passeio — cupom aplicado no checkout;
+  // 2) payment_status='pago' com valor_pago < valor_passeio — gateway não aceita parcial,
+  //    então valor_pago menor que pacote normalmente significa desconto.
   const getCouponDiscountEfetivo = (reserva: Reserva): number => {
     const explicit = Number(reserva.coupon_discount || 0);
     if (explicit > 0) return explicit;
-    const snapshot = Number(reserva.valor_total_com_opcionais || 0);
     const base = Number(reserva.valor_passeio || 0);
-    if (snapshot > 0 && base > 0 && snapshot < base) return base - snapshot;
+    if (base <= 0) return 0;
+    const snapshot = Number(reserva.valor_total_com_opcionais || 0);
+    if (snapshot > 0 && snapshot < base) return base - snapshot;
+    const pago = Number(reserva.valor_pago || 0);
+    if (reserva.payment_status === 'pago' && pago > 0 && pago < base) return base - pago;
     return 0;
   };
 

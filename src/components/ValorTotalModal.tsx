@@ -79,13 +79,20 @@ const ValorTotalModal: React.FC<ValorTotalModalProps> = ({
 
   const valorBase = reserva.valor_passeio || 0;
   const explicitDiscount = reserva.coupon_discount || 0;
-  // Se não há cupom explícito mas o snapshot do pagamento (valor_total_com_opcionais)
-  // é menor que valor_passeio, inferimos que houve desconto aplicado no checkout
-  // e exibimos o delta como "desconto detectado".
+  // Infere desconto quando não foi gravado em coupon_discount. Dois sinais:
+  // 1) snapshot (valor_total_com_opcionais) < valor_passeio — cupom aplicado no checkout;
+  // 2) payment_status='pago' com valor_pago < valor_passeio — gateway não aceita parcial.
   const snapshotTotal = Number(reserva.valor_total_com_opcionais || 0);
-  const inferredDiscount = (explicitDiscount === 0 && snapshotTotal > 0 && snapshotTotal < valorBase)
-    ? valorBase - snapshotTotal
-    : 0;
+  const valorPagoReserva = Number(reserva.valor_pago || 0);
+  const isPago = reserva.payment_status === 'pago';
+  let inferredDiscount = 0;
+  if (explicitDiscount === 0 && valorBase > 0) {
+    if (snapshotTotal > 0 && snapshotTotal < valorBase) {
+      inferredDiscount = valorBase - snapshotTotal;
+    } else if (isPago && valorPagoReserva > 0 && valorPagoReserva < valorBase) {
+      inferredDiscount = valorBase - valorPagoReserva;
+    }
+  }
   const couponDiscount = explicitDiscount || inferredDiscount;
   const isInferred = explicitDiscount === 0 && inferredDiscount > 0;
   const opcionaisTotal = opcionais.reduce((s, o) => s + o.price * o.quantity, 0);
