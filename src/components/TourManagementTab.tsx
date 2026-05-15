@@ -543,7 +543,7 @@ const TourManagementTab: React.FC<TourManagementTabProps> = ({ tours, onRefresh,
       result = result.filter((t) => t.name.toLowerCase().includes(term) || t.city.toLowerCase().includes(term));
     }
 
-    result.sort((a, b) => new Date(b.start_date + "T12:00:00").getTime() - new Date(a.start_date + "T12:00:00").getTime());
+    result.sort((a, b) => new Date(a.start_date + "T12:00:00").getTime() - new Date(b.start_date + "T12:00:00").getTime());
 
     return result;
   }, [tours, filterStatus, filterTime, filterYears, filterMonths, searchTerm]);
