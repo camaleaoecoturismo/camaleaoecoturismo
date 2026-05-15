@@ -539,9 +539,12 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     setSelectedMonth(format(newDate, 'yyyy-MM'));
   }, [selectedMonth]);
 
-  // Helper to check if reservation is confirmed (handles both 'confirmada' and 'confirmado')
-  const isConfirmed = useCallback((status: string) => {
-    return status === 'confirmada' || status === 'confirmado';
+  // Helper to check if reservation is confirmed — mirrors TourManagement logic:
+  // include confirmed OR paid, exclude cancelled/refunded/transferred.
+  const isConfirmed = useCallback((status: string, paymentStatus?: string) => {
+    if (status === 'cancelado' || status === 'cancelada' || status === 'transferido') return false;
+    if (paymentStatus === 'reembolsado' || paymentStatus === 'reembolso_parcial') return false;
+    return status === 'confirmada' || status === 'confirmado' || paymentStatus === 'pago';
   }, []);
 
   // Shared helper: check if payment method is card
@@ -1057,7 +1060,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   // Note: This function should only be called for the selectedTourId
   // since tourCosts and tourParticipants are loaded specifically for that tour
   const calculateTourFinancials = (tourId: string) => {
-    const tourReservations = reservations.filter(r => r.tour_id === tourId && isConfirmed(r.status));
+    const tourReservations = reservations.filter(r => r.tour_id === tourId && isConfirmed(r.status, r.payment_status));
     // Nota: antes incluíamos canceladas-com-pagamento aqui ("revenue is real even if refunded later"),
     // mas isso divergia do "Valor Pago" da planilha de participantes (que só considera confirmadas)
     // e confundia na aba Por Passeio. Visões de caixa agregadas (mensal/balanço) continuam com sua
@@ -1267,7 +1270,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
       // Allocate operational cost to the tour's start_date month
       const tourDate = new Date(tour.start_date + 'T12:00:00');
       if (tourDate >= monthStart && tourDate <= monthEnd) {
-        const tourReservations = reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status));
+        const tourReservations = reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status, r.payment_status));
         const tourReservaIds = tourReservations.map(r => r.id);
         const tourParticipantsForCalc = allParticipants.filter(p => tourReservaIds.includes(p.reserva_id));
         const totalValue = calcCostTotalValue(cost, tourReservations, tourParticipantsForCalc);
@@ -1290,7 +1293,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     };
 
     const tourSummary = monthTours.map(tour => {
-      const tourReservations = reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status));
+      const tourReservations = reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status, r.payment_status));
       const clientes = tourReservations.reduce((sum, r) => sum + (r.numero_participantes || 1), 0);
       const faturamento = calcFaturamentoBase(tourReservations, allParticipants);
       const despesas = tourCostInMonth.get(tour.id) || 0;
@@ -1311,7 +1314,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     let faturamentoTotal = 0;
     reservations.forEach(r => {
       const isCancelled = r.status === 'cancelada' || r.status === 'cancelado';
-      if (!isConfirmed(r.status) && !(isCancelled && (r.valor_pago || 0) > 0)) return;
+      if (!isConfirmed(r.status, r.payment_status) && !(isCancelled && (r.valor_pago || 0) > 0)) return;
       const parcelas = parcelasMap.get(r.id);
 
       if (parcelas && parcelas.length > 0) {
@@ -1406,7 +1409,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
 
   // Tour costs table - Excel-like layout
   const TourCostsTable = () => {
-    const tourReservations = reservations.filter(r => r.tour_id === selectedTourId && isConfirmed(r.status));
+    const tourReservations = reservations.filter(r => r.tour_id === selectedTourId && isConfirmed(r.status, r.payment_status));
     // Count total participants, not just reservations
     const numClientes = tourReservations.reduce((sum, r) => sum + (r.numero_participantes || 1), 0) || 1;
     
@@ -2666,18 +2669,18 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
 
     // Calculate totals using consistent logic
     const totalFaturamentoFuture = futureTours.reduce((sum, tour) => {
-      const tourReservations = reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status));
+      const tourReservations = reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status, r.payment_status));
       return sum + calcFaturamentoBase(tourReservations, allParticipants);
     }, 0);
     const totalFaturamentoPast = pastTours.reduce((sum, tour) => {
-      const tourReservations = reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status));
+      const tourReservations = reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status, r.payment_status));
       return sum + calcFaturamentoBase(tourReservations, allParticipants);
     }, 0);
     const totalClientesFuture = futureTours.reduce((sum, tour) => {
-      return sum + reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status)).reduce((s, r) => s + (r.numero_participantes || 1), 0);
+      return sum + reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status, r.payment_status)).reduce((s, r) => s + (r.numero_participantes || 1), 0);
     }, 0);
     const totalClientesPast = pastTours.reduce((sum, tour) => {
-      return sum + reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status)).reduce((s, r) => s + (r.numero_participantes || 1), 0);
+      return sum + reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status, r.payment_status)).reduce((s, r) => s + (r.numero_participantes || 1), 0);
     }, 0);
 
     // Calculate tour duration in days
@@ -2691,7 +2694,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     // Tour card component matching the screenshot design
     // Uses same calculation logic as calculateTourFinancials for consistency
     const TourCard = ({ tour }: { tour: Tour }) => {
-      const tourReservations = reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status));
+      const tourReservations = reservations.filter(r => r.tour_id === tour.id && isConfirmed(r.status, r.payment_status));
       // Alinhado com calculateTourFinancials e com a planilha de participantes:
       // canceladas não entram no faturamento da aba Por Passeio.
       const allRevenueRes = tourReservations;
