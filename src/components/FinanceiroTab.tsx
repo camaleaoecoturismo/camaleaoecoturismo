@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Users, Percent, Wallet, Building2, Briefcase, Calculator, ChevronLeft, ChevronRight, Lock, Calendar, BarChart3, LayoutDashboard, Brain, Link2, PieChart as PieChartIcon, Receipt, ChevronDown } from "lucide-react";
+import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Users, Percent, Wallet, Building2, Briefcase, Calculator, ChevronLeft, ChevronRight, Lock, Calendar, BarChart3, LayoutDashboard, Brain, Link2, PieChart as PieChartIcon, Receipt, ChevronDown, RefreshCw } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import BalancoAnual from './BalancoAnual';
 import BalancoCompetencia from './BalancoCompetencia';
@@ -659,6 +659,25 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     });
     return map;
   }, [allParcelas]);
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const refreshAllData = useCallback(async () => {
+    if (!isUnlocked) return;
+    setIsRefreshing(true);
+    await Promise.all([
+      fetchReservations(),
+      fetchAllTourCosts(),
+      fetchAllMonthlyGeneralCosts(),
+      fetchClientes(),
+      fetchRecurringCosts(),
+      fetchAllParticipants(),
+      fetchAllPricingOptions(),
+      fetchAllCostPayments(),
+      fetchAllParcelas(),
+    ]);
+    setIsRefreshing(false);
+  }, [isUnlocked]);
 
   useEffect(() => {
     if (!isUnlocked) return;
@@ -2837,9 +2856,21 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
                   </Select>
                 </div>
                 
-                <Badge variant="secondary" className="ml-auto">
-                  {filteredTours.length} passeio{filteredTours.length !== 1 ? 's' : ''}
-                </Badge>
+                <div className="ml-auto flex items-center gap-2">
+                  <Badge variant="secondary">
+                    {filteredTours.length} passeio{filteredTours.length !== 1 ? 's' : ''}
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={refreshAllData}
+                    disabled={isRefreshing}
+                    className="h-8 gap-1.5"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    Atualizar
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
