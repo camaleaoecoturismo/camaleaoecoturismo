@@ -694,6 +694,9 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   useEffect(() => {
     if (!isUnlocked) return;
     if (selectedTourId) {
+      fetchReservations();
+      fetchAllParticipants();
+      fetchAllParcelas();
       fetchTourCosts(selectedTourId);
       fetchTourOptionalItems(selectedTourId);
       fetchTourPricingOptions(selectedTourId);
@@ -2981,6 +2984,16 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
           <Badge variant={isPastTour ? "secondary" : "default"} className="shrink-0">
             {financials.numClientes} clientes
           </Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refreshAllData}
+            disabled={isRefreshing}
+            className="shrink-0 h-8 gap-1.5"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
         </div>
 
         {/* Key metrics - clean grid */}
