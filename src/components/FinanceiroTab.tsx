@@ -452,7 +452,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
 
   // Get ALL tours sorted by date (descending - newest first), grouped by year/month
   const allToursSorted = useMemo(() => {
-    return [...tours].sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
+    return [...tours].sort((a, b) => new Date(b.start_date + 'T12:00:00').getTime() - new Date(a.start_date + 'T12:00:00').getTime());
   }, [tours]);
 
   // TourView filter state — lifted here so TourView can be called as {TourView()} without hooks
@@ -461,23 +461,23 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   const [tourMonthFilter, setTourMonthFilter] = useState<string>('all');
   const tourAvailableYears = useMemo(() => {
     const years = new Set<number>();
-    tours.forEach(t => years.add(new Date(t.start_date).getFullYear()));
+    tours.forEach(t => years.add(new Date(t.start_date + 'T12:00:00').getFullYear()));
     years.add(new Date().getFullYear());
     return Array.from(years).sort((a, b) => b - a);
   }, [tours]);
   const tourFilteredTours = useMemo(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     return allToursSorted.filter(t => {
-      const tourDate = new Date(t.start_date);
+      const tourDate = new Date(t.start_date + 'T12:00:00');
       const tourYear = tourDate.getFullYear();
       const tourMonth = String(tourDate.getMonth() + 1).padStart(2, '0');
-      const isPast = new Date(t.end_date || t.start_date) < today;
+      const isPast = new Date((t.end_date || t.start_date) + 'T12:00:00') < today;
       if (tourYear !== tourYearFilter) return false;
       if (tourMonthFilter !== 'all' && tourMonth !== tourMonthFilter) return false;
       if (tourStatusFilter === 'future' && isPast) return false;
       if (tourStatusFilter === 'past' && !isPast) return false;
       return true;
-    }).sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+    }).sort((a, b) => new Date(a.start_date + 'T12:00:00').getTime() - new Date(b.start_date + 'T12:00:00').getTime());
   }, [allToursSorted, tourYearFilter, tourMonthFilter, tourStatusFilter]);
 
   // Group tours by year and month for the selector
@@ -488,7 +488,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
       tours: Tour[];
     }> = {};
     allToursSorted.forEach(tour => {
-      const date = new Date(tour.start_date);
+      const date = new Date(tour.start_date + 'T12:00:00');
       const key = format(date, 'yyyy-MM');
       const year = date.getFullYear();
       const monthLabel = format(date, 'MMMM', {
@@ -1213,7 +1213,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     const monthStart = startOfMonth(new Date(parseInt(year), parseInt(month) - 1));
     const monthEnd = endOfMonth(monthStart);
     const monthTours = tours.filter(t => {
-      const tourDate = new Date(t.start_date);
+      const tourDate = new Date(t.start_date + 'T12:00:00');
       return tourDate >= monthStart && tourDate <= monthEnd;
     });
     
@@ -2661,8 +2661,8 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     ];
 
     // Separate future and past from filtered tours
-    const futureTours = filteredTours.filter(t => new Date(t.end_date || t.start_date) >= today);
-    const pastTours = filteredTours.filter(t => new Date(t.end_date || t.start_date) < today);
+    const futureTours = filteredTours.filter(t => new Date((t.end_date || t.start_date) + 'T12:00:00') >= today);
+    const pastTours = filteredTours.filter(t => new Date((t.end_date || t.start_date) + 'T12:00:00') < today);
 
     // Helper function for card payment method detection (same as calculateTourFinancials)
     // Using shared calcFaturamentoBase and isCardPaymentMethod from component scope
@@ -2686,8 +2686,8 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     // Calculate tour duration in days
     const getTourDuration = (tour: Tour) => {
       if (!tour.end_date) return 1;
-      const start = new Date(tour.start_date);
-      const end = new Date(tour.end_date);
+      const start = new Date(tour.start_date + 'T12:00:00');
+      const end = new Date(tour.end_date + 'T12:00:00');
       return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     };
 
@@ -2744,7 +2744,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
         return sum + qty * c.unit_value;
       }, 0);
       const lucro = faturamento - custos - (faturamento * IR_RATE);
-      const tourDate = new Date(tour.start_date);
+      const tourDate = new Date(tour.start_date + 'T12:00:00');
       const duration = getTourDuration(tour);
       
       return (
@@ -2967,7 +2967,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
     // Tour detail view
     const financials = calculateTourFinancials(selectedTourId);
     const selectedTour = tours.find(t => t.id === selectedTourId);
-    const tourDate = selectedTour ? new Date(selectedTour.start_date) : new Date();
+    const tourDate = selectedTour ? new Date(selectedTour.start_date + 'T12:00:00') : new Date();
     const isPastTour = tourDate < today;
     
     return (
@@ -3371,7 +3371,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   const BalancoView = () => {
     const availableYears = useMemo(() => {
       const years = new Set<number>([2023, 2024, 2025]);
-      tours.forEach(t => years.add(new Date(t.start_date).getFullYear()));
+      tours.forEach(t => years.add(new Date(t.start_date + 'T12:00:00').getFullYear()));
       allMonthlyGeneralCosts.forEach(c => years.add(c.year));
       const currentYear = new Date().getFullYear();
       years.add(currentYear);
@@ -3397,7 +3397,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   const CompetenciaView = () => {
     const availableYears = useMemo(() => {
       const years = new Set<number>([new Date().getFullYear()]);
-      tours.forEach(t => { if (t.start_date) years.add(new Date(t.start_date).getFullYear()); });
+      tours.forEach(t => { if (t.start_date) years.add(new Date(t.start_date + 'T12:00:00').getFullYear()); });
       allMonthlyGeneralCosts.forEach(c => years.add(c.year));
       return Array.from(years).sort((a, b) => b - a);
     }, [tours, allMonthlyGeneralCosts]);
@@ -3420,7 +3420,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   const AnaliseGraficaView = () => {
     const availableYears = useMemo(() => {
       const years = new Set<number>([2023, 2024, 2025]);
-      tours.forEach(t => years.add(new Date(t.start_date).getFullYear()));
+      tours.forEach(t => years.add(new Date(t.start_date + 'T12:00:00').getFullYear()));
       allMonthlyGeneralCosts.forEach(c => years.add(c.year));
       const currentYear = new Date().getFullYear();
       years.add(currentYear);
@@ -3445,7 +3445,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   const DashboardView = () => {
     const availableYears = useMemo(() => {
       const years = new Set<number>([2023, 2024, 2025]);
-      tours.forEach(t => years.add(new Date(t.start_date).getFullYear()));
+      tours.forEach(t => years.add(new Date(t.start_date + 'T12:00:00').getFullYear()));
       allMonthlyGeneralCosts.forEach(c => years.add(c.year));
       const currentYear = new Date().getFullYear();
       years.add(currentYear);
@@ -3470,7 +3470,7 @@ const FinanceiroTab: React.FC<FinanceiroTabProps> = ({
   const HistoricoView = () => {
     const availableYears = useMemo(() => {
       const years = new Set<number>([2023, 2024, 2025]);
-      tours.forEach(t => years.add(new Date(t.start_date).getFullYear()));
+      tours.forEach(t => years.add(new Date(t.start_date + 'T12:00:00').getFullYear()));
       allMonthlyGeneralCosts.forEach(c => years.add(c.year));
       const currentYear = new Date().getFullYear();
       years.add(currentYear);
